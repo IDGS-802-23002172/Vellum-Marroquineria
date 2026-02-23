@@ -11,7 +11,7 @@ services:
       MYSQL_USER: vellum_user
       MYSQL_PASSWORD: vellum_password_123
     ports:
-      - "3306:3306"
+      - "3307:3306"
     volumes:
       - vellum_db_data:/var/lib/mysql
 

@@ -3,11 +3,11 @@ from flask import Flask, render_template
 from flask_wtf.csrf import CSRFProtect
 from dotenv import load_dotenv
 
-from app.models import db, Usuario, Proveedor, MateriaPrima
+from app.models import db, Usuario
 
 load_dotenv()
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder='app/templates', static_folder='app/static')
 
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv(
     'DATABASE_URL', 
@@ -33,6 +33,7 @@ def index():
 @app.route('/login')
 def login():
     return render_template('login.html')
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
