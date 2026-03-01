@@ -1,0 +1,52 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+<div class="flex justify-between items-center mb-10">
+    <h2 class="text-4xl font-black tracking-tighter italic">COLECCIÓN {{ (productos|length) }}</h2>
+    <a href="{{ url_for('crear_producto') }}" class="bg-black text-white px-8 py-3 rounded-full font-bold hover:bg-gray-800 transition shadow-lg">
+        + AGREGAR PIEZA
+    </a>
+</div>
+
+<div class="grid-container">
+    {% for p in productos %}
+    <div class="card">
+        <section class="landscape-section">
+            <img src="{{ url_for('static', filename='img/productos/' + p.imagen) }}" class="product-card-img">
+            <div class="filter"></div>
+        </section>
+
+        <section class="content-section">
+            <div class="weather-info">
+                <div class="left-side">
+                    <div class="icon">
+                        <svg fill="none" stroke="white" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg>
+                    </div>
+                    <p class="text-[8pt] uppercase font-bold">{{ p.linea }}</p>
+                </div>
+                <div class="right-side">
+                    <div class="location">
+                        <span>LEÓN, MX</span>
+                    </div>
+                    <p class="temperature">${{ p.precio_venta }}</p>
+                </div>
+            </div>
+            
+            <div class="forecast">
+                <div class="mb-2">
+                    <p class="font-bold text-black text-lg">{{ p.nombre }}</p>
+                    <p class="text-gray-400 italic">{{ p.categoria }}</p>
+                </div>
+                <div class="separator"></div>
+                <div class="flex justify-between w-full pt-2">
+                    <a href="{{ url_for('modificar_producto', id=p.id) }}" class="text-blue-600 font-bold hover:underline">EDITAR</a>
+                    <a href="{{ url_for('eliminar_producto', id=p.id) }}" class="text-red-500 font-bold hover:underline">ELIMINAR</a>
+                </div>
+            </div>
+        </section>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
