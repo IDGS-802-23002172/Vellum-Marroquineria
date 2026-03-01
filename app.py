@@ -7,7 +7,7 @@ from datetime import timedelta
 
 from models import db, Usuario 
 from forms import UserForm      
-
+from ventas import ventas_bp
 
 load_dotenv()
 
@@ -23,6 +23,8 @@ app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=10)
 
 db.init_app(app)
 csrf = CSRFProtect(app)
+
+app.register_blueprint(ventas_bp, url_prefix="/ventas")
 
 with app.app_context():
     try:

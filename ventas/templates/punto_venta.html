@@ -1,0 +1,80 @@
+{% extends "layout.html" %}
+
+{% block content %}
+
+<div class="pos-container">
+
+<form method="get" action="{{ url_for('ventas.punto_venta') }}">
+    <input type="text" name="busqueda" placeholder="Buscar por nombre o SKU">
+    <button type="submit">Buscar</button>
+</form>
+{% if productos %}
+<table>
+    <thead>
+        <tr>
+            <th>Nombre</th>
+            <th>SKU</th>
+            <th>Precio</th>
+            <th>Stock</th>
+            <th>Acción</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for producto in productos %}
+        <tr>
+            <td>{{ producto.nombre }}</td>
+            <td>{{ producto.sku }}</td>
+            <td>${{ producto.precio }}</td>
+            <td>{{ producto.stock }}</td>
+            <td>
+                <form method="post" action="{{ url_for('ventas.agregar_producto') }}">
+                    <input type="hidden" name="producto_id" value="{{ producto.id }}">
+                    <input type="number" name="cantidad" min="1" value="1" style="width:60px;">
+                    <button type="submit">Agregar</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}
+{% if carrito %}
+<h3>Carrito</h3>
+<table>
+    <thead>
+        <tr>
+            <th>Producto</th>
+            <th>Cantidad</th>
+            <th>Precio</th>
+            <th>Subtotal</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for item in carrito %}
+        <tr>
+            <td>{{ item.nombre }}</td>
+            <td>{{ item.cantidad }}</td>
+            <td>${{ item.precio }}</td>
+            <td>${{ item.precio * item.cantidad }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<p>Subtotal: ${{ subtotal }}</p>
+<p>IVA (16%): ${{ iva }}</p>
+<p><strong>Total: ${{ total }}</strong></p>
+
+<form method="post" action="{{ url_for('ventas.finalizar_venta') }}">
+    <button type="submit">Finalizar Venta</button>
+</form>
+
+<form method="post" action="{{ url_for('ventas.cancelar_venta') }}">
+    <button type="submit">Cancelar Venta</button>
+</form>
+
+{% endif %}
+
+</div>
+
+{% endblock %}
