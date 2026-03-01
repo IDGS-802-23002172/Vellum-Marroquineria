@@ -1,12 +1,14 @@
 import os
-from flask import Flask, render_template, session, flash, redirect, url_for
+from flask import Flask, render_template, session, flash, redirect, url_for, request
 from flask_wtf.csrf import CSRFProtect
 from dotenv import load_dotenv
 from datetime import timedelta
 from proveedores.routes import proveedores_bp
 
 
-from models import db, Usuario 
+from models import db, Usuario, Producto
+from werkzeug.utils import secure_filename
+import forms
 from forms import UserForm      
 
 
@@ -71,7 +73,8 @@ def listar_productos():
 def crear_producto():
     form = forms.ProductoForm(request.form)
     if request.method == 'POST' and form.validate():
-        # Lógica para guardar la imagen 
+        if not os.path.exists(app.config['UPLOAD_FOLDER']):
+            os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
         f = request.files['imagen']
         filename = secure_filename(f.filename)
         f.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))

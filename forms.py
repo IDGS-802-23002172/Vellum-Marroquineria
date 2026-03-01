@@ -1,6 +1,8 @@
 from flask_wtf import FlaskForm 
-from wtforms import StringField, PasswordField, IntegerField
+from wtforms import StringField, PasswordField, IntegerField, HiddenField, SelectField, DecimalField
+from flask_wtf.file import FileField, FileAllowed
 from wtforms import validators
+from wtforms.validators import DataRequired, Length, Optional, Email
 
 class UserForm(FlaskForm):
     id = IntegerField('id')
@@ -45,7 +47,7 @@ class ProveedorForm(FlaskForm):
     id_estado = IntegerField('Estado ID', [validators.Optional()])
     notas = StringField('Notas', [validators.Optional()])
 
-class ProductoForm(Form):
+class ProductoForm(FlaskForm):
     id = HiddenField('id')
     nombre = StringField('Nombre del Producto', [DataRequired()])
     linea = SelectField('Línea', choices=[
@@ -59,7 +61,6 @@ class ProductoForm(Form):
         ('Chamarras', 'Chamarras')
     ])
     precio = DecimalField('Precio de Venta', [DataRequired()])
-    # Validación específica para JPG y PNG 
     imagen = FileField('Imagen del Producto', validators=[
         FileAllowed(['jpg', 'png'], '¡Solo se permiten imágenes JPG o PNG!')
     ])

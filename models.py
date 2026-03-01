@@ -1,7 +1,6 @@
-from datetime import datetime
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import event
-import datetime
+from datetime import datetime
 
 db = SQLAlchemy()
 
@@ -235,7 +234,7 @@ class Producto(db.Model):
     linea = db.Column(db.String(50), nullable=False) 
     # Categorías: Portafolios, carteras, chamarras [cite: 29]
     categoria = db.Column(db.String(50), nullable=False)
-    precio_venta = db.Column(db.Decimal(10, 2))
+    precio_venta = db.Column(db.Numeric(10, 2))
     stock_actual = db.Column(db.Integer, default=0)
     imagen = db.Column(db.String(255)) # Solo JPG y PNG 
-    fecha_registro = db.Column(db.DateTime, default=datetime.datetime.now)
+    fecha_registro = db.Column(db.DateTime, default=datetime.now)
