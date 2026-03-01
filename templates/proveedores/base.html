@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Proveedores{% endblock %} — Marroquinería</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+  <!-- Bootstrap 5 -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Bootstrap Icons -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+
+  <style>
+    :root {
+      --piel-dark:   #1a1008;
+      --piel-brown:  #6b3a1f;
+      --piel-tan:    #b8834a;
+      --piel-cream:  #f5ede0;
+      --piel-light:  #fdf8f2;
+      --piel-border: #e4d5c1;
+      --danger:      #c0392b;
+      --success-dk:  #1e6641;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--piel-light);
+      color: var(--piel-dark);
+      min-height: 100vh;
+    }
+
+    /* ── Sidebar ─────────────────────────────── */
+    .sidebar {
+      width: 240px;
+      min-height: 100vh;
+      background: var(--piel-dark);
+      position: fixed;
+      top: 0; left: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      z-index: 100;
+    }
+
+    .sidebar-brand {
+      padding: 28px 24px 20px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+
+    .sidebar-brand .brand-name {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.15rem;
+      color: var(--piel-cream);
+      line-height: 1.2;
+      display: block;
+    }
+
+    .sidebar-brand .brand-sub {
+      font-size: .72rem;
+      color: var(--piel-tan);
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .sidebar-nav { padding: 16px 0; flex: 1; }
+
+    .nav-section-label {
+      font-size: .65rem;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,.3);
+      padding: 18px 24px 6px;
+    }
+
+    .sidebar-link {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 24px;
+      color: rgba(255,255,255,.65);
+      text-decoration: none;
+      font-size: .88rem;
+      font-weight: 400;
+      transition: all .18s;
+      border-left: 3px solid transparent;
+    }
+
+    .sidebar-link:hover,
+    .sidebar-link.active {
+      color: var(--piel-cream);
+      background: rgba(255,255,255,.05);
+      border-left-color: var(--piel-tan);
+    }
+
+    .sidebar-link i { font-size: 1rem; width: 20px; }
+
+    /* ── Main content ────────────────────────── */
+    .main-wrap {
+      margin-left: 240px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .topbar {
+      background: #fff;
+      border-bottom: 1px solid var(--piel-border);
+      padding: 14px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 90;
+    }
+
+    .topbar-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--piel-dark);
+    }
+
+    .topbar-breadcrumb {
+      font-size: .8rem;
+      color: #999;
+    }
+
+    .topbar-breadcrumb a { color: var(--piel-tan); text-decoration: none; }
+
+    .page-body { padding: 32px; }
+
+    /* ── Cards ───────────────────────────────── */
+    .card-piel {
+      background: #fff;
+      border: 1px solid var(--piel-border);
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(26,16,8,.05);
+    }
+
+    .card-piel .card-header {
+      background: transparent;
+      border-bottom: 1px solid var(--piel-border);
+      padding: 18px 24px;
+      font-family: 'Playfair Display', serif;
+      font-size: 1.05rem;
+      font-weight: 700;
+    }
+
+    /* ── Buttons ─────────────────────────────── */
+    .btn-piel {
+      background: var(--piel-brown);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 9px 20px;
+      font-size: .88rem;
+      font-weight: 500;
+      font-family: 'DM Sans', sans-serif;
+      transition: background .18s, transform .1s;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      text-decoration: none;
+    }
+
+    .btn-piel:hover { background: var(--piel-tan); color: #fff; transform: translateY(-1px); }
+
+    .btn-outline-piel {
+      background: transparent;
+      border: 1.5px solid var(--piel-brown);
+      color: var(--piel-brown);
+      border-radius: 8px;
+      padding: 8px 18px;
+      font-size: .88rem;
+      font-weight: 500;
+      font-family: 'DM Sans', sans-serif;
+      transition: all .18s;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      text-decoration: none;
+    }
+
+    .btn-outline-piel:hover { background: var(--piel-brown); color: #fff; }
+
+    .btn-danger-piel {
+      background: transparent;
+      border: 1.5px solid #c0392b;
+      color: #c0392b;
+      border-radius: 8px;
+      padding: 7px 16px;
+      font-size: .85rem;
+      font-weight: 500;
+      font-family: 'DM Sans', sans-serif;
+      transition: all .18s;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      text-decoration: none;
+    }
+
+    .btn-danger-piel:hover { background: #c0392b; color: #fff; }
+
+    /* ── Form controls ───────────────────────── */
+    .form-label {
+      font-size: .82rem;
+      font-weight: 600;
+      color: var(--piel-brown);
+      letter-spacing: .03em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    .form-control, .form-select {
+      border: 1.5px solid var(--piel-border);
+      border-radius: 8px;
+      padding: 9px 14px;
+      font-size: .9rem;
+      font-family: 'DM Sans', sans-serif;
+      background: #fff;
+      color: var(--piel-dark);
+      transition: border-color .18s, box-shadow .18s;
+    }
+
+    .form-control:focus, .form-select:focus {
+      border-color: var(--piel-tan);
+      box-shadow: 0 0 0 3px rgba(184,131,74,.15);
+      outline: none;
+    }
+
+    textarea.form-control { resize: vertical; min-height: 90px; }
+
+    /* ── Checkbox chips ──────────────────────── */
+    .chip-group { display: flex; flex-wrap: wrap; gap: 8px; }
+
+    .chip-label {
+      cursor: pointer;
+    }
+
+    .chip-label input { display: none; }
+
+    .chip-label span {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 12px;
+      border: 1.5px solid var(--piel-border);
+      border-radius: 20px;
+      font-size: .8rem;
+      font-weight: 500;
+      color: #888;
+      background: #fff;
+      transition: all .18s;
+      user-select: none;
+    }
+
+    .chip-label input:checked + span {
+      background: var(--piel-brown);
+      border-color: var(--piel-brown);
+      color: #fff;
+    }
+
+    /* ── Table ───────────────────────────────── */
+    .table-piel {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      font-size: .88rem;
+    }
+
+    .table-piel thead th {
+      background: var(--piel-cream);
+      color: var(--piel-brown);
+      font-size: .72rem;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      padding: 12px 16px;
+      border-bottom: 2px solid var(--piel-border);
+    }
+
+    .table-piel tbody tr {
+      border-bottom: 1px solid var(--piel-border);
+      transition: background .15s;
+    }
+
+    .table-piel tbody tr:hover { background: var(--piel-cream); }
+
+    .table-piel tbody td {
+      padding: 13px 16px;
+      vertical-align: middle;
+    }
+
+    /* ── Badges ──────────────────────────────── */
+    .badge-activo {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: .75rem;
+      font-weight: 600;
+    }
+
+    .badge-activo.si   { background: #d1fae5; color: var(--success-dk); }
+    .badge-activo.no   { background: #fee2e2; color: var(--danger); }
+
+    .tag-material {
+      display: inline-block;
+      background: var(--piel-cream);
+      border: 1px solid var(--piel-border);
+      color: var(--piel-brown);
+      font-size: .72rem;
+      font-weight: 500;
+      padding: 2px 8px;
+      border-radius: 4px;
+      margin: 2px;
+    }
+
+    /* ── Alerts ──────────────────────────────── */
+    .alert-piel {
+      padding: 12px 18px;
+      border-radius: 8px;
+      font-size: .88rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .alert-piel.success { background: #d1fae5; color: var(--success-dk); border-left: 4px solid #34d399; }
+    .alert-piel.danger  { background: #fee2e2; color: var(--danger); border-left: 4px solid #f87171; }
+    .alert-piel.warning { background: #fef3c7; color: #92400e; border-left: 4px solid #fbbf24; }
+
+    /* ── Search bar ──────────────────────────── */
+    .search-wrap {
+      position: relative;
+    }
+    .search-wrap i {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #aaa;
+      font-size: .95rem;
+    }
+    .search-wrap input {
+      padding-left: 36px;
+    }
+
+    /* ── Detail row ──────────────────────────── */
+    .detail-row {
+      display: flex;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--piel-border);
+      font-size: .9rem;
+    }
+    .detail-row:last-child { border-bottom: none; }
+    .detail-label {
+      min-width: 180px;
+      font-size: .78rem;
+      font-weight: 600;
+      color: var(--piel-tan);
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      padding-top: 2px;
+    }
+    .detail-value { flex: 1; color: var(--piel-dark); }
+  </style>
+
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <span class="brand-name">Marroquinería<br>de Autor</span>
+    <span class="brand-sub">León · Guanajuato</span>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Principal</div>
+    <a href="#" class="sidebar-link"><i class="bi bi-speedometer2"></i> Dashboard</a>
+
+    <div class="nav-section-label">Suministros</div>
+    <a href="{{ url_for('proveedores.index') }}"
+       class="sidebar-link {% if 'proveedores' in request.endpoint %}active{% endif %}">
+      <i class="bi bi-person-lines-fill"></i> Proveedores
+    </a>
+    <a href="#" class="sidebar-link"><i class="bi bi-boxes"></i> Materia Prima</a>
+    <a href="#" class="sidebar-link"><i class="bi bi-cart3"></i> Compras</a>
+
+    <div class="nav-section-label">Producción</div>
+    <a href="#" class="sidebar-link"><i class="bi bi-scissors"></i> Órdenes</a>
+    <a href="#" class="sidebar-link"><i class="bi bi-list-check"></i> Recetas</a>
+
+    <div class="nav-section-label">Ventas</div>
+    <a href="#" class="sidebar-link"><i class="bi bi-bag-check"></i> Punto de Venta</a>
+    <a href="#" class="sidebar-link"><i class="bi bi-graph-up-arrow"></i> Reportes</a>
+  </nav>
+</aside>
+
+<!-- MAIN -->
+<div class="main-wrap">
+  <header class="topbar">
+    <div>
+      <div class="topbar-breadcrumb">
+        {% block breadcrumb %}{% endblock %}
+      </div>
+      <div class="topbar-title">{% block page_title %}Módulo{% endblock %}</div>
+    </div>
+    <div class="d-flex align-items-center gap-3">
+      <span style="font-size:.85rem; color:#888;">
+        <i class="bi bi-person-circle"></i>
+        {{ current_user.nombre_completo if current_user else 'Usuario' }}
+      </span>
+    </div>
+  </header>
+
+  <main class="page-body">
+    <!-- Flash messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for cat, msg in messages %}
+          <div class="alert-piel {{ cat }}">
+            <i class="bi bi-{% if cat == 'success' %}check-circle{% elif cat == 'danger' %}exclamation-circle{% else %}exclamation-triangle{% endif %}-fill"></i>
+            {{ msg }}
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </main>
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -3,6 +3,7 @@ from flask import Flask, render_template, session, flash, redirect, url_for
 from flask_wtf.csrf import CSRFProtect
 from dotenv import load_dotenv
 from datetime import timedelta
+from proveedores.routes import proveedores_bp
 
 
 from models import db, Usuario 
@@ -23,6 +24,8 @@ app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=10)
 
 db.init_app(app)
 csrf = CSRFProtect(app)
+app.register_blueprint(proveedores_bp)
+
 
 with app.app_context():
     try:
@@ -58,27 +61,6 @@ def login():
     return render_template('login.html', form=form)
 
 
-@app.route('/proovedor', methods=['GET', 'POST'])
-def proovedor():
-    form = UserForm()
-    if form.validate_on_submit():
-        user = Usuario.query.filter_by(username=form.username.data).first()
-        if user.intentos_fallidos >= 3:
-            flash("Cuenta bloqueada por seguridad. Contacte al admin.", "danger")
-            return render_template('login.html', form=form)
-        if user.password == form.password.data:
-            user.intentos_fallidos = 0
-            db.session.commit()
-            session['user_id'] = user.id
-            session.permanent = True 
-            return redirect(url_for('index'))
-        else:
-            user.intentos_fallidos += 1
-            db.session.commit()
-            flash(f"Contraseña incorrecta. Intento {user.intentos_fallidos} de 3.", "warning")
-    else:
-        flash("El usuario no existe.", "danger")
-    return render_template('login.html', form=form)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

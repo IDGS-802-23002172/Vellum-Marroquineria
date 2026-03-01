@@ -1,0 +1,193 @@
+{% extends "proveedores/base.html" %}
+
+{% block title %}{{ 'Nuevo Proveedor' if modo == 'crear' else 'Editar Proveedor' }}{% endblock %}
+
+{% block breadcrumb %}
+  <a href="#">Suministros</a> /
+  <a href="{{ url_for('proveedores.index') }}">Proveedores</a> /
+  {{ 'Nuevo' if modo == 'crear' else 'Editar' }}
+{% endblock %}
+
+{% block page_title %}
+  {{ 'Registrar Proveedor' if modo == 'crear' else 'Editar: ' + prov.razon_social }}
+{% endblock %}
+
+{% block content %}
+<form method="POST"
+      action="{{ url_for('proveedores.crear') if modo == 'crear' else url_for('proveedores.editar', id_proveedor=prov.id_proveedor) }}"
+      autocomplete="off" novalidate>
+
+  <!-- CSRF Token -->
+  {{ form.csrf_token }}
+
+  <div class="row g-4">
+
+    <!-- ── Columna izquierda ─────────────────── -->
+    <div class="col-lg-7">
+
+      <!-- Datos principales -->
+      <div class="card-piel mb-4">
+        <div class="card-header">
+          <i class="bi bi-building me-2" style="color:var(--piel-tan)"></i>Datos del Proveedor
+        </div>
+        <div class="p-4">
+          <div class="row g-3">
+
+            <div class="col-12">
+              {{ form.razon_social.label(class="form-label") }}
+              {{ form.razon_social(class="form-control", placeholder="Nombre legal o comercial del proveedor", maxlength=200, required=True) }}
+            </div>
+
+            <div class="col-md-6">
+              {{ form.nombre_contacto.label(class="form-label") }}
+              {{ form.nombre_contacto(class="form-control", placeholder="Persona de contacto", maxlength=150, required=True) }}
+            </div>
+
+            <div class="col-md-6">
+              {{ form.telefono.label(class="form-label") }}
+              {{ form.telefono(class="form-control", placeholder="477 000 0000", maxlength=20, required=True) }}
+            </div>
+
+            <div class="col-md-6">
+              {{ form.correo.label(class="form-label") }}
+              {{ form.correo(class="form-control", placeholder="proveedor@ejemplo.com", maxlength=150) }}
+            </div>
+
+            <div class="col-md-6">
+              {{ form.rfc.label(class="form-label") }}
+              {{ form.rfc(class="form-control", placeholder="XAXX010101000", maxlength=13, style="text-transform:uppercase") }}
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- Ubicación -->
+      <div class="card-piel mb-4">
+        <div class="card-header">
+          <i class="bi bi-geo-alt me-2" style="color:var(--piel-tan)"></i>Ubicación
+        </div>
+        <div class="p-4">
+          <div class="row g-3">
+
+            <div class="col-12">
+              {{ form.direccion.label(class="form-label") }}
+              {{ form.direccion(class="form-control", placeholder="Calle, número, colonia", maxlength=300) }}
+            </div>
+
+            <div class="col-md-6">
+              {{ form.ciudad.label(class="form-label") }}
+              {{ form.ciudad(class="form-control", placeholder="Ej. León", maxlength=100) }}
+            </div>
+
+            <div class="col-md-6">
+              {{ form.id_estado.label(class="form-label") }}
+              <select name="id_estado" class="form-select">
+                <option value="">— Seleccionar —</option>
+                {% for est in estados %}
+                  <option value="{{ est.id_estado }}"
+                    {% if (prov and prov.id_estado == est.id_estado) or (request.form.get('id_estado') and request.form.get('id_estado')|string == est.id_estado|string) %}selected{% endif %}>
+                    {{ est.nombre }}
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- Notas -->
+      <div class="card-piel">
+        <div class="card-header">
+          <i class="bi bi-chat-left-text me-2" style="color:var(--piel-tan)"></i>Notas internas
+        </div>
+        <div class="p-4">
+          {{ form.notas(class="form-control", placeholder="Condiciones de pago, tiempos de entrega, observaciones…") }}
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── Columna derecha ──────────────────── -->
+    <div class="col-lg-5">
+
+      <!-- Tipos de material -->
+      <div class="card-piel mb-4">
+        <div class="card-header">
+          <i class="bi bi-tags me-2" style="color:var(--piel-tan)"></i>Tipo de Material que Provee
+        </div>
+        <div class="p-4">
+          <p style="font-size:.82rem; color:#999; margin-bottom:16px;">
+            Selecciona uno o varios materiales que este proveedor puede suministrar.
+          </p>
+          <div class="chip-group">
+            {% set sel_ids = [] %}
+            {% if prov and prov.tipos_material %}
+              {% for t in prov.tipos_material %}
+                {% set _ = sel_ids.append(t.id_tipo) %}
+              {% endfor %}
+            {% endif %}
+
+            {% for mat in materiales %}
+            <label class="chip-label">
+              <input type="checkbox"
+                     name="materiales"
+                     value="{{ mat.id_tipo }}"
+                     {% if (mat.id_tipo in sel_ids) or (mat.id_tipo|string in request.form.getlist('materiales')) %}checked{% endif %}>
+              <span><i class="bi bi-check2" style="font-size:.75rem;"></i> {{ mat.nombre }}</span>
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Guía de campos -->
+      <div class="card-piel" style="background:var(--piel-cream); border-color:var(--piel-border);">
+        <div class="p-4">
+          <p style="font-size:.8rem; font-weight:600; color:var(--piel-brown); margin-bottom:10px;">
+            <i class="bi bi-info-circle me-1"></i> Campos obligatorios
+          </p>
+          <ul style="font-size:.8rem; color:#888; padding-left:16px; margin:0; line-height:1.8;">
+            <li>Razón social</li>
+            <li>Nombre de contacto</li>
+            <li>Teléfono</li>
+          </ul>
+          <hr style="border-color:var(--piel-border); margin:12px 0;">
+          <p style="font-size:.78rem; color:#aaa; margin:0;">
+            El correo y RFC deben ser únicos en el sistema.
+            El borrado es lógico: el proveedor se desactiva pero el historial de compras se conserva.
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Acciones -->
+  <div class="d-flex gap-3 mt-4 pt-3" style="border-top:1px solid var(--piel-border);">
+    <button type="submit" class="btn-piel">
+      <i class="bi bi-{{ 'floppy' if modo == 'crear' else 'check-lg' }}"></i>
+      {{ 'Registrar proveedor' if modo == 'crear' else 'Guardar cambios' }}
+    </button>
+    <a href="{{ url_for('proveedores.index') }}" class="btn-outline-piel">
+      <i class="bi bi-x-lg"></i> Cancelar
+    </a>
+  </div>
+
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Forzar RFC en mayúsculas en tiempo real
+  const rfcField = document.querySelector('[name="rfc"]');
+  if (rfcField) {
+    rfcField.addEventListener('input', function () {
+      const pos = this.selectionStart;
+      this.value = this.value.toUpperCase();
+      this.setSelectionRange(pos, pos);
+    });
+  }
+</script>
+{% endblock %}
