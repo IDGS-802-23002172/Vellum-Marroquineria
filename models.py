@@ -31,13 +31,18 @@ class Proveedor(SoftDeleteMixin, db.Model):
     nombre_contacto = db.Column(db.String(150), nullable=False)
     telefono = db.Column(db.String(20), nullable=False)
     correo = db.Column(db.String(150), unique=True)
+    rfc = db.Column(db.String(13))
+    direccion = db.Column(db.String(300)) 
+    ciudad = db.Column(db.String(100))
+    notas = db.Column(db.Text) 
     id_estado = db.Column(db.SmallInteger, db.ForeignKey("estados_mexico.id_estado"))
     materiales = db.relationship("ProveedorTipoMaterial", back_populates="proveedor")
-
-class TipoMaterialProveedor(db.Model):
+    
+class TipoMaterialProveedor(SoftDeleteMixin, db.Model):
     __tablename__ = "tipo_material_proveedor"
-    id_tipo = db.Column(db.SmallInteger, primary_key=True)
-    nombre = db.Column(db.String(80), unique=True)
+    id_tipo = db.Column(db.SmallInteger, primary_key=True, autoincrement=True)
+    nombre = db.Column(db.String(80), nullable=False, unique=True)
+    descripcion = db.Column(db.String(200))
 
 class ProveedorTipoMaterial(db.Model):
     __tablename__ = "proveedor_tipo_material"

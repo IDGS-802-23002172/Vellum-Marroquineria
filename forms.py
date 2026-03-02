@@ -1,4 +1,5 @@
 from flask_wtf import FlaskForm 
+from sqlalchemy import null
 from wtforms import StringField, PasswordField, IntegerField, HiddenField, SelectField, DecimalField
 from flask_wtf.file import FileField, FileAllowed
 from wtforms.validators import DataRequired, Length, Optional, Email
@@ -10,8 +11,13 @@ class UserForm(FlaskForm):
 class ProveedorForm(FlaskForm):
     razon_social = StringField('Razón Social', [DataRequired(), Length(max=200)])
     nombre_contacto = StringField('Nombre de Contacto', [DataRequired()])
+    rfc = StringField('RFC')
+    direccion = StringField('Dirección') 
+    ciudad = StringField('Ciudad') or null  
+    id_estado = StringField('Estado', validators=[Optional()]) 
     telefono = StringField('Teléfono', [DataRequired()])
     correo = StringField('Correo', [Optional(), Email()])
+    notas = StringField('Notas') 
 
 class ProductoForm(FlaskForm):
     id = HiddenField('id')

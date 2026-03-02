@@ -1,52 +1,80 @@
-{% extends "layout.html" %}
+{% extends "base.html" %}
+
+{% block title %}Acervo de Productos{% endblock %}
+{% block page_title %}Catálogo de Colección — León, MX{% endblock %}
 
 {% block content %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-
-<div class="flex justify-between items-center mb-10">
-    <h2 class="text-4xl font-black tracking-tighter italic">COLECCIÓN {{ (productos|length) }}</h2>
-    <a href="{{ url_for('crear_producto') }}" class="bg-black text-white px-8 py-3 rounded-full font-bold hover:bg-gray-800 transition shadow-lg">
-        + AGREGAR PIEZA
-    </a>
-</div>
-
-<div class="grid-container">
-    {% for p in productos %}
-    <div class="card">
-        <section class="landscape-section">
-            <img src="{{ url_for('static', filename='img/productos/' + p.imagen) }}" class="product-card-img">
-            <div class="filter"></div>
-        </section>
-
-        <section class="content-section">
-            <div class="weather-info">
-                <div class="left-side">
-                    <div class="icon">
-                        <svg fill="none" stroke="white" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg>
-                    </div>
-                    <p class="text-[8pt] uppercase font-bold">{{ p.linea }}</p>
-                </div>
-                <div class="right-side">
-                    <div class="location">
-                        <span>LEÓN, MX</span>
-                    </div>
-                    <p class="temperature">${{ p.precio_venta }}</p>
-                </div>
-            </div>
-            
-            <div class="forecast">
-                <div class="mb-2">
-                    <p class="font-bold text-black text-lg">{{ p.nombre }}</p>
-                    <p class="text-gray-400 italic">{{ p.categoria }}</p>
-                </div>
-                <div class="separator"></div>
-                <div class="flex justify-between w-full pt-2">
-                    <a href="{{ url_for('modificar_producto', id=p.id) }}" class="text-blue-600 font-bold hover:underline">EDITAR</a>
-                    <a href="{{ url_for('eliminar_producto', id=p.id) }}" class="text-red-500 font-bold hover:underline">ELIMINAR</a>
-                </div>
-            </div>
-        </section>
+<div class="container-fluid px-0">
+    <div class="d-flex justify-content-between align-items-end mb-5 border-bottom border-stone-200 pb-4">
+        <div>
+            <h2 class="text-premium text-uppercase m-0" style="font-size: 2.5rem; letter-spacing: -2px;">
+                Colección <span class="text-muted" style="font-family: 'DM Sans'; font-weight: 300;">{{ productos|length }}</span>
+            </h2>
+            <p class="text-uppercase tracking-widest text-muted mb-0" style="font-size: 0.65rem;">Piezas terminadas en existencia</p>
+        </div>
+        <a href="{{ url_for('crear_producto') }}" class="btn-vellum">
+            <i class="bi bi-plus-lg me-2"></i> Registrar Nueva Pieza
+        </a>
     </div>
-    {% endfor %}
+
+    <div class="row g-4">
+        {% for p in productos %}
+        <div class="col-xl-3 col-lg-4 col-md-6">
+            <div class="card-vellum p-0 border-0 h-100 d-flex flex-column bg-white shadow-sm" style="border-radius: 0;">
+                <div class="position-relative overflow-hidden" style="aspect-ratio: 4/5;">
+                    <img src="{{ url_for('static', filename='img/productos/' + p.imagen) }}" 
+                         class="w-100 h-100 object-fit-cover"
+                         style="filter: contrast(1.05);">
+                    
+                    <div class="position-absolute top-0 start-0 p-3">
+                        <span class="bg-black text-white px-3 py-1 tracking-widest uppercase fw-bold" style="font-size: 0.6rem;">
+                            {{ p.linea }}
+                        </span>
+                    </div>
+
+                    <div class="position-absolute bottom-0 end-0 p-3 bg-white">
+                        <span class="text-dark fw-bold" style="font-size: 1.1rem;">${{ p.precio_venta }}</span>
+                    </div>
+                </div>
+
+                <div class="p-4 flex-grow-1 d-flex flex-column">
+                    <div class="d-flex justify-content-between align-items-start mb-1">
+                        <h3 class="text-premium text-uppercase mb-0" style="font-size: 1.1rem; letter-spacing: 0;">{{ p.nombre }}</h3>
+                        <span class="text-muted small font-monospace">#{{ p.sku or 'S/N' }}</span>
+                    </div>
+                    <p class="text-muted italic small mb-4">{{ p.categoria }}</p>
+                    
+                    <div class="mt-auto pt-3 border-top d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="badge-activo {% if p.stock_actual > 0 %}si{% else %}no{% endif %}">
+                                {{ p.stock_actual }} EN STOCK
+                            </span>
+                        </div>
+                        <div class="d-flex gap-3">
+                            <a href="{{ url_for('modificar_producto', id=p.id) }}" class="text-stone-400 hover:text-dark">
+                                <i class="bi bi-pencil-square"></i>
+                            </a>
+                            <a href="{{ url_for('eliminar_producto', id=p.id) }}" class="text-stone-300 hover:text-danger">
+                                <i class="bi bi-trash3"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
 </div>
+
+<style>
+    .card-vellum {
+        transition: transform 0.3s ease, border-color 0.3s ease;
+        border: 1px solid var(--v-border) !important;
+    }
+    .card-vellum:hover {
+        transform: translateY(-5px);
+        border-color: var(--v-black) !important;
+    }
+    .text-premium { font-family: 'Playfair Display', serif; }
+</style>
 {% endblock %}

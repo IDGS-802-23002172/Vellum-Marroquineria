@@ -81,61 +81,39 @@ def index():
 # ─────────────────────────────────────────────
 # C — CREAR
 # ─────────────────────────────────────────────
-@proveedores_bp.route("/proveedor_crear", methods=["GET", "POST"])
+@proveedores_bp.route('/proveedor_crear', methods=['GET', 'POST'])
 def crear():
-    estados, materiales = _get_catalogos()
     form = ProveedorForm()
+    estados = EstadoMexico.query.filter_by(activo=True).all()
+    materiales = TipoMaterialProveedor.query.filter_by(activo=True).all()
 
     if form.validate_on_submit():
-        try:
-            proveedor = Proveedor(
-                razon_social=form.razon_social.data,
-                nombre_contacto=form.nombre_contacto.data,
-                telefono=form.telefono.data,
-                correo=form.correo.data or None,
-                rfc=(form.rfc.data.upper() if form.rfc.data else None),
-                direccion=form.direccion.data or None,
-                ciudad=form.ciudad.data or None,
-                id_estado=form.id_estado.data or None,
-                notas=form.notas.data or None,
-            )
+        raw_estado = request.form.get('id_estado')
+        id_estado_limpio = int(raw_estado) if raw_estado and raw_estado.isdigit() else None
 
-            db.session.add(proveedor)
-            db.session.flush()  # obtiene id_proveedor antes de commit
+        nuevo_prov = Proveedor(
+            razon_social=form.razon_social.data,
+            nombre_contacto=form.nombre_contacto.data,
+            telefono=form.telefono.data,
+            correo=form.correo.data,
+            rfc=form.rfc.data,
+            direccion=request.form.get('direccion'),
+            ciudad=request.form.get('ciudad'),
+            id_estado=id_estado_limpio, 
+            activo=True 
+        )
 
-            materiales_ids = request.form.getlist("materiales")
-            for mat_id in materiales_ids:
-                relacion = ProveedorTipoMaterial(
-                    id_proveedor=proveedor.id_proveedor,
-                    id_tipo=mat_id
-                )
-                db.session.add(relacion)
+        db.session.add(nuevo_prov)
+        db.session.commit()
+        
+        flash("Proveedor registrado con éxito", "success")
+        return redirect(url_for('proveedores.index'))
+    
 
-            db.session.commit()
+    if form.errors:
+        print(f"Errores: {form.errors}")
 
-            _log("CREAR", proveedor.id_proveedor, "Proveedor creado")
-            flash("Proveedor creado correctamente.", "success")
-            return redirect(url_for("proveedores.index"))
-
-        except Exception as e:
-            db.session.rollback()
-            flash(f"Error al crear proveedor: {e}", "danger")
-    else:
-        if request.method == "POST":
-            for field, errors in form.errors.items():
-                label = getattr(form, field).label.text if hasattr(form, field) else field
-                for err in errors:
-                    flash(f"{label}: {err}", "danger")
-
-    return render_template(
-        "proveedores/form.html",
-        estados=estados,
-        materiales=materiales,
-        proveedor=None,
-        prov=None,
-        modo='crear',
-        form=form
-    )
+    return render_template('proveedores/form.html', form=form, estados=estados, materiales=materiales, modo='crear')
 
 
 # ─────────────────────────────────────────────
