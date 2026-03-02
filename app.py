@@ -10,7 +10,7 @@ from models import db, Usuario, Producto
 from werkzeug.utils import secure_filename
 import forms
 from forms import UserForm      
-
+from ventas import ventas_bp
 
 load_dotenv()
 
@@ -29,6 +29,8 @@ db.init_app(app)
 csrf = CSRFProtect(app)
 app.register_blueprint(proveedores_bp)
 
+
+app.register_blueprint(ventas_bp, url_prefix="/ventas")
 
 with app.app_context():
     try:
@@ -80,10 +82,12 @@ def crear_producto():
         f.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
         
         nuevo_prod = Producto(
+            sku=form.sku.data,
             nombre=form.nombre.data,
             linea=form.linea.data,
             categoria=form.categoria.data,
             precio_venta=form.precio.data,
+            stock_actual=form.stock.data,
             imagen=filename
         )
         db.session.add(nuevo_prod)

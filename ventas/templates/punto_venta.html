@@ -1,0 +1,89 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="p-4 sm:ml-64 bg-gray-50 min-h-screen"> <div class="p-4 border-2 border-gray-200 border-dashed rounded-lg dark:border-gray-700 mt-14">
+        
+        <h2 class="text-3xl font-extrabold dark:text-white mb-6">Punto de Venta - Vellum</h2>
+
+        <form method="get" action="{{ url_for('ventas.punto_venta') }}" class="mb-8 max-w-lg">
+            <div class="flex">
+                <input type="text" name="busqueda" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-amber-500 focus:border-amber-500 block w-full p-2.5" placeholder="Buscar por nombre o SKU...">
+                <button type="submit" class="ml-2 px-5 py-2.5 text-sm font-medium text-white bg-amber-800 hover:bg-amber-900 rounded-lg">Buscar</button>
+            </div>
+        </form>
+
+        {% if productos %}
+        <div class="relative overflow-x-auto shadow-md sm:rounded-lg mb-10">
+            <table class="w-full text-sm text-left text-gray-500">
+                <thead class="text-xs text-gray-700 uppercase bg-gray-100">
+                    <tr>
+                        <th class="px-6 py-3">Producto</th>
+                        <th class="px-6 py-3">SKU</th>
+                        <th class="px-6 py-3">Precio</th>
+                        <th class="px-6 py-3">Stock</th>
+                        <th class="px-6 py-3 text-center">Acción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for producto in productos %}
+                    <tr class="bg-white border-b hover:bg-gray-50">
+                        <td class="px-6 py-4 font-bold text-gray-900">{{ producto.nombre }}</td>
+                        <td class="px-6 py-4">{{ producto.sku or 'N/A' }}</td>
+                        <td class="px-6 py-4 text-green-600 font-semibold">${{ producto.precio_venta }}</td>
+                        <td class="px-6 py-4">{{ producto.stock_actual }}</td>
+                        <td class="px-6 py-4">
+                            <form method="post" action="{{ url_for('ventas.agregar_producto') }}" class="flex items-center justify-center gap-2">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"> <input type="hidden" name="producto_id" value="{{ producto.id }}">
+                                <input type="number" name="cantidad" min="1" value="1" class="w-16 p-1 border rounded text-center">
+                                <button type="submit" class="text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-xs px-3 py-2">Agregar</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+
+        {% if carrito %}
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border">
+                <h3 class="text-xl font-bold mb-4">Carrito de Compra</h3>
+                <table class="w-full text-sm text-left">
+                    <tr class="border-b text-gray-400">
+                        <th class="py-2">Detalle</th>
+                        <th>Cant.</th>
+                        <th>Subtotal</th>
+                    </tr>
+                    {% for item in carrito %}
+                    <tr class="border-b">
+                        <td class="py-3 font-medium">{{ item.nombre }}</td>
+                        <td>{{ item.cantidad }}</td>
+                        <td class="font-bold text-gray-700">${{ item.precio * item.cantidad }}</td>
+                    </tr>
+                    {% endfor %}
+                </table>
+            </div>
+
+            <div class="bg-stone-100 p-6 rounded-xl border border-stone-200">
+                <h3 class="text-lg font-bold mb-4">Resumen</h3>
+                <div class="flex justify-between mb-2"><span>Subtotal:</span> <span>${{ subtotal }}</span></div>
+                <div class="flex justify-between mb-2"><span>IVA (16%):</span> <span>${{ iva }}</span></div>
+                <div class="flex justify-between border-t border-stone-300 pt-2 text-xl font-black text-amber-900">
+                    <span>Total:</span> <span>${{ total }}</span>
+                </div>
+                
+                <div class="mt-6 space-y-3">
+                    <form method="post" action="{{ url_for('ventas.finalizar_venta') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"> <button type="submit" class="w-full bg-green-600 text-white py-3 rounded-lg font-bold hover:bg-green-700 shadow-md">FINALIZAR VENTA</button>
+                    </form>
+                    <form method="post" action="{{ url_for('ventas.cancelar_venta') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"> <button type="submit" class="w-full text-red-600 py-2 font-medium hover:underline text-sm">Cancelar Pedido</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

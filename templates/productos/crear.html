@@ -1,24 +1,27 @@
 {% extends "layout.html" %}
-{% from "macros.html" import render_field %}
+{% import "_macros.html" as macros %}
 
 {% block content %}
 <div class="max-w-2xl mx-auto bg-white p-8 rounded-2xl shadow-sm border">
     <h2 class="text-2xl font-bold mb-6">Registrar Producto Terminado</h2>
-    
+
     <form method="POST" enctype="multipart/form-data" novalidate>
         {{ form.csrf_token }}
-        
-        {{ render_field(form.nombre) }}
-        
+
+        {{ macros.nuevoMacro(form.nombre) }}
+        {{ macros.nuevoMacro(form.sku) }}
+
         <div class="grid grid-cols-2 gap-4">
-            {{ render_field(form.linea) }}
-            {{ render_field(form.categoria) }}
+            {{ macros.nuevoMacro(form.linea) }}
+            {{ macros.nuevoMacro(form.categoria) }}
         </div>
-        
-        {{ render_field(form.precio) }}
-        
+
+        <div class="grid grid-cols-2 gap-4">
+            {{ macros.nuevoMacro(form.precio) }}
+            {{ macros.nuevoMacro(form.stock) }} </div>
+
         <div class="mt-4 p-4 bg-gray-50 border-2 border-dashed rounded-lg">
-            {{ render_field(form.imagen) }}
+            {{ macros.nuevoMacro(form.imagen) }}
             <p class="text-xs text-gray-500 mt-1">Formatos permitidos: JPG, PNG</p>
         </div>
 
@@ -26,7 +29,8 @@
             <button type="submit" class="flex-1 bg-black text-white py-3 rounded-lg font-bold hover:bg-gray-800">
                 Guardar en Inventario
             </button>
-            <a href="{{ url_for('listar_productos') }}" class="px-6 py-3 border rounded-lg text-gray-600 hover:bg-gray-50">Cancelar</a>
+            <a href="{{ url_for('listar_productos') }}"
+                class="px-6 py-3 border rounded-lg text-gray-600 hover:bg-gray-50">Cancelar</a>
         </div>
     </form>
 </div>
