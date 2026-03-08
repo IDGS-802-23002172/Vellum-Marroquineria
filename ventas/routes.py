@@ -84,12 +84,17 @@ def finalizar_venta():
     iva = subtotal * IVA_TASA
     total = subtotal + iva
 
-    # FIX: usuario_id=1 por ahora, luego cámbialo por session.get('user_id')
+    usuario_id = session.get("user_id")
+
+    if not usuario_id:
+        flash("Sesión inválida", "danger")
+        return redirect(url_for("auth.login"))
+
     nueva_venta = Venta(
         subtotal=subtotal,
         iva=iva,
         total=total,
-        usuario_id=1
+        usuario_id=usuario_id
     )
 
     db.session.add(nueva_venta)
