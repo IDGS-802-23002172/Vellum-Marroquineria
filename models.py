@@ -93,3 +93,22 @@ class CarritoTemporal(db.Model):
     nombre = db.Column(db.String(200))
     precio = db.Column(db.Numeric(10, 2))
     cantidad = db.Column(db.Integer)
+
+# --- EXPLOSION-MATERIALES ---
+class Receta(db.Model):
+    __tablename__ = "recetas"
+    id_receta = db.Column(db.Integer, primary_key=True)
+    id_producto = db.Column(db.Integer, db.ForeignKey("productos.id"), nullable=False)
+    id_materia = db.Column(db.Integer, db.ForeignKey("materias_primas.id_materia"), nullable=False)
+    area_plantilla_dm2 = db.Column(db.Numeric(10,2), nullable=False)
+    area_reticula_corte_dm2 = db.Column(db.Numeric(10,2), nullable=False)
+    producto = db.relationship("Producto", backref="receta_articulos")
+    materia = db.relationship("MateriaPrima")
+
+class RetalRecuperado(db.Model):
+    __tablename__ = "retales_recuperados"
+    id_retal = db.Column(db.Integer, primary_key=True)
+    id_materia_origen = db.Column(db.Integer, db.ForeignKey("materias_primas.id_materia"))
+    area_disponible_dm2 = db.Column(db.Numeric(10,2), nullable=False)
+    es_reusable = db.Column(db.Boolean, default=True)
+    fecha_registro = db.Column(db.DateTime, default=db.func.current_timestamp())

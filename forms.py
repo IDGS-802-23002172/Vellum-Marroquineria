@@ -4,6 +4,9 @@ from wtforms import StringField, PasswordField, IntegerField, HiddenField, Selec
 from flask_wtf.file import FileField, FileAllowed
 from wtforms.validators import DataRequired, Length, Optional, Email
 
+from wtforms import SubmitField
+from wtforms.validators import NumberRange
+
 class UserForm(FlaskForm):
     username = StringField('Username', [DataRequired(), Length(min=3, max=10)])
     password = PasswordField('Contraseña', [DataRequired()])
@@ -28,3 +31,18 @@ class ProductoForm(FlaskForm):
     precio = DecimalField('Precio de Venta', [DataRequired()])
     stock = IntegerField('Stock Inicial', [DataRequired()])
     imagen = FileField('Imagen', validators=[FileAllowed(['jpg', 'png', 'jpeg'], '¡Solo imágenes!')])
+
+class RecetaForm(FlaskForm):
+    id_producto = HiddenField('ID Producto', validators=[DataRequired()])
+    id_materia = SelectField('Seleccionar Material', coerce=int, validators=[DataRequired()])
+    area_plantilla = DecimalField(
+        'Área de Plantilla (dm²)', 
+        places=2, 
+        validators=[DataRequired(), NumberRange(min=0.01, message="Debe ser mayor a 0")]
+    )
+    area_reticula = DecimalField(
+        'Área de Retícula de Corte (dm²)', 
+        places=2, 
+        validators=[DataRequired(), NumberRange(min=0.01, message="Debe ser mayor a 0")]
+    )
+    submit = SubmitField('Asignar a Receta')
