@@ -63,8 +63,11 @@ class Producto(db.Model):
     stock_actual = db.Column(db.Integer, default=0) # Usar este nombre siempre
     imagen = db.Column(db.String(255)) 
     fecha_registro = db.Column(db.DateTime, default=datetime.now)
-    detalles = db.relationship("DetalleVenta", backref="producto", lazy=True)
-
+    detalles = db.relationship(
+        "DetalleVenta",
+        back_populates="producto",
+        lazy=True
+    )
 # --- VENTAS ---
 class Venta(db.Model):
     __tablename__ = "ventas"
@@ -82,8 +85,10 @@ class DetalleVenta(db.Model):
     venta_id = db.Column(db.Integer, db.ForeignKey("ventas.id"), nullable=False)
     producto_id = db.Column(db.Integer, db.ForeignKey("productos.id"), nullable=False)
     cantidad = db.Column(db.Integer, nullable=False)
-    precio_unitario = db.Column(db.Numeric(10, 2))
-    subtotal = db.Column(db.Numeric(10, 2))
+    precio_unitario = db.Column(db.Numeric(10,2))
+    subtotal = db.Column(db.Numeric(10,2))
+    producto = db.relationship(
+        "Producto",back_populates="detalles")
 
 class CarritoTemporal(db.Model):
     __tablename__ = "carrito_temporal"
