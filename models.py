@@ -6,7 +6,7 @@ db = SQLAlchemy()
 
 # --- USUARIOS ---
 class Usuario(db.Model):
-    __tablename__ = "usuarios"
+    __tablename__ = "usuario"
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
     password = db.Column(db.String(50), nullable=False)
@@ -73,7 +73,7 @@ class Venta(db.Model):
     subtotal = db.Column(db.Numeric(10, 2))
     iva = db.Column(db.Numeric(10, 2))
     total = db.Column(db.Numeric(10, 2))
-    usuario_id = db.Column(db.Integer, db.ForeignKey("usuarios.id"), nullable=False)
+    usuario_id = db.Column(db.Integer, db.ForeignKey("usuario.id"), nullable=False)
     detalles = db.relationship("DetalleVenta", backref="venta", cascade="all, delete-orphan", lazy=True)
 
 class DetalleVenta(db.Model):

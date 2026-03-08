@@ -9,7 +9,7 @@ from proveedores.routes import proveedores_bp
 from models import db, Usuario, Producto
 from werkzeug.utils import secure_filename
 import forms
-from forms import UserForm      
+from forms import UserForm
 from ventas import ventas_bp
 
 load_dotenv()
@@ -23,6 +23,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv(
 )
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'clave_segura_vellum_123')
+## LA SESIÓN EXPIRA DESPUES DE 10 MINUTOS SI NO HAY NINGUNA INTERACCIÓN
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=10)
 
 db.init_app(app)
@@ -39,8 +40,17 @@ with app.app_context():
     except Exception as e:
         print(f"error al conectar con la bd {e}")
 
+## VERIFICA LA SESIÓN, AL NO TENER SESIÓN, DESPUES DE HACER ALGUNA PETICIÓN NO LO DEJARA Y LO REGRESA AL LOGIN
+@app.before_request
+def verificar_sesion():
+    rutas_publicas = ['login', 'static']
+
+    if request.endpoint not in rutas_publicas and 'user_id' not in session:
+        return redirect(url_for('login'))
+    
 @app.route('/')
 def index():
+    print("Sesion:", dict(session), flush=True)
     return render_template('index.html')
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -48,6 +58,9 @@ def login():
     form = UserForm()
     if form.validate_on_submit():
         user = Usuario.query.filter_by(username=form.username.data).first()
+        if not user:
+            flash("El usuario no existe.", "danger")
+            return render_template('login.html', form=form)
         if user.intentos_fallidos >= 3:
             flash("Cuenta bloqueada por seguridad. Contacte al admin.", "danger")
             return render_template('login.html', form=form)
@@ -55,14 +68,13 @@ def login():
             user.intentos_fallidos = 0
             db.session.commit()
             session['user_id'] = user.id
-            session.permanent = True 
+            session.permanent = True
             return redirect(url_for('index'))
         else:
             user.intentos_fallidos += 1
             db.session.commit()
             flash(f"Contraseña incorrecta. Intento {user.intentos_fallidos} de 3.", "warning")
-    else:
-        flash("El usuario no existe.", "danger")
+
     return render_template('login.html', form=form)
 
 #CRUD Productos
@@ -73,10 +85,14 @@ def listar_productos():
 
 @app.route("/productos/nuevo", methods=['GET', 'POST'])
 def crear_producto():
+
     form = forms.ProductoForm(request.form)
+
     if request.method == 'POST' and form.validate():
+
         if not os.path.exists(app.config['UPLOAD_FOLDER']):
             os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
         f = request.files['imagen']
         filename = secure_filename(f.filename)
         f.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
@@ -94,7 +110,7 @@ def crear_producto():
         db.session.commit()
         flash("Producto registrado con éxito")
         return redirect(url_for('listar_productos'))
-    
+
     return render_template("productos/crear.html", form=form)
 
 @app.route("/modificar_producto", methods=['GET', 'POST'])
@@ -122,7 +138,7 @@ def modificar_producto():
         id = form.id.data
         # Obtenemos la referencia al producto original
         prod = db.session.query(Producto).filter(Producto.id == id).first()
-        
+
         if prod:
             # Actualizamos los campos con lo que el usuario escribió en el formulario
             prod.nombre = str.rstrip(form.nombre.data)
