@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}Ticket{% endblock %}
+
+{% block content %}
+
+<div class="container mt-5" style="max-width:400px">
+
+    <h3 class="text-center mb-4">VELLUM</h3>
+
+    <p>Venta #{{ venta.id }}</p>
+    <p>Fecha: {{ venta.fecha }}</p>
+
+    <hr>
+
+    <table class="table table-sm">
+        <thead>
+            <tr>
+                <th>Producto</th>
+                <th>Cant</th>
+                <th>Total</th>
+            </tr>
+        </thead>
+        <tbody>
+
+        {% for d in detalles %}
+        <tr>
+            <td>{{ d.producto.nombre }}</td>
+            <td>{{ d.cantidad }}</td>
+            <td>${{ d.subtotal }}</td>
+        </tr>
+        {% endfor %}
+
+        </tbody>
+    </table>
+
+    <hr>
+
+    <p>Subtotal: ${{ venta.subtotal }}</p>
+    <p>IVA: ${{ venta.iva }}</p>
+    <h5>Total: ${{ venta.total }}</h5>
+
+    <div class="text-center mt-4">
+        <a href="{{ url_for('ventas.punto_venta') }}" class="btn btn-dark">
+            Nueva Venta
+        </a>
+    </div>
+
+</div>
+
+{% endblock %}

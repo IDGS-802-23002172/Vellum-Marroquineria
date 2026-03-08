@@ -89,7 +89,7 @@ def finalizar_venta():
         subtotal=subtotal,
         iva=iva,
         total=total,
-        usuario_id=1 
+        usuario_id=1
     )
 
     db.session.add(nueva_venta)
@@ -113,8 +113,9 @@ def finalizar_venta():
     CarritoTemporal.query.filter_by(session_id=session_id).delete()
     db.session.commit()
 
-    flash("¡Venta exitosa! El inventario se ha actualizado.", "success")
-    return redirect(url_for("ventas.punto_venta"))
+    # guardar la venta en sesión
+    session["ultima_venta_id"] = nueva_venta.id
+    return redirect(url_for("ventas.ticket"))
 
 
 @ventas_bp.route("/cancelar", methods=["POST"])
@@ -124,3 +125,21 @@ def cancelar_venta():
     db.session.commit()
     flash("Venta cancelada", "info")
     return redirect(url_for("ventas.punto_venta"))
+
+@ventas_bp.route("/ticket")
+def ticket():
+
+    venta_id = session.get("ultima_venta_id")
+    if not venta_id:
+        flash("No hay ticket disponible", "warning")
+        return redirect(url_for("ventas.punto_venta"))
+    venta = Venta.query.get(venta_id)
+    if not venta:
+        flash("Venta no encontrada", "danger")
+        return redirect(url_for("ventas.punto_venta"))
+    detalles = DetalleVenta.query.filter_by(venta_id=venta.id).all()
+    return render_template(
+        "ticket.html",
+        venta=venta,
+        detalles=detalles
+    )
