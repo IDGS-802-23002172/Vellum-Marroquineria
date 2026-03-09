@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+
+{% block title %}Materias primas{% endblock %}
+{% block breadcrumb %}<a href="#">Inventario</a> / Materias primas{% endblock %}
+{% block page_title %}Directorio de Materias Primas{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-4">
+
+  <!-- Búsqueda -->
+  <form method="GET" class="d-flex gap-2 align-items-center" style="flex:1; max-width:520px;">
+    
+    <div class="search-wrap" style="flex:1;">
+      <i class="bi bi-search"></i>
+      <input type="text"
+             name="q"
+             class="form-control"
+             placeholder="Buscar materia prima…"
+             value="{{ q }}">
+    </div>
+
+    <button type="submit" class="btn-piel">
+      <i class="bi bi-funnel"></i> Filtrar
+    </button>
+
+  </form>
+
+  <a href="{{ url_for('materias.crear') }}" class="btn-piel ms-3">
+    <i class="bi bi-plus-lg"></i> Nueva materia prima
+  </a>
+
+  
+
+</div>
+
+
+<div class="card-piel">
+
+<div class="card-header d-flex align-items-center justify-content-between">
+<span>
+<i class="bi bi-box-seam me-2" style="color:var(--piel-tan)"></i>
+Materias primas registradas
+</span>
+
+<span style="font-size:.8rem; font-weight:400; color:#999;">
+{{ paginacion.total }} resultado{{ 's' if paginacion.total != 1 }}
+</span>
+</div>
+
+
+{% if materias %}
+
+<div style="overflow-x:auto;">
+
+<table class="table-piel">
+
+<thead>
+<tr>
+<th>#</th>
+<th>Nombre</th>
+<th>Unidad</th>
+<th>Stock</th>
+<th>Punto reorden</th>
+<th>Fecha registro</th>
+<th style="text-align:center;">Acciones</th>
+</tr>
+</thead>
+
+<tbody>
+
+{% for m in materias %}
+
+<tr>
+
+<td style="color:#bbb; font-size:.8rem;">
+{{ m.id_materia }}
+</td>
+
+<td>
+<a href="{{ url_for('materias.detalle', id=m.id_materia) }}"
+   style="color:var(--piel-brown); font-weight:600; text-decoration:none;">
+{{ m.nombre }}
+</a>
+</td>
+
+<td>
+<span class="tag-material">
+{{ m.unidad.abreviatura }}
+</span>
+</td>
+
+<td>
+
+{% if m.stock %}
+<span style="font-weight:600;">
+{{ m.stock.cantidad_actual }}
+</span>
+{{ m.unidad.abreviatura }}
+{% else %}
+<span style="color:#ccc;">—</span>
+{% endif %}
+
+</td>
+
+<td>
+
+{% if m.stock %}
+<span style="color:#777;">
+{{ m.stock.punto_reorden }}
+</span>
+{% else %}
+—
+{% endif %}
+
+</td>
+
+<td style="font-size:.85rem; color:#aaa;">
+{{ m.creado_en.strftime('%d/%m/%Y') }}
+</td>
+
+
+<td>
+
+<div class="d-flex gap-2 justify-content-center">
+
+<a href="{{ url_for('materias.detalle', id=m.id_materia) }}"
+   class="btn-outline-piel"
+   title="Ver detalle">
+<i class="bi bi-eye"></i>
+</a>
+
+
+<a href="{{ url_for('materias.editar', id=m.id_materia) }}"
+   class="btn-outline-piel"
+   title="Editar">
+<i class="bi bi-pencil"></i>
+</a>
+
+
+<form method="POST"
+      action="{{ url_for('materias.eliminar', id=m.id_materia) }}"
+      onsubmit="return confirm('¿Eliminar materia prima {{ m.nombre }}?')">
+
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+<button type="submit"
+        class="btn-danger-piel"
+        title="Eliminar">
+<i class="bi bi-trash"></i>
+</button>
+
+</form>
+
+</div>
+
+</td>
+
+</tr>
+
+{% endfor %}
+
+</tbody>
+</table>
+
+</div>
+
+
+{% if paginacion.pages > 1 %}
+
+<div class="d-flex align-items-center justify-content-between p-3"
+style="border-top:1px solid var(--piel-border);">
+
+<span style="font-size:.82rem; color:#999;">
+Página {{ paginacion.page }} de {{ paginacion.pages }}
+</span>
+
+<div class="d-flex gap-2">
+
+{% if paginacion.has_prev %}
+<a href="{{ url_for('materias.index', pagina=paginacion.prev_num, q=q) }}"
+class="btn-outline-piel">
+<i class="bi bi-chevron-left"></i>
+</a>
+{% endif %}
+
+{% if paginacion.has_next %}
+<a href="{{ url_for('materias.index', pagina=paginacion.next_num, q=q) }}"
+class="btn-outline-piel">
+<i class="bi bi-chevron-right"></i>
+</a>
+{% endif %}
+
+</div>
+
+</div>
+
+{% endif %}
+
+{% else %}
+
+<div style="padding:48px; text-align:center; color:#ccc;">
+
+<i class="bi bi-box-seam"
+style="font-size:2.5rem; color:var(--piel-border);"></i>
+
+<p style="margin-top:12px; font-size:.95rem;">
+
+{% if q %}
+No se encontraron materias primas con «{{ q }}».
+{% else %}
+Aún no hay materias primas registradas.
+{% endif %}
+
+</p>
+
+<a href="{{ url_for('materias.crear') }}" class="btn-piel">
+<i class="bi bi-plus-lg"></i> Registrar primera materia prima
+</a>
+
+</div>
+
+{% endif %}
+
+</div>
+
+{% endblock %}

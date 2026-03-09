@@ -51,6 +51,154 @@ class ProveedorTipoMaterial(db.Model):
     proveedor = db.relationship("Proveedor", back_populates="materiales")
     tipo_material = db.relationship("TipoMaterialProveedor")
 
+    
+##-- COSILLAS PARA MATERIA PRIMA ------------------------##
+##-------------------------------------------------------##
+class UnidadMedida(db.Model):
+    __tablename__ = "unidades_medida"
+
+    id_unidad = db.Column(db.SmallInteger, primary_key=True, autoincrement=True)
+
+    nombre = db.Column(db.String(50), nullable=False, unique=True)
+    abreviatura = db.Column(db.String(10), nullable=False, unique=True)
+
+    tipo = db.Column(db.String(30), nullable=False)
+    # peso, area, longitud, pieza
+
+    creado_en = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+    def __repr__(self):
+        return f"<Unidad {self.abreviatura}>"
+    
+class MateriaPrima(db.Model):
+    __tablename__ = "materias_primas"
+
+    __table_args__ = (
+        db.Index("idx_mp_nombre", "nombre"),
+    )
+
+    id_materia = db.Column(db.Integer, primary_key=True, autoincrement=True)
+
+    nombre = db.Column(db.String(150), nullable=False)
+    descripcion = db.Column(db.String(250))
+
+    id_unidad = db.Column(
+        db.SmallInteger,
+        db.ForeignKey("unidades_medida.id_unidad", ondelete="RESTRICT"),
+        nullable=False
+    )
+
+    creado_en = db.Column(
+        db.DateTime,
+        default=datetime.utcnow,
+        nullable=False
+    )
+
+    actualizado_en = db.Column(
+        db.DateTime,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
+        nullable=False
+    )
+
+    unidad = db.relationship("UnidadMedida")
+
+    def __repr__(self):
+        return f"<MateriaPrima {self.nombre}>"
+    
+class StockMateriaPrima(db.Model):
+    __tablename__ = "stock_materia_prima"
+
+    id_materia = db.Column(
+        db.Integer,
+        db.ForeignKey("materias_primas.id_materia", ondelete="CASCADE"),
+        primary_key=True
+    )
+
+    cantidad_actual = db.Column(
+        db.Numeric(14,2),
+        nullable=False,
+        default=0
+    )
+
+    punto_reorden = db.Column(
+        db.Numeric(14,2),
+        nullable=False,
+        default=0
+    )
+
+    actualizado_en = db.Column(
+        db.DateTime,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
+        nullable=False
+    )
+
+    materia = db.relationship(
+        "MateriaPrima",
+        backref=db.backref("stock", uselist=False)
+    )
+    
+class MovimientoMateriaPrima(db.Model):
+    __tablename__ = "movimientos_materia_prima"
+
+    __table_args__ = (
+        db.Index("idx_mov_mp_fecha", "fecha"),
+        db.Index("idx_mov_mp_materia", "id_materia"),
+    )
+
+    id_movimiento = db.Column(db.Integer, primary_key=True)
+
+    id_materia = db.Column(
+        db.Integer,
+        db.ForeignKey("materias_primas.id_materia", ondelete="RESTRICT"),
+        nullable=False
+    )
+
+    id_proveedor = db.Column(
+        db.Integer,
+        db.ForeignKey("proveedores.id_proveedor", ondelete="SET NULL"),
+        nullable=True
+    )
+
+    tipo = db.Column(
+        db.String(20),
+        nullable=False
+    )
+    # COMPRA, PRODUCCION, AJUSTE, MERMA
+
+    cantidad = db.Column(
+        db.Numeric(14,2),
+        nullable=False
+    )
+    # positivo = entrada
+    # negativo = salida
+
+    costo_unitario = db.Column(
+        db.Numeric(12,2)
+    )
+
+    referencia = db.Column(
+        db.String(150)
+    )
+    # factura, orden producción, ajuste inventario
+
+    fecha = db.Column(
+        db.DateTime,
+        default=datetime.utcnow,
+        nullable=False
+    )
+
+    materia = db.relationship(
+        "MateriaPrima",
+        backref="movimientos"
+    )
+
+    proveedor = db.relationship(
+        "Proveedor")  
+    
+##-- FIN DE COSILLAS DE MATERIA PRIMA------------------------------------##
+
 # --- PRODUCTOS (UNIFICADO) ---
 class Producto(db.Model):
     __tablename__ = 'productos'
@@ -98,3 +246,4 @@ class CarritoTemporal(db.Model):
     nombre = db.Column(db.String(200))
     precio = db.Column(db.Numeric(10, 2))
     cantidad = db.Column(db.Integer)
+    

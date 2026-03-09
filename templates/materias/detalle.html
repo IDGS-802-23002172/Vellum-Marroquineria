@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+
+{% block title %}{{ materia.nombre }}{% endblock %}
+
+{% block breadcrumb %}
+  <a href="#">Inventario</a> /
+  <a href="{{ url_for('materias.index') }}">Materias Primas</a> /
+  {{ materia.nombre }}
+{% endblock %}
+
+{% block page_title %}{{ materia.nombre }}{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+
+  <!-- ── Columna principal ───────────────────── -->
+  <div class="col-lg-8">
+
+    <div class="card-piel mb-4">
+
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <span>
+          <i class="bi bi-box-seam me-2" style="color:var(--piel-tan)"></i>
+          Información de la Materia Prima
+        </span>
+      </div>
+
+      <div class="p-4">
+
+        <div class="detail-row">
+          <div class="detail-label">Nombre</div>
+          <div class="detail-value" style="font-weight:600;">
+            {{ materia.nombre }}
+          </div>
+        </div>
+
+        <div class="detail-row">
+          <div class="detail-label">Descripción</div>
+          <div class="detail-value">
+            {{ materia.descripcion or '—' }}
+          </div>
+        </div>
+
+        <div class="detail-row">
+          <div class="detail-label">Unidad de medida</div>
+          <div class="detail-value">
+            <span class="tag-material">
+              {{ materia.unidad.nombre }} ({{ materia.unidad.abreviatura }})
+            </span>
+          </div>
+        </div>
+
+        <div class="detail-row">
+          <div class="detail-label">Stock actual</div>
+          <div class="detail-value">
+
+            {% if materia.stock %}
+              <strong>{{ materia.stock.cantidad_actual }}</strong>
+              {{ materia.unidad.abreviatura }}
+            {% else %}
+              —
+            {% endif %}
+
+          </div>
+        </div>
+
+        <div class="detail-row">
+          <div class="detail-label">Punto de reorden</div>
+          <div class="detail-value">
+
+            {% if materia.stock %}
+              {{ materia.stock.punto_reorden }}
+              {{ materia.unidad.abreviatura }}
+            {% else %}
+              —
+            {% endif %}
+
+          </div>
+        </div>
+
+        <div class="detail-row">
+          <div class="detail-label">Registrado el</div>
+          <div class="detail-value" style="color:#999; font-size:.83rem;">
+            {{ materia.creado_en.strftime('%d %b %Y, %H:%M') }}
+          </div>
+        </div>
+
+        <div class="detail-row">
+          <div class="detail-label">Última actualización</div>
+          <div class="detail-value" style="color:#999; font-size:.83rem;">
+            {{ materia.actualizado_en.strftime('%d %b %Y, %H:%M') }}
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <!-- Historial de movimientos -->
+    <div class="card-piel">
+
+      <div class="card-header">
+        <i class="bi bi-arrow-left-right me-2" style="color:var(--piel-tan)"></i>
+        Movimientos recientes
+      </div>
+
+      {% if movimientos %}
+
+      <div style="overflow-x:auto;">
+
+        <table class="table-piel">
+
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Tipo</th>
+              <th>Cantidad</th>
+              <th>Referencia</th>
+            </tr>
+          </thead>
+
+          <tbody>
+
+          {% for mov in movimientos %}
+
+          <tr>
+
+            <td style="font-size:.85rem; color:#777;">
+              {{ mov.fecha.strftime('%d/%m/%Y') }}
+            </td>
+
+            <td>
+              <span class="tag-material">
+                {{ mov.tipo }}
+              </span>
+            </td>
+
+            <td>
+
+              {% if mov.cantidad > 0 %}
+                <span style="color:#059669;">
+                  +{{ mov.cantidad }}
+                </span>
+              {% else %}
+                <span style="color:#dc2626;">
+                  {{ mov.cantidad }}
+                </span>
+              {% endif %}
+
+              {{ materia.unidad.abreviatura }}
+
+            </td>
+
+            <td style="color:#777;">
+              {{ mov.referencia or '—' }}
+            </td>
+
+          </tr>
+
+          {% endfor %}
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+      {% else %}
+
+      <div style="padding:24px; color:#bbb;">
+        No hay movimientos registrados.
+      </div>
+
+      {% endif %}
+
+    </div>
+
+  </div>
+
+
+  <!-- ── Columna lateral ─────────────────────── -->
+  <div class="col-lg-4">
+
+    <div class="card-piel mb-4">
+
+      <div class="card-header">
+        <i class="bi bi-sliders me-2" style="color:var(--piel-tan)"></i>
+        Acciones
+      </div>
+
+      <div class="p-4 d-flex flex-column gap-2">
+
+        <a href="{{ url_for('materias.editar', id=materia.id_materia) }}"
+           class="btn-piel w-100 justify-content-center">
+
+          <i class="bi bi-pencil"></i>
+          Editar materia
+
+        </a>
+
+
+        <form method="POST"
+              action="{{ url_for('materias.eliminar', id=materia.id_materia) }}"
+              onsubmit="return confirm('¿Eliminar {{ materia.nombre }}?')">
+
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+          <button type="submit"
+                  class="btn-danger-piel w-100 justify-content-center">
+
+            <i class="bi bi-trash"></i>
+            Eliminar materia
+
+          </button>
+
+        </form>
+
+        <a href="{{ url_for('materias.index') }}"
+           class="btn-outline-piel w-100 justify-content-center">
+
+          <i class="bi bi-arrow-left"></i>
+          Volver al listado
+
+        </a>
+
+        <a href="{{ url_for('materias.movimiento', id_materia=materia.id_materia) }}"
+          class="btn-piel w-100 justify-content-center">
+
+          <i class="bi bi-plus-circle"></i>
+          Registrar movimiento
+
+        </a>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}
