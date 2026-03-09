@@ -12,6 +12,7 @@ import forms
 from forms import UserForm      
 from ventas import ventas_bp
 from productos.routes import productos_bp
+from recetas.routes import recetas_bp
 
 load_dotenv()
 
@@ -30,6 +31,7 @@ db.init_app(app)
 csrf = CSRFProtect(app)
 app.register_blueprint(proveedores_bp)
 app.register_blueprint(productos_bp)
+app.register_blueprint(recetas_bp)
 
 
 app.register_blueprint(ventas_bp, url_prefix="/ventas")
