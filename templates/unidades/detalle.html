@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+
+{% block title %}{{ unidad.nombre }}{% endblock %}
+
+{% block breadcrumb %}
+  <a href="#">Catálogos</a> /
+  <a href="{{ url_for('unidades.listar') }}">Unidades de Medida</a> /
+  {{ unidad.nombre }}
+{% endblock %}
+
+{% block page_title %}{{ unidad.nombre }}{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+
+  <!-- ── Columna principal ───────────────────── -->
+  <div class="col-lg-8">
+
+    <div class="card-piel mb-4">
+
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <span>
+          <i class="bi bi-rulers me-2" style="color:var(--piel-tan)"></i>
+          Información de la Unidad
+        </span>
+      </div>
+
+      <div class="p-4">
+
+        <div class="detail-row">
+          <div class="detail-label">Nombre</div>
+          <div class="detail-value" style="font-weight:600;">
+            {{ unidad.nombre }}
+          </div>
+        </div>
+
+        <div class="detail-row">
+          <div class="detail-label">Abreviatura</div>
+          <div class="detail-value">
+            <span class="badge bg-light text-dark border">
+              {{ unidad.abreviatura }}
+            </span>
+          </div>
+        </div>
+
+        <div class="detail-row">
+          <div class="detail-label">Tipo</div>
+          <div class="detail-value">
+            <span class="tag-material">
+              {{ unidad.tipo }}
+            </span>
+          </div>
+        </div>
+
+        <div class="detail-row">
+          <div class="detail-label">Registrado el</div>
+          <div class="detail-value" style="color:#999; font-size:.83rem;">
+            {{ unidad.creado_en.strftime('%d %b %Y, %H:%M') if unidad.creado_en else '—' }}
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- ── Columna lateral ─────────────────────── -->
+  <div class="col-lg-4">
+
+    <!-- Acciones -->
+    <div class="card-piel mb-4">
+
+      <div class="card-header">
+        <i class="bi bi-sliders me-2" style="color:var(--piel-tan)"></i>
+        Acciones
+      </div>
+
+      <div class="p-4 d-flex flex-column gap-2">
+
+        <a href="{{ url_for('unidades.editar', id=unidad.id_unidad) }}"
+           class="btn-piel w-100 justify-content-center">
+
+          <i class="bi bi-pencil"></i>
+          Editar unidad
+
+        </a>
+
+        <form method="POST"
+              action="{{ url_for('unidades.eliminar', id=unidad.id_unidad) }}"
+              onsubmit="return confirm('¿Eliminar la unidad {{ unidad.nombre }}?')">
+
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+          <button type="submit"
+                  class="btn-danger-piel w-100 justify-content-center">
+
+            <i class="bi bi-trash"></i>
+            Eliminar unidad
+
+          </button>
+
+        </form>
+
+        <a href="{{ url_for('unidades.listar') }}"
+           class="btn-outline-piel w-100 justify-content-center">
+
+          <i class="bi bi-arrow-left"></i>
+          Volver al listado
+
+        </a>
+
+      </div>
+
+    </div>
+
+    <!-- Info rápida -->
+    <div class="card-piel" style="background:var(--piel-cream);">
+
+      <div class="p-4">
+
+        <p style="font-size:.78rem; color:#aaa; margin:0; line-height:1.7;">
+
+          <i class="bi bi-info-circle me-1" style="color:var(--piel-tan)"></i>
+
+          Las unidades de medida se utilizan para definir cómo se
+          registran los materiales dentro del sistema, por ejemplo:
+
+          <br><br>
+
+          <strong>dm²</strong> para piel  
+          <br>
+          <strong>kg</strong> para químicos  
+          <br>
+          <strong>m</strong> para hilo  
+
+        </p>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}

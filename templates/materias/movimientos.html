@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+
+{% block title %}Registrar Movimiento{% endblock %}
+
+{% block breadcrumb %}
+<a href="#">Inventario</a> /
+<a href="{{ url_for('materias.index') }}">Materias Primas</a> /
+<a href="{{ url_for('materias.detalle', id=materia.id_materia) }}">{{ materia.nombre }}</a> /
+Movimiento
+{% endblock %}
+
+{% block page_title %}
+Registrar Movimiento
+{% endblock %}
+
+
+{% block content %}
+
+<div class="row justify-content-center">
+
+<div class="col-lg-6">
+
+<div class="card-piel">
+
+<div class="card-header">
+<i class="bi bi-arrow-left-right me-2" style="color:var(--piel-tan)"></i>
+Movimiento de Inventario
+</div>
+
+<div class="p-4">
+
+<form method="POST">
+
+{{ form.hidden_tag() }}
+
+{{ form.csrf_token }}
+
+<!-- Materia -->
+<div class="mb-3">
+
+<label class="form-label">Materia Prima</label>
+
+<input
+type="text"
+class="form-control"
+value="{{ materia.nombre }}"
+disabled
+>
+
+</div>
+
+
+<!-- Tipo -->
+<div class="mb-3">
+
+<label class="form-label">Tipo de movimiento</label>
+
+{{ form.tipo(class="form-select") }}
+
+</div>
+
+
+<!-- Cantidad -->
+<div class="mb-3">
+
+<label class="form-label">Cantidad</label>
+
+<div class="input-group">
+
+{{ form.cantidad(class="form-control") }}
+
+<span class="input-group-text">
+{{ materia.unidad.abreviatura }}
+</span>
+
+</div>
+
+</div>
+
+
+<!-- Costo -->
+<div class="mb-3">
+
+<label class="form-label">Costo unitario</label>
+
+<div class="input-group">
+
+<span class="input-group-text">$</span>
+
+{{ form.costo_unitario(class="form-control") }}
+
+</div>
+
+<small style="color:#999;">
+Usar solo para compras
+</small>
+
+</div>
+
+
+<!-- Proveedor -->
+<div class="mb-3">
+
+<label class="form-label">Proveedor</label>
+
+{{ form.id_proveedor(class="form-select") }}
+
+</div>
+
+
+<!-- Referencia -->
+<div class="mb-3">
+
+<label class="form-label">Referencia</label>
+
+{{ form.referencia(class="form-control") }}
+
+<small style="color:#999;">
+Ej: Factura, Orden de producción, Ajuste inventario
+</small>
+
+</div>
+
+
+<div class="d-flex gap-2 pt-3">
+
+<button
+type="submit"
+class="btn-piel flex-grow-1 justify-content-center">
+
+<i class="bi bi-check-circle"></i>
+Registrar movimiento
+
+</button>
+
+
+<a
+href="{{ url_for('materias.detalle', id=materia.id_materia) }}"
+class="btn-outline-piel flex-grow-1 justify-content-center">
+
+<i class="bi bi-arrow-left"></i>
+Cancelar
+
+</a>
+
+</div>
+
+</form>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+{% endblock %}v

@@ -4,7 +4,8 @@ from flask_wtf.csrf import CSRFProtect
 from dotenv import load_dotenv
 from datetime import timedelta
 from proveedores.routes import proveedores_bp
-
+from materiales.routes import unidades_bp
+from materiales.routes import materias_bp
 
 from models import db, Usuario, Producto
 from werkzeug.utils import secure_filename
@@ -29,6 +30,8 @@ db.init_app(app)
 csrf = CSRFProtect(app)
 app.register_blueprint(proveedores_bp)
 
+app.register_blueprint(unidades_bp)
+app.register_blueprint(materias_bp)
 
 app.register_blueprint(ventas_bp, url_prefix="/ventas")
 

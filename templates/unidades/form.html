@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}
+{{ 'Nueva Unidad' if modo == 'crear' else 'Editar Unidad' }}
+{% endblock %}
+
+{% block page_title %}
+{{ 'Registrar Unidad de Medida' if modo == 'crear' else 'Editar Unidad de Medida' }}
+{% endblock %}
+
+{% block content %}
+
+<form method="POST"
+action="{{ url_for('unidades.crear') if modo == 'crear' else url_for('unidades.editar', id=unidad.id_unidad) }}"
+novalidate>
+
+{{ form.csrf_token }}
+
+<div class="row justify-content-center">
+
+<div class="col-lg-6">
+
+<div class="card-vellum">
+
+<h3 class="text-xs uppercase tracking-widest text-stone-500 border-bottom pb-3 mb-4">
+Definición de Unidad
+</h3>
+
+<div class="row g-4">
+
+<!-- NOMBRE -->
+
+<div class="col-12">
+<label class="small uppercase tracking-widest text-stone-400 mb-2">
+Nombre de la unidad
+</label>
+
+{{ form.nombre(
+class="form-control border-0 border-bottom rounded-0 shadow-none px-0",
+placeholder="Ejemplo: Decímetro cuadrado"
+) }}
+
+</div>
+
+
+<!-- ABREVIATURA -->
+
+<div class="col-md-6">
+
+<label class="small uppercase tracking-widest text-stone-400 mb-2">
+Abreviatura
+</label>
+
+{{ form.abreviatura(
+class="form-control border-0 border-bottom rounded-0 shadow-none px-0",
+placeholder="dm²"
+) }}
+
+</div>
+
+
+<!-- TIPO -->
+
+<div class="col-md-6">
+
+<label class="small uppercase tracking-widest text-stone-400 mb-2">
+Tipo de unidad
+</label>
+
+{{ form.tipo(
+class="form-select border-0 border-bottom rounded-0 shadow-none px-0"
+) }}
+
+</div>
+
+</div>
+
+
+<!-- BOTONES -->
+
+<div class="mt-5 d-grid gap-3">
+
+<button type="submit" class="btn-vellum py-3">
+{{ 'Registrar Unidad' if modo == 'crear' else 'Guardar Cambios' }}
+</button>
+
+<a href="{{ url_for('unidades.listar') }}"
+class="text-center text-xs uppercase tracking-widest text-stone-400 text-decoration-none">
+
+Cancelar
+
+</a>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</form>
+
+
+<style>
+
+.form-control:focus {
+border-bottom-color: var(--v-black) !important;
+}
+
+</style>
+
+{% endblock %}

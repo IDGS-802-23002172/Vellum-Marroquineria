@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block title %}
+{{ 'Nueva Materia Prima' if modo == 'crear' else 'Editar Materia Prima' }}
+{% endblock %}
+
+{% block page_title %}
+{{ 'Registrar Materia Prima' if modo == 'crear' else 'Editar Materia Prima' }}
+{% endblock %}
+
+{% block content %}
+
+<form method="POST"
+action="{{ url_for('materias.crear') if modo == 'crear' else url_for('materias.editar', id=materia.id_materia) }}"
+novalidate>
+
+{{ form.csrf_token }}
+
+<div class="row justify-content-center">
+
+<div class="col-lg-6">
+
+<div class="card-vellum">
+
+<h3 class="text-xs uppercase tracking-widest text-stone-500 border-bottom pb-3 mb-4">
+Definición de Materia Prima
+</h3>
+
+<div class="row g-4">
+
+<!-- NOMBRE -->
+
+<div class="col-12">
+
+<label class="small uppercase tracking-widest text-stone-400 mb-2">
+Nombre de la materia prima
+</label>
+
+{{ form.nombre(
+class="form-control border-0 border-bottom rounded-0 shadow-none px-0",
+placeholder="Ejemplo: Piel vacuna negra"
+) }}
+
+</div>
+
+
+<!-- DESCRIPCIÓN -->
+
+<div class="col-12">
+
+<label class="small uppercase tracking-widest text-stone-400 mb-2">
+Descripción
+</label>
+
+{{ form.descripcion(
+class="form-control border-0 border-bottom rounded-0 shadow-none px-0",
+placeholder="Tipo de cuero, acabado, color, etc."
+) }}
+
+</div>
+
+
+<!-- UNIDAD -->
+
+<div class="col-12">
+
+<label class="small uppercase tracking-widest text-stone-400 mb-2">
+Unidad de medida
+</label>
+
+{{ form.id_unidad(
+class="form-select border-0 border-bottom rounded-0 shadow-none px-0"
+) }}
+
+</div>
+
+</div>
+
+
+<!-- BOTONES -->
+
+<div class="mt-5 d-grid gap-3">
+
+<button type="submit" class="btn-vellum py-3">
+{{ 'Registrar Materia Prima' if modo == 'crear' else 'Guardar Cambios' }}
+</button>
+
+<a href="{{ url_for('materias.index') }}"
+class="text-center text-xs uppercase tracking-widest text-stone-400 text-decoration-none">
+
+Cancelar
+
+</a>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</form>
+
+
+<style>
+
+.form-control:focus {
+border-bottom-color: var(--v-black) !important;
+}
+
+</style>
+
+{% endblock %}
