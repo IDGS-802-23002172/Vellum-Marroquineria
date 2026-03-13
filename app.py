@@ -80,6 +80,12 @@ def login():
 
     return render_template('login.html', form=form)
 
+@app.route('/logout')
+def logout():
+    session.clear()
+    flash("Has cerrado sesión correctamente", "info")
+    return redirect(url_for('login'))
+
 #CRUD Productos
 @app.route("/productos")
 def listar_productos():
