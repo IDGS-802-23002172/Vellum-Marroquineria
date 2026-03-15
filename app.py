@@ -11,6 +11,7 @@ from werkzeug.utils import secure_filename
 import forms
 from forms import UserForm
 from ventas import ventas_bp
+from models import crear_vista_cierre_diario
 
 load_dotenv()
 
@@ -32,7 +33,9 @@ app.register_blueprint(proveedores_bp)
 
 
 app.register_blueprint(ventas_bp, url_prefix="/ventas")
-
+with app.app_context():
+    crear_vista_cierre_diario()
+    
 with app.app_context():
     try:
         db.create_all()

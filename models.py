@@ -1,5 +1,5 @@
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import event
+from sqlalchemy import event, text
 from datetime import datetime
 
 db = SQLAlchemy()
@@ -59,10 +59,11 @@ class Producto(db.Model):
     nombre = db.Column(db.String(100), nullable=False)
     linea = db.Column(db.String(50)) 
     categoria = db.Column(db.String(50))
-    precio_venta = db.Column(db.Numeric(10, 2), nullable=False)
-    stock_actual = db.Column(db.Integer, default=0) # Usar este nombre siempre
-    imagen = db.Column(db.String(255)) 
-    fecha_registro = db.Column(db.DateTime, default=datetime.now)
+    precio_venta = db.Column(db.Numeric(10,2), nullable=False)
+    costo_produccion = db.Column(db.Numeric(10,2), nullable=False, default=0) # se agrego el campo para calcular las utilidades
+    stock_actual = db.Column(db.Integer, default=0)
+    imagen = db.Column(db.String(255))
+    fecha_registro = db.Column(db.DateTime, default=datetime.utcnow)
     detalles = db.relationship(
         "DetalleVenta",
         back_populates="producto",
@@ -86,6 +87,7 @@ class DetalleVenta(db.Model):
     producto_id = db.Column(db.Integer, db.ForeignKey("productos.id"), nullable=False)
     cantidad = db.Column(db.Integer, nullable=False)
     precio_unitario = db.Column(db.Numeric(10,2))
+    costo_unitario = db.Column(db.Numeric(10,2))  # costo histórico
     subtotal = db.Column(db.Numeric(10,2))
     producto = db.relationship(
         "Producto",back_populates="detalles")
@@ -98,3 +100,54 @@ class CarritoTemporal(db.Model):
     nombre = db.Column(db.String(200))
     precio = db.Column(db.Numeric(10, 2))
     cantidad = db.Column(db.Integer)
+
+class AuditoriaVenta(db.Model):
+    __tablename__ = "auditoria_ventas"
+    
+    id = db.Column(db.Integer, primary_key=True)
+    venta_id = db.Column(db.Integer)
+    usuario_id = db.Column(db.Integer)
+    fecha = db.Column(db.DateTime, default=datetime.utcnow)
+    accion = db.Column(db.String(50))
+
+
+@event.listens_for(Venta, "after_insert")
+def registrar_auditoria(mapper, connection, target):
+
+    connection.execute(
+        AuditoriaVenta.__table__.insert(),
+        {
+            "venta_id": target.id,
+            "usuario_id": target.usuario_id,
+            "fecha": datetime.utcnow(),
+            "accion": "VENTA_REGISTRADA"
+        }
+    )
+
+
+def crear_vista_cierre_diario():
+
+    sql = """
+    CREATE OR REPLACE VIEW vista_cierre_diario AS
+    SELECT 
+        DATE(v.fecha) AS fecha,
+
+        SUM(d.cantidad) AS articulos_vendidos,
+
+        SUM(d.subtotal) AS total_ventas,
+
+        SUM(
+            (d.precio_unitario - d.costo_unitario) * d.cantidad
+        ) AS utilidad_total
+
+    FROM ventas v
+    JOIN detalle_ventas d ON v.id = d.venta_id
+
+    WHERE DATE(v.fecha) = CURDATE()
+
+    GROUP BY DATE(v.fecha);
+    """
+
+    db.session.execute(text(sql))
+    db.session.commit()
+

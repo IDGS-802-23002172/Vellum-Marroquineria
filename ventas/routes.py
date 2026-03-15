@@ -3,6 +3,7 @@ from . import ventas_bp
 from models import CarritoTemporal, Venta, DetalleVenta, db, Producto
 from decimal import Decimal
 import uuid
+from sqlalchemy import text
 
 IVA_TASA = Decimal("0.16")
 
@@ -101,17 +102,20 @@ def finalizar_venta():
     db.session.flush()
 
     for item in carrito:
+
+        producto = Producto.query.get(item.producto_id)
+
         detalle = DetalleVenta(
             venta_id=nueva_venta.id,
             producto_id=item.producto_id,
             cantidad=item.cantidad,
             precio_unitario=item.precio,
+            costo_unitario=producto.costo_produccion,  # NUEVO
             subtotal=item.precio * item.cantidad
         )
+
         db.session.add(detalle)
 
-        # FIX: Descontar usando el nombre correcto: stock_actual
-        producto = Producto.query.get(item.producto_id)
         if producto:
             producto.stock_actual -= item.cantidad
 
@@ -147,4 +151,23 @@ def ticket():
         "ticket.html",
         venta=venta,
         detalles=detalles
+    )
+
+@ventas_bp.route("/cierre-diario")
+def cierre_diario():
+
+    resultado = db.session.execute(text("""
+        SELECT 
+            fecha,
+            articulos_vendidos,
+            total_ventas,
+            utilidad_total
+        FROM vista_cierre_diario
+    """))
+
+    cierre = resultado.mappings().first()
+
+    return render_template(
+        "cierre_diario.html",
+        cierre=cierre
     )
