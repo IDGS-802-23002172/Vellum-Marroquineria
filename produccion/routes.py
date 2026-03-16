@@ -86,20 +86,25 @@ def cancelar_orden(id):
 @produccion_bp.route("/produccion/actualizar/<int:id>", methods=['GET', 'POST'])
 def actualizar_produccion(id):
     orden = OrdenProduccion.query.get_or_404(id)
-    # Usamos un formulario similar al de productos para mantener la simetría
     form = forms.OrdenProduccionForm(obj=orden)
-    
-    # Recargar opciones de producto (solo lectura en esta fase)
     form.id_producto.choices = [(orden.producto.id, orden.producto.nombre)]
 
     if request.method == 'POST':
-        # Aquí capturamos el cambio de estado solicitado
         nuevo_estado = request.form.get('estado')
         
-        if nuevo_estado:
-            orden.estado = nuevo_estado
-            db.session.commit()
-            flash(f"Orden #{orden.id_orden} actualizada a: {nuevo_estado}", "info")
-            return redirect(url_for('produccion.listar_ordenes'))
+        # LÓGICA DE ENTRADA A ALMACÉN (Tarea 4)
+        # Si el estado cambia de "En Corte" a "Terminado"
+        if orden.estado == "En Corte" and nuevo_estado == "Terminado":
+            producto_almacen = Producto.query.get(orden.id_producto)
+            
+            # Sumamos las unidades al stock de venta
+            producto_almacen.stock_actual += orden.cantidad
+            flash(f"¡Éxito! {orden.cantidad} unidades añadidas al catálogo de ventas.", "success")
+        
+        orden.estado = nuevo_estado
+        db.session.commit()
+        
+        flash(f"Estado de la orden #{orden.id_orden} actualizado.", "info")
+        return redirect(url_for('produccion.listar_ordenes'))
         
     return render_template("produccion/modificar.html", form=form, orden=orden)
