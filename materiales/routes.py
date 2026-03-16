@@ -7,7 +7,7 @@ Empresa: Marroquinería de Autor, León Gto.
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 from sqlalchemy import or_
 from models import Proveedor, db, UnidadMedida
-from models import MateriaPrima, StockMateriaPrima, MovimientoMateriaPrima
+from models import MateriaPrima, StockMateriaPrima, MovimientoMateriaPrima, PiezaMateriaPrima
 from forms import UnidadMedidaForm, MateriaPrimaForm, MovimientoMateriaPrimaForm
 import logging
 
@@ -27,6 +27,7 @@ def _log(accion: str, id_registro: int = None, detalle: str = None):
     except Exception as e:
         logging.error(f"Error en auditoría: {e}")
         
+
 @unidades_bp.route("/")
 def listar():
 
@@ -58,6 +59,7 @@ def listar():
         q=q
     )
     
+
 @unidades_bp.route("/crear", methods=["GET", "POST"])
 def crear():
 
@@ -87,6 +89,7 @@ def crear():
         titulo="Nueva Unidad de Medida"
     )
     
+
 @unidades_bp.route("/editar/<int:id>", methods=["GET", "POST"])
 def editar(id):
 
@@ -117,6 +120,7 @@ def editar(id):
         
     )
     
+
 @unidades_bp.route("/eliminar/<int:id>", methods=["POST"])
 def eliminar(id):
 
@@ -153,10 +157,7 @@ def detalle(id):
         unidad=unidad
     )
     
- 
-# ─────────────────────────────────────────────
-# MATERIAS PRIMAS
-# ─────────────────────────────────────────────    
+
 materias_bp = Blueprint("materias", __name__, url_prefix="/materias")
 
 @materias_bp.get("/")
@@ -183,7 +184,7 @@ def index():
         paginacion=paginacion,
         q=q
     )
-    
+
 @materias_bp.route("/nueva", methods=["GET", "POST"])
 def crear():
 
@@ -199,16 +200,17 @@ def crear():
         materia = MateriaPrima(
             nombre=form.nombre.data,
             descripcion=form.descripcion.data,
-            id_unidad=form.id_unidad.data
+            id_unidad=form.id_unidad.data,
+            tipo_control=form.tipo_control.data
         )
 
         db.session.add(materia)
         db.session.commit()
         
         stock = StockMateriaPrima(
-        id_materia=materia.id_materia,
-        cantidad_actual=0,
-        punto_reorden=0
+            id_materia=materia.id_materia,
+            cantidad_actual=0,
+            punto_reorden=0
         )
 
         db.session.add(stock)
@@ -223,7 +225,7 @@ def crear():
         form=form,
         modo="crear"
     )
-    
+
 @materias_bp.get("/<int:id>")
 def detalle(id):
 
@@ -242,7 +244,7 @@ def detalle(id):
         materia=materia,
         movimientos=movimientos
     )
-    
+
 @materias_bp.route("/<int:id>/editar", methods=["GET", "POST"])
 def editar(id):
 
@@ -260,6 +262,7 @@ def editar(id):
         materia.nombre = form.nombre.data
         materia.descripcion = form.descripcion.data
         materia.id_unidad = form.id_unidad.data
+        materia.tipo_control = form.tipo_control.data
 
         db.session.commit()
 
@@ -295,67 +298,66 @@ def eliminar(id):
 
 @materias_bp.route("/movimiento/<int:id_materia>", methods=["GET", "POST"])
 def movimiento(id_materia):
-
+    """
+    Solo maneja AJUSTE de inventario (corrección manual de existencias).
+    Las compras con proveedor y factura se gestionan en compras_bp.
+    La merma se registra automáticamente desde el módulo de Producción.
+    """
     materia = MateriaPrima.query.get_or_404(id_materia)
+    form    = MovimientoMateriaPrimaForm()
 
-    form = MovimientoMateriaPrimaForm()
-    form.id_proveedor.choices = [
-    (0, "— Sin proveedor —")
-    ] + [
-        (p.id_proveedor, p.razon_social)
-        for p in Proveedor.query.order_by(Proveedor.razon_social)
-    ]
     if form.validate_on_submit():
-
         cantidad = form.cantidad.data
-        tipo = form.tipo.data
 
-        stock = StockMateriaPrima.query.filter_by(
-            id_materia=id_materia
-        ).first()
+        if not cantidad or cantidad <= 0:
+            flash("La cantidad debe ser mayor a 0.", "danger")
+            return render_template("materias/movimientos.html", form=form, materia=materia)
+
+        stock = StockMateriaPrima.query.filter_by(id_materia=id_materia).first()
 
         if not stock:
-            flash("No existe registro de stock", "danger")
+            flash("No existe registro de stock para esta materia.", "danger")
             return redirect(url_for("materias.detalle", id=id_materia))
 
-        # ─────────────────────────────
-        # VALIDACIÓN DE SALIDA
-        # ─────────────────────────────
-        if tipo in ["salida", "merma"] and cantidad > stock.cantidad_actual:
-            flash("Stock insuficiente", "danger")
-            return redirect(url_for("materias.detalle", id=id_materia))
+        # ── Materiales controlados por pieza ──────────────────────────────
+        if materia.tipo_control == "pieza":
+            mov = MovimientoMateriaPrima(
+                id_materia=id_materia,
+                tipo="AJUSTE",
+                cantidad=cantidad,
+                referencia=form.referencia.data or None,
+            )
+            db.session.add(mov)
+            db.session.flush()
 
-        movimiento = MovimientoMateriaPrima(
-            id_materia=id_materia,
-            tipo=tipo,
-            cantidad=cantidad,
-            referencia=form.referencia.data,
-        )
+            pieza = PiezaMateriaPrima(
+                id_materia=id_materia,
+                area=cantidad,
+                id_movimiento_entrada=mov.id_movimiento,
+            )
+            db.session.add(pieza)
 
-        db.session.add(movimiento)
+            # Recalcular stock como conteo de piezas disponibles
+            stock.cantidad_actual = (
+                PiezaMateriaPrima.query
+                .filter_by(id_materia=id_materia, disponible=True)
+                .count()
+            )
 
-        # ─────────────────────────────
-        # ACTUALIZAR STOCK
-        # ─────────────────────────────
-        if tipo == "entrada":
-            stock.cantidad_actual += cantidad
-
-        elif tipo in ["salida", "merma"]:
-            stock.cantidad_actual -= cantidad
-
-        elif tipo == "ajuste":
+        # ── Materiales acumulables ─────────────────────────────────────────
+        else:
+            mov = MovimientoMateriaPrima(
+                id_materia=id_materia,
+                tipo="AJUSTE",
+                cantidad=cantidad,
+                referencia=form.referencia.data or None,
+            )
+            db.session.add(mov)
+            # AJUSTE = sobreescribir la cantidad actual (no sumar)
             stock.cantidad_actual = cantidad
 
         db.session.commit()
+        flash("Ajuste de inventario registrado correctamente.", "success")
+        return redirect(url_for("materias.detalle", id=id_materia))
 
-        flash("Movimiento registrado correctamente", "success")
-
-        return redirect(
-            url_for("materias.detalle", id=id_materia)
-        )
-
-    return render_template(
-        "materias/movimientos.html",
-        form=form,
-        materia=materia
-    )
+    return render_template("materias/movimientos.html", form=form, materia=materia)

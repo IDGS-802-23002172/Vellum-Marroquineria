@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block title %}Flujo de Caja{% endblock %}
+{% block breadcrumb %}<a href="#">Compras</a> / <a href="{{ url_for('compras.index') }}">Órdenes</a> / Caja{% endblock %}
+{% block page_title %}Historial de Caja{% endblock %}
+
+{% block content %}
+
+{# ── Resumen ──────────────────────────────────────────────────────────────── #}
+<div class="row g-4 mb-5">
+  <div class="col-md-3">
+    <div class="card-piel" style="border-left:4px solid #10b981;">
+      <div class="p-4">
+        <div style="font-size:.85rem; color:#888; margin-bottom:8px;">ENTRADAS</div>
+        <div style="font-size:1.8rem; font-weight:700; color:#10b981;">
+          ${{ "%.2f"|format(entradas) }}
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card-piel" style="border-left:4px solid #ef4444;">
+      <div class="p-4">
+        <div style="font-size:.85rem; color:#888; margin-bottom:8px;">SALIDAS</div>
+        <div style="font-size:1.8rem; font-weight:700; color:#ef4444;">
+          ${{ "%.2f"|format(salidas) }}
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card-piel" style="border-left:4px solid #3b82f6;">
+      <div class="p-4">
+        <div style="font-size:.85rem; color:#888; margin-bottom:8px;">SALDO</div>
+        <div style="font-size:1.8rem; font-weight:700; color:{% if saldo >= 0 %}#10b981{% else %}#ef4444{% endif %};">
+          ${{ "%.2f"|format(saldo) }}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# ── Filtros ──────────────────────────────────────────────────────────────── #}
+<div class="card-piel mb-4">
+  <div class="p-3" style="border-bottom:1px solid var(--piel-border);">
+    <form method="GET" class="d-flex gap-2">
+      <input type="text" name="q" class="form-control" placeholder="Buscar..." value="{{ q }}">
+      <select name="tipo" class="form-select" style="max-width:180px;">
+        <option value="">Todos</option>
+        <option value="ENTRADA" {% if tipo == 'ENTRADA' %}selected{% endif %}>Entradas</option>
+        <option value="SALIDA" {% if tipo == 'SALIDA' %}selected{% endif %}>Salidas</option>
+      </select>
+      <button type="submit" class="btn-piel">Filtrar</button>
+    </form>
+  </div>
+</div>
+
+{# ── Tabla ──────────────────────────────────────────────────────────────── #}
+<div class="card-piel">
+  <div class="table-responsive">
+    <table class="table-piel">
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Tipo</th>
+          <th>Concepto</th>
+          <th>Referencia</th>
+          <th style="text-align:right;">Monto</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for m in movimientos %}
+        <tr>
+          <td style="font-size:.85rem;">{{ m.fecha.strftime('%d/%m/%Y %H:%M') }}</td>
+          <td>
+            {% if m.tipo == 'ENTRADA' %}
+              <span class="tag-material" style="background:#d1fae5; color:#065f46;">Entrada</span>
+            {% else %}
+              <span class="tag-material" style="background:#fee2e2; color:#991b1b;">Salida</span>
+            {% endif %}
+          </td>
+          <td style="font-size:.9rem;">{{ m.concepto }}</td>
+          <td style="font-size:.85rem; color:#888;">{{ m.referencia or '—' }}</td>
+          <td style="text-align:right; font-weight:600; color:{% if m.tipo == 'ENTRADA' %}#10b981{% else %}#ef4444{% endif %};">
+            {% if m.tipo == 'ENTRADA' %}+{% else %}-{% endif %} ${{ "%.2f"|format(m.monto) }}
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="5" class="text-center py-4" style="color:#999;">No hay movimientos</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {# Paginación #}
+  {% if paginacion.pages > 1 %}
+  <div class="d-flex align-items-center justify-content-between p-3" style="border-top:1px solid var(--piel-border);">
+    <span style="font-size:.82rem; color:#999;">Página {{ paginacion.page }} de {{ paginacion.pages }}</span>
+    <div class="d-flex gap-2">
+      {% if paginacion.has_prev %}
+        <a href="{{ url_for('compras.caja', pagina=paginacion.prev_num, q=q, tipo=tipo) }}" class="btn-outline-piel">
+          <i class="bi bi-chevron-left"></i>
+        </a>
+      {% endif %}
+      {% if paginacion.has_next %}
+        <a href="{{ url_for('compras.caja', pagina=paginacion.next_num, q=q, tipo=tipo) }}" class="btn-outline-piel">
+          <i class="bi bi-chevron-right"></i>
+        </a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}

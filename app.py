@@ -6,7 +6,7 @@ from datetime import timedelta
 from proveedores.routes import proveedores_bp
 from materiales.routes import unidades_bp
 from materiales.routes import materias_bp
-
+from caja.routes import compras_bp
 from models import db, Usuario, Producto
 from werkzeug.utils import secure_filename
 import forms
@@ -29,7 +29,7 @@ app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=10)
 db.init_app(app)
 csrf = CSRFProtect(app)
 app.register_blueprint(proveedores_bp)
-
+app.register_blueprint(compras_bp)
 app.register_blueprint(unidades_bp)
 app.register_blueprint(materias_bp)
 

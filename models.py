@@ -103,6 +103,13 @@ class MateriaPrima(db.Model):
 
     unidad = db.relationship("UnidadMedida")
 
+    # Control de existencia: 'acumulable' = se suman cantidades, 'pieza' = se registran piezas individuales
+    tipo_control = db.Column(
+        db.String(20),
+        nullable=False,
+        default="acumulable"
+    )
+
     def __repr__(self):
         return f"<MateriaPrima {self.nombre}>"
     
@@ -138,6 +145,37 @@ class StockMateriaPrima(db.Model):
         "MateriaPrima",
         backref=db.backref("stock", uselist=False)
     )
+
+
+class PiezaMateriaPrima(db.Model):
+    __tablename__ = "piezas_materia_prima"
+
+    id_pieza = db.Column(db.Integer, primary_key=True, autoincrement=True)
+
+    id_materia = db.Column(
+        db.Integer,
+        db.ForeignKey("materias_primas.id_materia", ondelete="CASCADE"),
+        nullable=False
+    )
+
+    area = db.Column(
+        db.Numeric(14,2),
+        nullable=False
+    )
+
+    disponible = db.Column(db.Boolean, nullable=False, default=True)
+
+    creado_en = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+    # opcional: referencia al movimiento de entrada que creó la pieza
+    id_movimiento_entrada = db.Column(
+        db.Integer,
+        db.ForeignKey("movimientos_materia_prima.id_movimiento", ondelete="SET NULL"),
+        nullable=True
+    )
+
+    materia = db.relationship("MateriaPrima", backref=db.backref("piezas", lazy=True))
+
     
 class MovimientoMateriaPrima(db.Model):
     __tablename__ = "movimientos_materia_prima"
@@ -199,6 +237,156 @@ class MovimientoMateriaPrima(db.Model):
     
 ##-- FIN DE COSILLAS DE MATERIA PRIMA------------------------------------##
 
+##-- CAJA ----------------------------------------------------------------##
+"""
+Modelos — Módulo de Compras (Semana 3)
+Empresa: Marroquinería de Autor, León Gto.
+
+Agregar estas clases al archivo models.py existente.
+"""
+
+from flask_sqlalchemy import SQLAlchemy
+from datetime import datetime
+
+# ── Referencia al db existente ─────────────────────
+# from models import db, Proveedor, MateriaPrima, StockMateriaPrima, MovimientoMateriaPrima
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ORDEN DE COMPRA
+# Una orden agrupa N líneas de materia prima compradas al mismo proveedor.
+# Al "confirmar" la orden se generan los MovimientoMateriaPrima y el
+# MovimientoCaja correspondiente de forma atómica.
+# ─────────────────────────────────────────────────────────────────────────────
+class OrdenCompra(db.Model):
+    __tablename__ = "ordenes_compra"
+
+    id_orden = db.Column(db.Integer, primary_key=True, autoincrement=True)
+
+    folio = db.Column(db.String(30), unique=True, nullable=False)
+    # Ej: "OC-2025-0001"
+
+    id_proveedor = db.Column(
+        db.Integer,
+        db.ForeignKey("proveedores.id_proveedor", ondelete="RESTRICT"),
+        nullable=False
+    )
+
+    fecha = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+    # Referencia documental: número de factura, remisión, etc.
+    referencia_doc = db.Column(db.String(100), nullable=True)
+
+    estado = db.Column(
+        db.String(20),
+        nullable=False,
+        default="BORRADOR"
+    )
+    # BORRADOR → CONFIRMADA → CANCELADA
+
+    subtotal   = db.Column(db.Numeric(14, 2), default=0, nullable=False)
+    iva        = db.Column(db.Numeric(14, 2), default=0, nullable=False)
+    total      = db.Column(db.Numeric(14, 2), default=0, nullable=False)
+
+    notas = db.Column(db.Text, nullable=True)
+
+    creado_por = db.Column(db.Integer, db.ForeignKey("usuarios.id"), nullable=True)
+    creado_en  = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    confirmado_en = db.Column(db.DateTime, nullable=True)
+
+    # Relaciones
+    proveedor = db.relationship("Proveedor")
+    detalles  = db.relationship(
+        "DetalleOrdenCompra",
+        backref="orden",
+        cascade="all, delete-orphan",
+        lazy=True
+    )
+    movimiento_caja = db.relationship(
+        "MovimientoCaja",
+        backref="orden",
+        uselist=False
+    )
+
+    def __repr__(self):
+        return f"<OrdenCompra {self.folio} | {self.estado}>"
+
+
+class DetalleOrdenCompra(db.Model):
+    __tablename__ = "detalle_ordenes_compra"
+
+    id_detalle  = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    id_orden    = db.Column(
+        db.Integer,
+        db.ForeignKey("ordenes_compra.id_orden", ondelete="CASCADE"),
+        nullable=False
+    )
+    id_materia  = db.Column(
+        db.Integer,
+        db.ForeignKey("materias_primas.id_materia", ondelete="RESTRICT"),
+        nullable=False
+    )
+
+    cantidad       = db.Column(db.Numeric(14, 2), nullable=False)
+    costo_unitario = db.Column(db.Numeric(12, 2),  nullable=False)
+    subtotal       = db.Column(db.Numeric(14, 2),  nullable=False)
+
+    # Referencia al movimiento generado al confirmar
+    id_movimiento = db.Column(
+        db.Integer,
+        db.ForeignKey("movimientos_materia_prima.id_movimiento", ondelete="SET NULL"),
+        nullable=True
+    )
+
+    materia    = db.relationship("MateriaPrima")
+    movimiento = db.relationship("MovimientoMateriaPrima")
+
+    def __repr__(self):
+        return f"<DetalleOC {self.id_detalle} – {self.cantidad} u>"
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# MOVIMIENTO DE CAJA
+# Registro simplificado de flujo de efectivo (entradas y salidas).
+# Las compras generan una SALIDA automática al confirmar la orden.
+# ─────────────────────────────────────────────────────────────────────────────
+class MovimientoCaja(db.Model):
+    __tablename__ = "movimientos_caja"
+
+    id_movimiento_caja = db.Column(db.Integer, primary_key=True, autoincrement=True)
+
+    tipo = db.Column(
+        db.String(20),
+        nullable=False
+    )
+    # ENTRADA | SALIDA
+
+    concepto = db.Column(db.String(200), nullable=False)
+
+    monto = db.Column(db.Numeric(14, 2), nullable=False)
+    # Siempre positivo; el tipo determina el signo en reportes
+
+    metodo_pago = db.Column(db.String(30), nullable=True)
+    # EFECTIVO, TRANSFERENCIA, CHEQUE, TARJETA
+
+    referencia = db.Column(db.String(150), nullable=True)
+
+    # Vínculo opcional con una orden de compra
+    id_orden = db.Column(
+        db.Integer,
+        db.ForeignKey("ordenes_compra.id_orden", ondelete="SET NULL"),
+        nullable=True
+    )
+
+    fecha      = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    creado_por = db.Column(db.Integer, db.ForeignKey("usuarios.id"), nullable=True)
+    notas      = db.Column(db.Text, nullable=True)
+
+    def __repr__(self):
+        return f"<MovCaja {self.tipo} ${self.monto}>"
+ 
+ 
+ # --- FIN DE CAJA --------------------
 # --- PRODUCTOS (UNIFICADO) ---
 class Producto(db.Model):
     __tablename__ = 'productos'
