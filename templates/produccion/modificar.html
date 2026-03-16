@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}Actualizar Producción{% endblock %}
+{% block page_title %}Control de Taller — Vellum{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm p-5" style="border-radius: 0; border: 1px solid #eee !important;">
+                <h2 class="text-premium text-uppercase mb-4">Actualizar Estado</h2>
+                
+                <div class="mb-4 pb-3 border-bottom">
+                    <span class="text-muted small tracking-widest uppercase">Orden de Fabricación</span>
+                    <h4 class="text-dark">{{ orden.producto.nombre }}</h4>
+                    <p class="mb-0">Cantidad: <strong>{{ orden.cantidad }} unidades</strong></p>
+                </div>
+
+                <form method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    
+                    <div class="mb-5">
+                        <label class="form-label text-uppercase small fw-bold tracking-wider">Fase de Producción</label>
+                        <select name="estado" class="form-select" style="border-radius: 0; height: 50px;">
+                            <option value="En Corte" {% if orden.estado == 'En Corte' %}selected{% endif %}>En Corte</option>
+                            <option value="Terminado" {% if orden.estado == 'Terminado' %}selected{% endif %}>Terminado (Mover a Almacén)</option>
+                        </select>
+                        <div class="form-text italic mt-2">Al marcar como "Terminado", se sumará el stock al catálogo.</div>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn-vellum">Actualizar Proceso</button>
+                        <a href="{{ url_for('produccion.listar_ordenes') }}" class="btn btn-link text-muted small text-decoration-none">Regresar al monitoreo</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

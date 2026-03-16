@@ -46,3 +46,12 @@ class RecetaForm(FlaskForm):
         validators=[DataRequired(), NumberRange(min=0.01, message="Debe ser mayor a 0")]
     )
     submit = SubmitField('Asignar a Receta')
+
+# Módulo de Producción - Semana 3
+class OrdenProduccionForm(FlaskForm):
+    id_producto = SelectField('Producto a Fabricar', coerce=int, validators=[DataRequired()])
+    
+    cantidad = IntegerField('Cantidad de Unidades', 
+                            validators=[DataRequired(), NumberRange(min=1, message="Mínimo 1 unidad")])
+    
+    submit = SubmitField('Iniciar Producción')

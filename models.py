@@ -112,3 +112,17 @@ class RetalRecuperado(db.Model):
     area_disponible_dm2 = db.Column(db.Numeric(10,2), nullable=False)
     es_reusable = db.Column(db.Boolean, default=True)
     fecha_registro = db.Column(db.DateTime, default=db.func.current_timestamp())
+
+# --- ORDENES DE PRODUCCION ---
+class OrdenProduccion(db.Model):
+    __tablename__ = "ordenes_produccion"
+    id_orden = db.Column(db.Integer, primary_key=True)
+    id_producto = db.Column(db.Integer, db.ForeignKey("productos.id"), nullable=False)
+    cantidad = db.Column(db.Integer, nullable=False)
+    
+    estado = db.Column(db.String(50), default="En Corte") 
+    
+    fecha_creacion = db.Column(db.DateTime, default=db.func.current_timestamp())
+    
+    producto = db.relationship("Producto")
+    
