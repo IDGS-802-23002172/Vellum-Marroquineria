@@ -12,6 +12,8 @@ from werkzeug.utils import secure_filename
 import forms
 from forms import UserForm
 from ventas import ventas_bp
+from productos.routes import productos_bp
+from recetas.routes import recetas_bp
 
 load_dotenv()
 
@@ -24,12 +26,13 @@ app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv(
 )
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'clave_segura_vellum_123')
-## LA SESIÓN EXPIRA DESPUES DE 10 MINUTOS SI NO HAY NINGUNA INTERACCIÓN
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=10)
 
 db.init_app(app)
 csrf = CSRFProtect(app)
 app.register_blueprint(proveedores_bp)
+app.register_blueprint(productos_bp)
+app.register_blueprint(recetas_bp)
 
 app.register_blueprint(unidades_bp)
 app.register_blueprint(materias_bp)
@@ -43,7 +46,6 @@ with app.app_context():
     except Exception as e:
         print(f"error al conectar con la bd {e}")
 
-## VERIFICA LA SESIÓN, AL NO TENER SESIÓN, DESPUES DE HACER ALGUNA PETICIÓN NO LO DEJARA Y LO REGRESA AL LOGIN
 @app.before_request
 def verificar_sesion():
     rutas_publicas = ['login', 'static']
@@ -124,16 +126,13 @@ def crear_producto():
 
 @app.route("/modificar_producto", methods=['GET', 'POST'])
 def modificar_producto():
-    # Usamos el formulario de productos que ya definimos
     form = forms.ProductoForm(request.form)
     
     if request.method == 'GET':
         id = request.args.get('id')
-        # Buscamos el producto en la base de datos por su ID [cite: 93, 111]
         prod = db.session.query(Producto).filter(Producto.id == id).first()
         
         if prod:
-            # Llenamos el formulario con los datos actuales para que el usuario los vea
             form.id.data = id
             form.nombre.data = prod.nombre
             form.linea.data = prod.linea
@@ -145,7 +144,6 @@ def modificar_producto():
 
     if request.method == 'POST':
         id = form.id.data
-        # Obtenemos la referencia al producto original
         prod = db.session.query(Producto).filter(Producto.id == id).first()
 
         if prod:

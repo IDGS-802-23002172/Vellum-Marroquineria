@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}Editar Insumo{% endblock %}
+{% block page_title %}Ajuste Técnico de Receta — Vellum{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="text-center mb-5">
+                <span class="text-uppercase tracking-widest text-muted" style="font-size: 0.7rem;">Módulo de Transformación</span>
+                <h2 class="text-premium mt-2" style="font-size: 2.2rem;">Actualizar Cantidades</h2>
+                <p class="text-muted small italic">Ajuste de áreas para {{ receta.producto.nombre }}</p>
+                <div class="mx-auto bg-dark" style="width: 50px; height: 2px;"></div>
+            </div>
+
+            <div class="card border-0 shadow-sm p-4 p-md-5" style="border-radius: 0; border: 1px solid #eee !important;">
+                <form method="POST" action="{{ url_for('recetas.modificar_receta', id=receta.id_receta) }}">
+                    {{ form.hidden_tag() }}
+
+                    <div class="mb-4">
+                        <label class="form-label text-uppercase tracking-wider small fw-bold">Materia Prima</label>
+                        {{ form.id_materia(class="form-select bg-light", style="border-radius: 0;") }}
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6 mb-4">
+                            <label class="form-label text-uppercase tracking-wider small fw-bold">Área Plantilla (dm²)</label>
+                            {{ form.area_plantilla(class="form-control", id="edit-plantilla", style="border-radius: 0;") }}
+                        </div>
+
+                        <div class="col-md-6 mb-4">
+                            <label class="form-label text-uppercase tracking-wider small fw-bold">Retícula Corte (dm²)</label>
+                            {{ form.area_reticula(class="form-control", id="edit-reticula", style="border-radius: 0;") }}
+                        </div>
+                    </div>
+
+                    <div class="p-3 mb-4 bg-light border-start border-dark border-4">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="text-uppercase small fw-bold">Nueva Merma Estimada:</span>
+                            <span id="visor-merma-edit" class="font-monospace fw-bold text-danger">0.00 dm²</span>
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn-vellum w-100">Guardar Cambios Técnicos</button>
+                        <a href="{{ url_for('recetas.listar_recetas') }}" class="btn btn-link text-muted text-decoration-none small">
+                            Cancelar y regresar
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const inputP = document.getElementById('edit-plantilla');
+    const inputR = document.getElementById('edit-reticula');
+    const visor = document.getElementById('visor-merma-edit');
+
+    function actualizarCalculo() {
+        const p = parseFloat(inputP.value) || 0;
+        const r = parseFloat(inputR.value) || 0;
+        visor.innerText = (r - p).toFixed(2) + ' dm²';
+    }
+
+    inputP.addEventListener('input', actualizarCalculo);
+    inputR.addEventListener('input', actualizarCalculo);
+    // Ejecutar al cargar para mostrar el valor actual
+    window.onload = actualizarCalculo;
+</script>
+
+<style>
+    .text-premium { font-family: 'Playfair Display', serif; }
+    .btn-vellum {
+        background: #000;
+        color: #fff;
+        border-radius: 0;
+        padding: 12px;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        font-size: 0.8rem;
+        transition: all 0.3s;
+    }
+    .btn-vellum:hover { background: #333; }
+</style>
+{% endblock %}

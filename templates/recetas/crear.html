@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}Definir Insumo{% endblock %}
+{% block page_title %}Ingeniería de Corte — Vellum{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="text-center mb-5">
+                <span class="text-uppercase tracking-widest text-muted" style="font-size: 0.7rem;">Módulo de Transformación</span>
+                <h2 class="text-premium mt-2" style="font-size: 2.2rem;">Nueva Receta</h2>
+                <div class="mx-auto bg-dark" style="width: 50px; height: 2px;"></div>
+            </div>
+
+            <div class="card border-0 shadow-sm p-4 p-md-5" style="border-radius: 0; border: 1px solid #eee !important;">
+                <form method="POST" action="{{ url_for('recetas.crear_receta') }}">
+                    {{ form.hidden_tag() }}
+
+                    <div class="mb-4">
+                        <label class="form-label text-uppercase tracking-wider small fw-bold">Producto a Configurar</label>
+                        {{ form.id_producto(class="form-select", style="border-radius: 0;") }}
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label text-uppercase tracking-wider small fw-bold">Materia Prima</label>
+                        {{ form.id_materia(class="form-select", style="border-radius: 0;") }}
+                        <div class="form-text italic" style="font-size: 0.75rem;">Solo se muestran materiales con stock activo.</div>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6 mb-4">
+                            <label class="form-label text-uppercase tracking-wider small fw-bold">Área Plantilla (dm²)</label>
+                            {{ form.area_plantilla(class="form-control", id="input-plantilla", placeholder="Ej. 0.50", style="border-radius: 0;") }}
+                        </div>
+
+                        <div class="col-md-6 mb-4">
+                            <label class="form-label text-uppercase tracking-wider small fw-bold">Retícula Corte (dm²)</label>
+                            {{ form.area_reticula(class="form-control", id="input-reticula", placeholder="Ej. 0.85", style="border-radius: 0;") }}
+                        </div>
+                    </div>
+
+                    <div class="p-3 mb-4 bg-light border-start border-dark border-4">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="text-uppercase small fw-bold">Estimación de Merma:</span>
+                            <span id="visor-merma" class="font-monospace fw-bold text-danger">0.00 dm²</span>
+                        </div>
+                        <p class="text-muted mb-0 mt-1" style="font-size: 0.7rem;">
+                            Basado en la diferencia entre el rectángulo de corte y la pieza útil.
+                        </p>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        {{ form.submit(class="btn-vellum w-100") }}
+                        <a href="{{ url_for('recetas.listar_recetas') }}" class="btn btn-link text-muted text-decoration-none small">
+                            Cancelar y volver al listado
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const inputPlantilla = document.getElementById('input-plantilla');
+    const inputReticula = document.getElementById('input-reticula');
+    const visorMerma = document.getElementById('visor-merma');
+
+    function calcularMerma() {
+        const p = parseFloat(inputPlantilla.value) || 0;
+        const r = parseFloat(inputReticula.value) || 0;
+        const merma = r - p;
+        
+        if (merma >= 0) {
+            visorMerma.innerText = merma.toFixed(2) + ' dm²';
+            visorMerma.classList.remove('text-warning');
+            visorMerma.classList.add('text-danger');
+        } else if (p > r) {
+            visorMerma.innerText = 'Error: Retícula insuficiente';
+            visorMerma.classList.add('text-warning');
+        }
+    }
+
+    inputPlantilla.addEventListener('input', calcularMerma);
+    inputReticula.addEventListener('input', calcularMerma);
+</script>
+
+<style>
+    .text-premium { font-family: 'Playfair Display', serif; }
+    .btn-vellum {
+        background: #000;
+        color: #fff;
+        border-radius: 0;
+        padding: 12px;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        font-size: 0.8rem;
+        transition: all 0.3s;
+    }
+    .btn-vellum:hover {
+        background: #333;
+        transform: translateY(-2px);
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}Explosión de Materiales{% endblock %}
+{% block page_title %}Ingeniería de Producto — Vellum León{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+    <div class="d-flex justify-content-between align-items-end mb-5 border-bottom border-stone-200 pb-4">
+        <div>
+            <h2 class="text-premium text-uppercase m-0" style="font-size: 2.5rem; letter-spacing: -2px;">
+                Recetario <span class="text-muted" style="font-family: 'DM Sans'; font-weight: 300;">{{ recetas|length }}</span>
+            </h2>
+            <p class="text-uppercase tracking-widest text-muted mb-0" style="font-size: 0.65rem;">Configuración técnica de insumos por pieza</p>
+        </div>
+        <a href="{{ url_for('recetas.crear_receta') }}" class="btn-vellum">
+            <i class="bi bi-diagram-3 me-2"></i> Definir Nuevo Insumo
+        </a>
+    </div>
+
+    <div class="card border-0 shadow-sm" style="border-radius: 0;">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light text-uppercase tracking-widest" style="font-size: 0.7rem;">
+                    <tr>
+                        <th class="ps-4 py-3">Producto Final</th>
+                        <th class="py-3">Materia Prima</th>
+                        <th class="py-3">Área Plantilla (dm²)</th>
+                        <th class="py-3">Retícula Corte (dm²)</th>
+                        <th class="py-3">Merma Técnica</th>
+                        <th class="pe-4 py-3 text-end">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody class="border-top-0">
+                    {% for r in recetas %}
+                    <tr>
+                        <td class="ps-4">
+                            <div class="d-flex align-items-center">
+                                <div class="me-3" style="width: 40px; height: 40px; background: #f8f9fa;">
+                                    <img src="{{ url_for('static', filename='img/productos/' + r.producto.imagen) }}" 
+                                         class="w-100 h-100 object-fit-cover" style="filter: grayscale(1);">
+                                </div>
+                                <div>
+                                    <span class="fw-bold d-block text-uppercase small">{{ r.producto.nombre }}</span>
+                                    <span class="text-muted" style="font-size: 0.65rem;">{{ r.producto.sku }}</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge bg-stone-100 text-dark fw-normal border px-2 py-1">
+                                {{ r.materia.nombre }}
+                            </span>
+                        </td>
+                        <td class="font-monospace text-muted">{{ r.area_plantilla_dm2 }}</td>
+                        <td class="font-monospace text-dark fw-bold">{{ r.area_reticula_corte_dm2 }}</td>
+                        <td>
+                            {# Cálculo basado en tus dibujos: Retícula - Plantilla #}
+                            {% set merma = r.area_reticula_corte_dm2 - r.area_plantilla_dm2 %}
+                            <span class="text-danger small italic">
+                                <i class="bi bi-scissors me-1"></i> {{ "%.2f"|format(merma) }} dm²
+                            </span>
+                        </td>
+                        <td class="pe-4 text-end">
+                            <div class="d-flex gap-3 justify-content-end">
+                                <a href="{{ url_for('recetas.modificar_receta', id=r.id_receta) }}" class="text-stone-400 hover:text-dark">
+                                    <i class="bi bi-pencil-square"></i>
+                                </a>
+                                <form action="{{ url_for('recetas.eliminar_receta', id=r.id_receta) }}" method="POST" class="d-inline">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="border-0 bg-transparent p-0 text-stone-300 hover:text-danger" 
+                                            onclick="return confirm('¿Remover este insumo de la receta?')">
+                                        <i class="bi bi-trash3"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center py-5 text-muted italic">
+                            No hay insumos definidos en el recetario actual.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+    .bg-stone-100 { background-color: #f1f0ee; }
+    .text-stone-400 { color: #a8a29e; }
+    .text-stone-300 { color: #d6d3d1; }
+    .text-premium { font-family: 'Playfair Display', serif; }
+    .table-hover tbody tr:hover { background-color: #fafaf9; }
+</style>
+{% endblock %}
