@@ -1,11 +1,13 @@
 import os
 from flask import Flask, render_template, session, flash, redirect, url_for, request
+from werkzeug.security import generate_password_hash, check_password_hash
 from flask_wtf.csrf import CSRFProtect
 from dotenv import load_dotenv
 from datetime import timedelta
 from proveedores.routes import proveedores_bp
 from materiales.routes import unidades_bp
 from materiales.routes import materias_bp
+
 
 from models import db, Usuario, Producto
 from werkzeug.utils import secure_filename
@@ -74,6 +76,11 @@ def login():
             db.session.commit()
             session['user_id'] = user.id
             session.permanent = True
+            return redirect(url_for('index'))
+        if user and check_password_hash(user.password, form.password.data):
+            user.intentos_fallidos = 0
+            db.session.commit()
+            session['user_id']=user.id
             return redirect(url_for('index'))
         else:
             user.intentos_fallidos += 1

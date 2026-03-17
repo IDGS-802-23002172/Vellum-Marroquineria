@@ -1,22 +1,30 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}{% endblock %} — VELLUM</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,500&family=DM+Sans:wght@300;400;500;600&display=swap"
+    rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css"
+    rel="stylesheet">
 
   <style>
     :root {
-      --v-black:     #000000;
-      --v-deep:      #121212; /* Gris casi negro */
-      --v-stone:     #4a4a4a; /* Gris medio */
-      --v-paper:     #f4f4f4; /* Fondo vitela */
-      --v-border:    #e0e0e0; /* Líneas finas */
+      --v-black: #000000;
+      --v-deep: #121212;
+      /* Gris casi negro */
+      --v-stone: #4a4a4a;
+      /* Gris medio */
+      --v-paper: #f4f4f4;
+      /* Fondo vitela */
+      --v-border: #e0e0e0;
+      /* Líneas finas */
     }
 
     body {
@@ -33,7 +41,8 @@
       min-height: 100vh;
       background: var(--v-black);
       position: fixed;
-      top: 0; left: 0;
+      top: 0;
+      left: 0;
       z-index: 100;
       border-right: 1px solid #222;
     }
@@ -73,13 +82,16 @@
       transition: all .3s ease;
     }
 
-    .sidebar-link:hover, .sidebar-link.active {
+    .sidebar-link:hover,
+    .sidebar-link.active {
       color: #fff;
-      background: rgba(255,255,255,0.05);
+      background: rgba(255, 255, 255, 0.05);
     }
 
     /* ── Main Content ──────────────────────── */
-    .main-wrap { margin-left: 260px; }
+    .main-wrap {
+      margin-left: 260px;
+    }
 
     .topbar {
       background: #fff;
@@ -97,13 +109,16 @@
       font-style: italic;
     }
 
-    .page-body { padding: 40px; }
+    .page-body {
+      padding: 40px;
+    }
 
     /* ── Componentes Premium ───────────────── */
     .card-vellum {
       background: #fff;
       border: 1px solid var(--v-border);
-      border-radius: 0; /* Bordes rectos para elegancia */
+      border-radius: 0;
+      /* Bordes rectos para elegancia */
       padding: 30px;
     }
 
@@ -126,42 +141,49 @@
   </style>
   {% block extra_head %}{% endblock %}
 </head>
+
 <body>
 
-<aside class="sidebar">
-  <div class="sidebar-brand">
-    <span class="brand-name">Vellum</span>
-    <span class="brand-small-name">Especialistas en cuero</span>
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <span class="brand-name">Vellum</span>
+      <span class="brand-small-name">Especialistas en cuero</span>
+    </div>
+
+    <nav class="mt-4">
+      <div class="px-4 mb-2 text-muted small uppercase" style="font-size: 0.6rem; letter-spacing: 0.1em;">Gestión</div>
+      <a href="{{ url_for('index') }}" class="sidebar-link"><i class="bi bi-house-door"></i> Menú Principal</a>
+      <a href="{{ url_for('listar_productos') }}" class="sidebar-link"><i class="bi bi-box-seam"></i> Inventario</a>
+      <a href="{{ url_for('proveedores.index') }}" class="sidebar-link"><i class="bi bi-truck"></i> Proveedores</a>
+      <a href="{{ url_for('ventas.punto_venta') }}" class="sidebar-link"><i class="bi bi-receipt"></i> Punto de
+        Venta</a>
+      <a href="{{ url_for('materias.index') }}" class="sidebar-link">
+        <i class="bi bi-boxes"></i> Materia Prima
+      </a>
+      <a href="{{ url_for('recetas.listar_recetas') }}" class="sidebar-link">
+        <i class="bi bi-diagram-3"></i> Recetas
+      </a>
+      <a href="{{ url_for('logout') }}" class="sidebar-link text-danger">
+        <i class="bi bi-box-arrow-right"></i> Cerrar Sesión
+      </a>
+    </nav>
+  </aside>
+
+  <div class="main-wrap">
+    <header class="topbar">
+      <div class="topbar-title">{% block page_title %}{% endblock %}</div>
+      <div class="small text-uppercase tracking-widest">
+        <i class="bi bi-person me-2"></i> {{ g.user.username if g.user else 'Artesano' }}
+      </div>
+    </header>
+
+    <main class="page-body">
+      {% block content %}{% endblock %}
+    </main>
   </div>
 
-  <nav class="mt-4">
-    <div class="px-4 mb-2 text-muted small uppercase" style="font-size: 0.6rem; letter-spacing: 0.1em;">Gestión</div>
-    <a href="{{ url_for('index') }}" class="sidebar-link"><i class="bi bi-house-door"></i> Menú Principal</a>
-    <a href="{{ url_for('listar_productos') }}" class="sidebar-link"><i class="bi bi-box-seam"></i> Inventario</a>
-    <a href="{{ url_for('proveedores.index') }}" class="sidebar-link"><i class="bi bi-truck"></i> Proveedores</a>
-    <a href="{{ url_for('ventas.punto_venta') }}" class="sidebar-link"><i class="bi bi-receipt"></i> Punto de Venta</a>
-    <a href="{{ url_for('materias.index') }}" class="sidebar-link"><i class="bi bi-boxes"></i> Materia Prima</a>
-    <a href="{{ url_for('ventas.punto_venta') }}" class="sidebar-link"><i class="bi bi-book"></i> Recetas</a>
-    <a href="{{ url_for('logout') }}" class="sidebar-link text-danger">
-        <i class="bi bi-box-arrow-right"></i> Cerrar Sesión
-    </a>
-  </nav>
-</aside>
-
-<div class="main-wrap">
-  <header class="topbar">
-    <div class="topbar-title">{% block page_title %}{% endblock %}</div>
-    <div class="small text-uppercase tracking-widest">
-      <i class="bi bi-person me-2"></i> {{ current_user.username if current_user else 'Artesano' }}
-    </div>
-  </header>
-
-  <main class="page-body">
-    {% block content %}{% endblock %}
-  </main>
-</div>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.js"></script>
 </body>
+
 </html>
