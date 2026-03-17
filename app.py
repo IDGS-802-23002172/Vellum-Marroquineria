@@ -9,6 +9,7 @@ from materiales.routes import unidades_bp
 from materiales.routes import materias_bp
 
 
+from caja.routes import compras_bp
 from models import db, Usuario, Producto
 from werkzeug.utils import secure_filename
 import forms
@@ -36,6 +37,7 @@ app.register_blueprint(proveedores_bp)
 app.register_blueprint(productos_bp)
 app.register_blueprint(recetas_bp)
 
+app.register_blueprint(compras_bp)
 app.register_blueprint(unidades_bp)
 app.register_blueprint(materias_bp)
 

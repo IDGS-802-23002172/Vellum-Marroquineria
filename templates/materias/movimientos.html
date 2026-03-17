@@ -1,158 +1,122 @@
 {% extends "base.html" %}
 
-{% block title %}Registrar Movimiento{% endblock %}
+{% block title %}Ajuste de Inventario{% endblock %}
 
 {% block breadcrumb %}
 <a href="#">Inventario</a> /
 <a href="{{ url_for('materias.index') }}">Materias Primas</a> /
 <a href="{{ url_for('materias.detalle', id=materia.id_materia) }}">{{ materia.nombre }}</a> /
-Movimiento
+Ajuste
 {% endblock %}
 
-{% block page_title %}
-Registrar Movimiento
-{% endblock %}
+{% block page_title %}Ajuste de Inventario{% endblock %}
 
 
 {% block content %}
 
 <div class="row justify-content-center">
-
 <div class="col-lg-6">
-
 <div class="card-piel">
 
-<div class="card-header">
-<i class="bi bi-arrow-left-right me-2" style="color:var(--piel-tan)"></i>
-Movimiento de Inventario
+  <div class="card-header">
+    <i class="bi bi-sliders me-2" style="color:var(--piel-tan)"></i>
+    Ajuste de Inventario
+  </div>
+
+  <div class="p-4">
+
+    {# Aviso explicativo #}
+    <div style="background:#fef9c3; border-left:3px solid #ca8a04; padding:10px 14px;
+                border-radius:4px; font-size:.85rem; color:#854d0e; margin-bottom:20px;">
+      <strong>¿Para qué sirve esto?</strong><br>
+      Usa este formulario solo para <strong>corregir el inventario</strong> cuando
+      hay diferencias entre el sistema y el físico (conteo, daño no registrado, etc.).<br>
+      Para registrar una <strong>compra</strong> a proveedor ve al
+      <a href="{{ url_for('compras.index') }}" style="color:#92400e; font-weight:600;">
+        Módulo de Compras
+      </a>.
+    </div>
+
+    <form method="POST">
+
+      {{ form.hidden_tag() }}
+      {{ form.csrf_token }}
+
+      {# Materia Prima (display only) #}
+      <div class="mb-3">
+        <label class="form-label">Materia Prima</label>
+        <input type="text" class="form-control" value="{{ materia.nombre }}" disabled>
+
+        {% if materia.tipo_control == 'pieza' %}
+        <small class="text-muted d-block mt-2"
+               style="background:#f0f8ff; padding:8px; border-radius:4px; border-left:3px solid #0066cc;">
+          Este material se controla por <strong>pieza</strong>.
+          El ajuste creará una nueva pieza con el área indicada.
+          Los consumos se registran automáticamente desde Producción.
+        </small>
+        {% endif %}
+      </div>
+
+      {# Nuevo valor de stock #}
+      <div class="mb-3">
+        <label class="form-label">
+          {% if materia.tipo_control == 'pieza' %}
+            Área de la nueva pieza ({{ materia.unidad.abreviatura }})
+          {% else %}
+            Nueva cantidad en inventario
+          {% endif %}
+        </label>
+
+        <div class="input-group">
+          {{ form.cantidad(class="form-control", placeholder="0.00") }}
+          <span class="input-group-text">{{ materia.unidad.abreviatura }}</span>
+        </div>
+
+        {% if materia.stock %}
+        <small style="color:#888; font-size:.82rem; margin-top:4px; display:block;">
+          Existencia actual:
+          <strong>
+            {% if materia.tipo_control == 'pieza' %}
+              {{ materia.piezas | selectattr('disponible') | list | length }} pieza(s)
+            {% else %}
+              {{ materia.stock.cantidad_actual }} {{ materia.unidad.abreviatura }}
+            {% endif %}
+          </strong>
+          {% if materia.tipo_control == 'acumulable' %}
+            — el sistema reemplazará este valor con el que ingreses.
+          {% endif %}
+        </small>
+        {% endif %}
+      </div>
+
+      {# Referencia / motivo #}
+      <div class="mb-3">
+        <label class="form-label">Motivo del ajuste</label>
+        {{ form.referencia(class="form-control",
+                           placeholder="Ej: Conteo físico dic-2025, Daño no registrado…") }}
+        <small style="color:#999;">Documenta siempre el motivo para trazabilidad.</small>
+      </div>
+
+      <div class="d-flex gap-2 pt-3">
+
+        <button type="submit" class="btn-piel flex-grow-1 justify-content-center">
+          <i class="bi bi-check-circle"></i>
+          Registrar ajuste
+        </button>
+
+        <a href="{{ url_for('materias.detalle', id=materia.id_materia) }}"
+           class="btn-outline-piel flex-grow-1 justify-content-center">
+          <i class="bi bi-arrow-left"></i>
+          Cancelar
+        </a>
+
+      </div>
+
+    </form>
+
+  </div>
+</div>
+</div>
 </div>
 
-<div class="p-4">
-
-<form method="POST">
-
-{{ form.hidden_tag() }}
-
-{{ form.csrf_token }}
-
-<!-- Materia -->
-<div class="mb-3">
-
-<label class="form-label">Materia Prima</label>
-
-<input
-type="text"
-class="form-control"
-value="{{ materia.nombre }}"
-disabled
->
-
-</div>
-
-
-<!-- Tipo -->
-<div class="mb-3">
-
-<label class="form-label">Tipo de movimiento</label>
-
-{{ form.tipo(class="form-select") }}
-
-</div>
-
-
-<!-- Cantidad -->
-<div class="mb-3">
-
-<label class="form-label">Cantidad</label>
-
-<div class="input-group">
-
-{{ form.cantidad(class="form-control") }}
-
-<span class="input-group-text">
-{{ materia.unidad.abreviatura }}
-</span>
-
-</div>
-
-</div>
-
-
-<!-- Costo -->
-<div class="mb-3">
-
-<label class="form-label">Costo unitario</label>
-
-<div class="input-group">
-
-<span class="input-group-text">$</span>
-
-{{ form.costo_unitario(class="form-control") }}
-
-</div>
-
-<small style="color:#999;">
-Usar solo para compras
-</small>
-
-</div>
-
-
-<!-- Proveedor -->
-<div class="mb-3">
-
-<label class="form-label">Proveedor</label>
-
-{{ form.id_proveedor(class="form-select") }}
-
-</div>
-
-
-<!-- Referencia -->
-<div class="mb-3">
-
-<label class="form-label">Referencia</label>
-
-{{ form.referencia(class="form-control") }}
-
-<small style="color:#999;">
-Ej: Factura, Orden de producción, Ajuste inventario
-</small>
-
-</div>
-
-
-<div class="d-flex gap-2 pt-3">
-
-<button
-type="submit"
-class="btn-piel flex-grow-1 justify-content-center">
-
-<i class="bi bi-check-circle"></i>
-Registrar movimiento
-
-</button>
-
-
-<a
-href="{{ url_for('materias.detalle', id=materia.id_materia) }}"
-class="btn-outline-piel flex-grow-1 justify-content-center">
-
-<i class="bi bi-arrow-left"></i>
-Cancelar
-
-</a>
-
-</div>
-
-</form>
-
-</div>
-
-</div>
-
-</div>
-
-</div>
-
-{% endblock %}v
+{% endblock %}

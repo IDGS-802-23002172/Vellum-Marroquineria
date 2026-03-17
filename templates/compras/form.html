@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}
+  {{ 'Nueva Orden de Compra' if modo == 'crear' else 'Editar Orden ' ~ orden.folio }}
+{% endblock %}
+
+{% block breadcrumb %}
+  <a href="#">Compras</a> /
+  <a href="{{ url_for('compras.index') }}">Órdenes</a> /
+  {{ 'Nueva' if modo == 'crear' else orden.folio }}
+{% endblock %}
+
+{% block page_title %}
+  {{ 'Nueva Orden de Compra' if modo == 'crear' else 'Editar Orden ' ~ orden.folio }}
+{% endblock %}
+
+{% block content %}
+
+<form method="POST"
+      action="{{ url_for('compras.crear') if modo == 'crear' else url_for('compras.editar', id=orden.id_orden) }}"
+      novalidate>
+
+  {{ form.csrf_token }}
+
+  <div class="row justify-content-center">
+    <div class="col-lg-6">
+      <div class="card-piel">
+
+        <div class="card-header">
+          <i class="bi bi-cart3 me-2" style="color:var(--piel-tan)"></i>
+          Datos de la Orden
+        </div>
+
+        <div class="p-4">
+          <div class="row g-4">
+
+            {# Proveedor #}
+            <div class="col-12">
+              <label class="form-label">
+                Proveedor <span style="color:#dc2626;">*</span>
+              </label>
+              {{ form.id_proveedor(class="form-select") }}
+              {% for e in form.id_proveedor.errors %}
+                <div class="invalid-feedback d-block">{{ e }}</div>
+              {% endfor %}
+            </div>
+
+            {# Factura #}
+            <div class="col-12">
+              <label class="form-label">Folio / Factura del proveedor</label>
+              {{ form.referencia_doc(class="form-control", placeholder="Ej: FAC-2025-00123") }}
+            </div>
+
+            {# Notas #}
+            <div class="col-12">
+              <label class="form-label">Notas</label>
+              {{ form.notas(class="form-control", rows=3,
+                            placeholder="Condiciones, observaciones, etc.") }}
+            </div>
+
+          </div>
+
+          <div class="mt-5 d-flex gap-3">
+            <button type="submit" class="btn-piel flex-grow-1 justify-content-center">
+              <i class="bi bi-check-circle"></i>
+              {{ 'Crear orden' if modo == 'crear' else 'Guardar cambios' }}
+            </button>
+            <a href="{{ url_for('compras.index') }}"
+               class="btn-outline-piel flex-grow-1 justify-content-center">
+              <i class="bi bi-arrow-left"></i> Regresar
+            </a>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+</form>
+
+{% endblock %}

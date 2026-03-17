@@ -92,12 +92,19 @@ Materias primas registradas
 <td>
 
 {% if m.stock %}
-<span style="font-weight:600;">
-{{ m.stock.cantidad_actual }}
-</span>
-{{ m.unidad.abreviatura }}
+  {% if m.tipo_control == 'pieza' %}
+    <span style="font-weight:600;">
+    {{ (m.piezas | selectattr('disponible') | list | length) }}
+    </span>
+    pieza{{ 's' if (m.piezas | selectattr('disponible') | list | length) != 1 }}
+  {% else %}
+    <span style="font-weight:600;">
+    {{ m.stock.cantidad_actual }}
+    </span>
+    {{ m.unidad.abreviatura }}
+  {% endif %}
 {% else %}
-<span style="color:#ccc;">—</span>
+  <span style="color:#ccc;">—</span>
 {% endif %}
 
 </td>
@@ -105,11 +112,18 @@ Materias primas registradas
 <td>
 
 {% if m.stock %}
-<span style="color:#777;">
-{{ m.stock.punto_reorden }}
-</span>
+  {% set stock_value = m.stock.cantidad_actual if m.tipo_control == 'acumulable' else (m.piezas | selectattr('disponible') | list | length) %}
+  {% if stock_value < m.stock.punto_reorden %}
+    <span style="color:#dc2626; font-weight:600;">
+    ⚠️ {{ m.stock.punto_reorden }} {{ 'pieza' if m.tipo_control == 'pieza' else m.unidad.abreviatura }}
+    </span>
+  {% else %}
+    <span style="color:#777;">
+    {{ m.stock.punto_reorden }} {{ 'pieza' if m.tipo_control == 'pieza' else m.unidad.abreviatura }}
+    </span>
+  {% endif %}
 {% else %}
-—
+  —
 {% endif %}
 
 </td>

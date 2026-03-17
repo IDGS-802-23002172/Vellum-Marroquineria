@@ -25,6 +25,11 @@ docker-compose up --build -d
 # En ocasiones puede ser necesario reiniciar el volumen vellum app para que se generen las tablas
 docker restart vellum_app
 
+# Consejo extra con docker, a veces no creara las tablas porque hay que limpiar el cache
+docker system prune -f
+
+
+
 ```
 
 ### 3. Sembrado de Datos

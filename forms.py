@@ -1,8 +1,8 @@
 from flask_wtf import FlaskForm 
 from sqlalchemy import null
-from wtforms import StringField, PasswordField, IntegerField, HiddenField, SelectField, DecimalField
+from wtforms import StringField, PasswordField, IntegerField, HiddenField, SelectField, DecimalField, TextAreaField
 from flask_wtf.file import FileField, FileAllowed
-from wtforms.validators import DataRequired, Length, Optional, Email
+from wtforms.validators import DataRequired, Length, NumberRange, Optional, Email
 
 from wtforms import SubmitField
 from wtforms.validators import NumberRange
@@ -41,6 +41,11 @@ class MateriaPrimaForm(FlaskForm):
     nombre = StringField("Nombre", validators=[DataRequired(), Length(max=150)])
     descripcion = StringField("Descripción", validators=[Optional(), Length(max=250)])
     id_unidad = SelectField("Unidad de Medida", coerce=int, validators=[DataRequired()])
+    tipo_control = SelectField(
+        "Control de existencia",
+        choices=[("acumulable", "Acumulable"), ("pieza", "Por pieza")],
+        validators=[DataRequired()]
+    )
     
 
 class MovimientoMateriaPrimaForm(FlaskForm):
@@ -54,8 +59,6 @@ class MovimientoMateriaPrimaForm(FlaskForm):
         "Tipo de Movimiento",
         choices=[
             ("COMPRA", "Compra"),
-            ("PRODUCCION", "Producción"),
-            ("MERMA", "Merma"),
             ("AJUSTE", "Ajuste Inventario")
         ],
         validators=[DataRequired()]
@@ -90,3 +93,41 @@ class RecetaForm(FlaskForm):
         validators=[DataRequired(), NumberRange(min=0.01, message="Debe ser mayor a 0")]
     )
     submit = SubmitField('Asignar a Receta')
+class OrdenCompraForm(FlaskForm):
+    """Cabecera de la orden de compra."""
+
+    id_proveedor = SelectField(
+        "Proveedor",
+        coerce=int,
+        validators=[DataRequired(message="Selecciona un proveedor")]
+    )
+
+    referencia_doc = StringField(
+        "Folio / Factura del proveedor",
+        validators=[Optional(), Length(max=100)]
+    )
+
+    notas = TextAreaField(
+        "Notas / Observaciones",
+        validators=[Optional(), Length(max=500)]
+    )
+
+
+class DetalleOrdenCompraForm(FlaskForm):
+    """Una línea dentro de la orden."""
+
+    id_materia = SelectField(
+        "Materia Prima",
+        coerce=int,
+        validators=[DataRequired()]
+    )
+
+    cantidad = DecimalField(
+        "Cantidad",
+        validators=[DataRequired(), NumberRange(min=0.01, message="Debe ser mayor a 0")]
+    )
+
+    costo_unitario = DecimalField(
+        "Costo Unitario",
+        validators=[DataRequired(), NumberRange(min=0.01, message="Debe ser mayor a 0")]
+    )
