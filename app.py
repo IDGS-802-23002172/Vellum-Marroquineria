@@ -17,6 +17,8 @@ from forms import UserForm
 from ventas import ventas_bp
 from productos.routes import productos_bp
 from recetas.routes import recetas_bp
+from produccion.routes import produccion_bp
+
 
 load_dotenv()
 
@@ -40,6 +42,7 @@ app.register_blueprint(recetas_bp)
 app.register_blueprint(compras_bp)
 app.register_blueprint(unidades_bp)
 app.register_blueprint(materias_bp)
+app.register_blueprint(produccion_bp)
 
 app.register_blueprint(ventas_bp, url_prefix="/ventas")
 

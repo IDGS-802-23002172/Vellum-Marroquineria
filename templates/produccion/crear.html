@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}Iniciar Fabricación{% endblock %}
+{% block page_title %}Flujo de Trabajo — Vellum{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-5">
+            <div class="text-center mb-5">
+                <span class="text-uppercase tracking-widest text-muted" style="font-size: 0.7rem;">Etapa de Transformación</span>
+                <h2 class="text-premium mt-2" style="font-size: 2.2rem;">Nueva Orden</h2>
+                <div class="mx-auto bg-dark" style="width: 50px; height: 2px;"></div>
+            </div>
+
+            <div class="card border-0 shadow-sm p-5" style="border-radius: 0; border: 1px solid #eee !important;">
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+
+                    <div class="mb-4">
+                        <label class="form-label text-uppercase small fw-bold tracking-wider">¿Qué vamos a fabricar?</label>
+                        {{ form.id_producto(class="form-select", style="border-radius: 0; height: 50px;") }}
+                    </div>
+
+                    <div class="mb-5">
+                        <label class="form-label text-uppercase small fw-bold tracking-wider">Cantidad de piezas</label>
+                        {{ form.cantidad(class="form-control", style="border-radius: 0; height: 50px;", placeholder="Mínimo 1") }}
+                    </div>
+
+                    <div class="p-3 bg-light mb-4 text-center">
+                        <p class="text-muted mb-0 small italic">Al iniciar, el sistema pasará la orden a estado <strong>"En Corte"</strong>.</p>
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn-vellum">Lanzar Orden a Taller</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

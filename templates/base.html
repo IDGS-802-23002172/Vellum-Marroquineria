@@ -151,7 +151,6 @@
     </div>
 
     <nav class="mt-4">
-      <div class="px-4 mb-2 text-muted small uppercase" style="font-size: 0.6rem; letter-spacing: 0.1em;">Gestión</div>
       <a href="{{ url_for('index') }}" class="sidebar-link"><i class="bi bi-house-door"></i> Menú Principal</a>
       <a href="{{ url_for('listar_productos') }}" class="sidebar-link"><i class="bi bi-box-seam"></i> Inventario</a>
       <a href="{{ url_for('proveedores.index') }}" class="sidebar-link"><i class="bi bi-truck"></i> Proveedores</a>
@@ -168,6 +167,9 @@
       </a>
       <a href="{{ url_for('compras.index') }}" class="sidebar-link">
         <i class="bi bi-bag"></i> Compras
+      </a>
+      <a href="{{ url_for('produccion.listar_ordenes') }}" class="sidebar-link">
+        <i class="bi bi-bag"></i> Producción
       </a>
       <a href="{{ url_for('logout') }}" class="sidebar-link text-danger">
         <i class="bi bi-box-arrow-right"></i> Cerrar Sesión
