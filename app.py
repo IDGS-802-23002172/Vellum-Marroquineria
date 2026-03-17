@@ -7,10 +7,12 @@ from datetime import timedelta
 from proveedores.routes import proveedores_bp
 from materiales.routes import unidades_bp
 from materiales.routes import materias_bp
+import time
+from sqlalchemy import text
 
 
 from caja.routes import compras_bp
-from models import db, Usuario, Producto
+from models import db, Usuario, Producto, MateriaPrima, Venta, DetalleVenta, OrdenProduccion, crear_vista_cierre_diario
 from werkzeug.utils import secure_filename
 import forms
 from forms import UserForm
@@ -47,11 +49,18 @@ app.register_blueprint(produccion_bp)
 app.register_blueprint(ventas_bp, url_prefix="/ventas")
 
 with app.app_context():
-    try:
-        db.create_all()
-        print("tablas creadas con exito")
-    except Exception as e:
-        print(f"error al conectar con la bd {e}")
+    intentos = 0
+    while intentos < 10: # Damos 50 segundos totales para que MySQL despierte
+        try:
+            db.create_all()
+            print("Tablas creadas con éxito.")
+            crear_vista_cierre_diario()
+            print("Vista de cierre diario operativa.")
+            break
+        except Exception as e:
+            intentos += 1
+            print(f"Esperando a MySQL (Intento {intentos}/10)...")
+            time.sleep(5)
 
 @app.before_request
 def verificar_sesion():

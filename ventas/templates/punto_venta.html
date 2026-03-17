@@ -5,6 +5,12 @@
 
 {% block content %}
 <div class="container-fluid px-0">
+    <div class="d-flex justify-content-end mb-3">
+    <a href="{{ url_for('ventas.cierre_diario') }}" 
+       class="btn btn-outline-dark btn-sm rounded-0 uppercase tracking-widest">
+        Corte Diario
+    </a>
+</div>
     <div class="row g-5">
         
         <div class="col-lg-8">
