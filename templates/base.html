@@ -38,19 +38,28 @@
     /* ── Sidebar Monocromática ──────────────── */
     .sidebar {
       width: 260px;
-      min-height: 100vh;
+      height: 100vh;
+      /* Cambiamos min-height por height fijo */
       background: var(--v-black);
       position: fixed;
       top: 0;
       left: 0;
       z-index: 100;
       border-right: 1px solid #222;
+
+      /* Habilitamos el scroll solo vertical y escondemos la barra si es posible */
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
     }
 
     .sidebar-brand {
-      padding: 40px 24px;
+      padding: 25px 24px;
+      /* Bajamos de 40px a 25px */
       text-align: center;
       border-bottom: 1px solid #222;
+      flex-shrink: 0;
+      /* Evita que el logo se aplaste */
     }
 
     .brand-name {
@@ -73,10 +82,12 @@
       display: flex;
       align-items: center;
       gap: 12px;
-      padding: 14px 24px;
+      padding: 10px 24px;
+      /* Bajamos de 14px a 10px */
       color: #888;
       text-decoration: none;
-      font-size: .75rem;
+      font-size: .7rem;
+      /* Un pelín más pequeña la fuente */
       text-transform: uppercase;
       letter-spacing: 0.1em;
       transition: all .3s ease;
@@ -86,6 +97,14 @@
     .sidebar-link.active {
       color: #fff;
       background: rgba(255, 255, 255, 0.05);
+    }
+
+    .sidebar::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .sidebar::-webkit-scrollbar-thumb {
+      background: #333;
     }
 
     /* ── Main Content ──────────────────────── */
@@ -151,29 +170,36 @@
     </div>
 
     <nav class="mt-4">
-      <a href="{{ url_for('index') }}" class="sidebar-link"><i class="bi bi-house-door"></i> Menú Principal</a>
-      <a href="{{ url_for('listar_productos') }}" class="sidebar-link"><i class="bi bi-box-seam"></i> Inventario</a>
+      <div class="px-4 mb-2 text-muted small text-uppercase" style="font-size: 0.6rem; letter-spacing: 0.1em;">
+        Administración</div>
+      <a href="{{ url_for('index') }}" class="sidebar-link"><i class="bi bi-house-door"></i> Inicio</a>
+      <a href="{{ url_for('listar_productos') }}" class="sidebar-link"><i class="bi bi-box-seam"></i> Catálogo
+        Productos</a>
+      <a href="{{ url_for('recetas.listar_recetas') }}" class="sidebar-link"><i class="bi bi-diagram-3"></i> Recetas
+        Técnicas</a>
+      <a href="{{ url_for('unidades.listar') }}" class="sidebar-link"><i class="bi bi-rulers"></i> Unidades Medida</a>
+
+      <div class="px-4 mt-4 mb-2 text-muted small text-uppercase" style="font-size: 0.6rem; letter-spacing: 0.1em;">
+        Taller y Logística</div>
       <a href="{{ url_for('proveedores.index') }}" class="sidebar-link"><i class="bi bi-truck"></i> Proveedores</a>
-      <a href="{{ url_for('ventas.punto_venta') }}" class="sidebar-link"><i class="bi bi-receipt"></i> Punto de
-        Venta</a>
-      <a href="{{ url_for('materias.index') }}" class="sidebar-link">
-        <i class="bi bi-boxes"></i> Materia Prima
-      </a>
-      <a href="{{ url_for('recetas.listar_recetas') }}" class="sidebar-link">
-        <i class="bi bi-diagram-3"></i> Recetas
-      </a>
-      <a href="{{ url_for('unidades.listar') }}" class="sidebar-link">
-        <i class="bi bi-rulers"></i> Unidades
-      </a>
-      <a href="{{ url_for('compras.index') }}" class="sidebar-link">
-        <i class="bi bi-bag"></i> Compras
-      </a>
-      <a href="{{ url_for('produccion.listar_ordenes') }}" class="sidebar-link">
-        <i class="bi bi-bag"></i> Producción
-      </a>
-      <a href="{{ url_for('logout') }}" class="sidebar-link text-danger">
-        <i class="bi bi-box-arrow-right"></i> Cerrar Sesión
-      </a>
+      <a href="{{ url_for('materias.index') }}" class="sidebar-link"><i class="bi bi-boxes"></i> Almacén Materia
+        Prima</a>
+      <a href="{{ url_for('compras.index') }}" class="sidebar-link"><i class="bi bi-cart-plus"></i> Orden de Compra</a>
+      <a href="{{ url_for('produccion.listar_ordenes') }}" class="sidebar-link"><i class="bi bi-hammer"></i> Órdenes de
+        Producción</a>
+
+      <div class="px-4 mt-4 mb-2 text-muted small text-uppercase" style="font-size: 0.6rem; letter-spacing: 0.1em;">
+        Punto de Venta</div>
+      <a href="{{ url_for('ventas.punto_venta') }}" class="sidebar-link"><i class="bi bi-receipt"></i> Nueva Venta
+        (POS)</a>
+      <a href="{{ url_for('ventas.cierre_diario') }}" class="sidebar-link"><i class="bi bi-cash-stack"></i> Cierre de
+        Caja</a>
+
+      <div class="border-top border-secondary mt-4 pt-2">
+        <a href="{{ url_for('logout') }}" class="sidebar-link text-danger">
+          <i class="bi bi-box-arrow-right"></i> Cerrar Sesión
+        </a>
+      </div>
     </nav>
   </aside>
 
