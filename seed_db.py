@@ -1,6 +1,6 @@
 # seed_db.py
 from app import app
-from models import db, Usuario
+from models import db, Usuario, Rol
 from werkzeug.security import generate_password_hash
 
 # aclaracion, este es un script para generar usuarios con contraseñas hasheadas
@@ -10,40 +10,46 @@ from werkzeug.security import generate_password_hash
 
 # ejecutar este script
 # docker exec -it vellum_app python seed_db.py
-
 def seed():
     with app.app_context():
-        #no vayan a ejecutar esto, solo lo dejo por si acaso (es para limpiar por si acaso)
-        # db.drop_all() 
-        # db.create_all()
+        print("--- Sembrando Roles y Usuarios de Vellum ---")
 
-        print("--- Sembrando Usuarios de Vellum ---")
-
+        # 1. Sembrar Roles primero
+        roles_necesarios = ['Admin', 'Artesano', 'Cliente']
+        for nombre_rol in roles_necesarios:
+            if not Rol.query.filter_by(nombre=nombre_rol).first():
+                nuevo_rol = Rol(nombre=nombre_rol, descripcion=f'Acceso para {nombre_rol}')
+                db.session.add(nuevo_rol)
+        db.session.commit()
+        print("Roles verificados/creados.")
         usuarios_iniciales = [
-            {"user": "admin_majo", "pass": "vellum_admin_2026"},
-            {"user": "maint_ange", "pass": "angel_mantenimiento_123"},
-            {"user": "user_emilio", "pass": "emilio_ventas_123"},
-            {"user": "maint_diego", "pass": "diego_mantenimiento_456"}
+            {"user": "admin_majo", "pass": "vellum_admin_2026", "rol": "Admin"},
+            {"user": "maint_ange", "pass": "angel_mantenimiento_123", "rol": "Admin"}, 
+            {"user": "user_emilio", "pass": "emilio_ventas_123", "rol": "Admin"},
+            {"user": "maint_diego", "pass": "diego_mantenimiento_456", "rol": "Admin"},
+            {"user": "cliente_test", "pass": "Vellum2026*", "rol": "Cliente"}
         ]
 
         for u in usuarios_iniciales:
             existente = Usuario.query.filter_by(username=u['user']).first()
             if not existente:
                 hash_pw = generate_password_hash(u['pass'])
+                rol_db = Rol.query.filter_by(nombre=u['rol']).first()
                 
                 nuevo_usuario = Usuario(
                     username=u['user'],
                     password=hash_pw,
                     intentos_fallidos=0,
-                    esta_bloqueado=False
+                    esta_bloqueado=False,
+                    id_rol=rol_db.id 
                 )
                 db.session.add(nuevo_usuario)
-                print(f"Usuario '{u['user']}' creado.")
+                print(f"Usuario '{u['user']}' creado con rol {u['rol']}.")
             else:
                 print(f"El usuario '{u['user']}' ya existe.")
 
         db.session.commit()
         print("--- Proceso terminado ---")
-
+        
 if __name__ == '__main__':
     seed()

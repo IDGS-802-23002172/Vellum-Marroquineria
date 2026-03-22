@@ -8,7 +8,7 @@ from wtforms import SubmitField
 from wtforms.validators import NumberRange
 
 class UserForm(FlaskForm):
-    username = StringField('Username', [DataRequired(), Length(min=3, max=10)])
+    username = StringField('Username', [DataRequired(), Length(min=3, max=30)])
     password = PasswordField('Contraseña', [DataRequired()])
 
 class ProveedorForm(FlaskForm):
@@ -141,3 +141,5 @@ class OrdenProduccionForm(FlaskForm):
                             validators=[DataRequired(), NumberRange(min=1, message="Mínimo 1 unidad")])
     
     submit = SubmitField('Iniciar Producción')
+
+

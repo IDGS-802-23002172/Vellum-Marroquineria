@@ -17,6 +17,7 @@ from werkzeug.utils import secure_filename
 import forms
 from forms import UserForm
 from ventas import ventas_bp
+from tiendaCliente.routes import tienda_bp
 from productos.routes import productos_bp
 from recetas.routes import recetas_bp
 from produccion.routes import produccion_bp
@@ -47,6 +48,8 @@ app.register_blueprint(materias_bp)
 app.register_blueprint(produccion_bp)
 
 app.register_blueprint(ventas_bp, url_prefix="/ventas")
+
+app.register_blueprint(tienda_bp, url_prefix="/tienda")
 
 with app.app_context():
     intentos = 0
@@ -79,30 +82,36 @@ def login():
     form = UserForm()
     if form.validate_on_submit():
         user = Usuario.query.filter_by(username=form.username.data).first()
+        
         if not user:
             flash("El usuario no existe.", "danger")
             return render_template('login.html', form=form)
-        if user.intentos_fallidos >= 3:
+            
+        if user.esta_bloqueado or user.intentos_fallidos >= 3:
             flash("Cuenta bloqueada por seguridad. Contacte al admin.", "danger")
             return render_template('login.html', form=form)
-        if user.password == form.password.data:
+            
+        if check_password_hash(user.password, form.password.data):
             user.intentos_fallidos = 0
             db.session.commit()
+            
             session['user_id'] = user.id
+            session['user_role'] = user.rol.nombre 
             session.permanent = True
-            return redirect(url_for('index'))
-        if user and check_password_hash(user.password, form.password.data):
-            user.intentos_fallidos = 0
-            db.session.commit()
-            session['user_id']=user.id
-            return redirect(url_for('index'))
+            
+            if session['user_role'] == 'Cliente':
+                return redirect(url_for('tiendaCliente.index')) 
+            else:
+                return redirect(url_for('index'))
+                
         else:
             user.intentos_fallidos += 1
+            if user.intentos_fallidos >= 3:
+                user.esta_bloqueado = True
             db.session.commit()
             flash(f"Contraseña incorrecta. Intento {user.intentos_fallidos} de 3.", "warning")
 
     return render_template('login.html', form=form)
-
 @app.route('/logout')
 def logout():
     session.clear()

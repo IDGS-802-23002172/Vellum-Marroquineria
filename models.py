@@ -14,6 +14,7 @@ class Usuario(db.Model):
     intentos_fallidos = db.Column(db.Integer, default=0)
     esta_bloqueado = db.Column(db.Boolean, default=False)
     ventas = db.relationship("Venta", backref="usuarios", lazy=True)
+    id_rol = db.Column(db.Integer, db.ForeignKey('roles.id'), nullable=False)
 
 # --- PROVEEDORES ---
 class SoftDeleteMixin:
@@ -478,22 +479,24 @@ class OrdenProduccion(db.Model):
 
 class AuditoriaVenta(db.Model):
     __tablename__ = "auditoria_ventas"
-    
+
     id = db.Column(db.Integer, primary_key=True)
-    venta_id = db.Column(db.Integer)
-    usuario_id = db.Column(db.Integer)
+    
+    venta_id = db.Column(db.Integer, db.ForeignKey("ventas.id"), nullable=False)
+    usuario_id = db.Column(db.Integer, db.ForeignKey("usuarios.id"), nullable=False)
+    
     fecha = db.Column(db.DateTime, default=datetime.utcnow)
     accion = db.Column(db.String(50))
-
-
+    venta = db.relationship("Venta")
+    usuario = db.relationship("Usuario")
+    
 @event.listens_for(Venta, "after_insert")
 def registrar_auditoria(mapper, connection, target):
-
     connection.execute(
         AuditoriaVenta.__table__.insert(),
         {
             "venta_id": target.id,
-            "usuario_id": target.usuario_id,
+            "usuario_id": target.usuario_id, 
             "fecha": datetime.utcnow(),
             "accion": "VENTA_REGISTRADA"
         }
@@ -526,3 +529,10 @@ def crear_vista_cierre_diario():
     db.session.execute(text(sql))
     db.session.commit()
 
+
+class Rol (db.Model):
+    __tablename__ = "roles"
+    id = db.Column(db.Integer, primary_key=True)
+    nombre = db.Column(db.String(50), unique=True, nullable=False)
+    descripcion = db.Column(db.String(200))
+    usuarios = db.relationship("Usuario", backref="rol")
