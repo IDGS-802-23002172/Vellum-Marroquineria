@@ -411,9 +411,6 @@ class Venta(db.Model):
     __tablename__ = "ventas"
     id = db.Column(db.Integer, primary_key=True)
     fecha = db.Column(db.DateTime, default=datetime.utcnow)
-    subtotal = db.Column(db.Numeric(10, 2))
-    iva = db.Column(db.Numeric(10, 2))
-    total = db.Column(db.Numeric(10, 2))
     usuario_id = db.Column(db.Integer, db.ForeignKey("usuarios.id"), nullable=False)
     detalles = db.relationship("DetalleVenta", backref="venta", cascade="all, delete-orphan", lazy=True)
 

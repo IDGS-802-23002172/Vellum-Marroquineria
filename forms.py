@@ -8,7 +8,7 @@ from wtforms import SubmitField
 from wtforms.validators import NumberRange
 
 class UserForm(FlaskForm):
-    username = StringField('Username', [DataRequired(), Length(min=3, max=10)])
+    username = StringField('Username', [DataRequired(), Length(min=3, max=12)]) ##Se subió a 12 para que quepa el usuario
     password = PasswordField('Contraseña', [DataRequired()])
 
 class ProveedorForm(FlaskForm):
