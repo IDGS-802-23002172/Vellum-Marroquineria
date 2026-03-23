@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block page_title %}Dashboard de KPIs{% endblock %}
+
+{% block content %}
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<!-- jsPDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<!-- KPIs -->
+<div class="row g-4">
+
+    <div class="col-md-4">
+        <div class="card-vellum text-center">
+            <h5 class="text-muted text-uppercase mb-2">Ventas Totales</h5>
+            <h2 id="ventasTotales">$0</h2>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card-vellum text-center">
+            <h5 class="text-muted text-uppercase mb-2">Stock Crítico</h5>
+            <h2 id="stockCritico">0</h2>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card-vellum text-center">
+            <h5 class="text-muted text-uppercase mb-2">ROI</h5>
+            <h2 id="roi">0%</h2>
+        </div>
+    </div>
+
+</div>
+
+<!-- Selector -->
+<div class="d-flex justify-content-center gap-3 mt-4 flex-wrap">
+
+    <button id="btnVentas" onclick="mostrarSeccion('ventas')" class="btn-vellum">
+        Ventas Mensuales
+    </button>
+
+    <button id="btnLineas" onclick="mostrarSeccion('lineas')" class="btn-vellum">
+        Ventas por Línea
+    </button>
+
+    <button id="btnStock" onclick="mostrarSeccion('stock')" class="btn-vellum">
+        Stock Crítico
+    </button>
+
+</div>
+
+<!-- SECCIÓN VENTAS -->
+<div id="seccionVentas" class="card-vellum mt-4 d-none">
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3>Ventas Mensuales</h3>
+        <button onclick="descargarPDF('graficaVentas', 'Ventas Mensuales')" class="btn btn-dark btn-sm">
+            Descargar PDF
+        </button>
+    </div>
+
+    <canvas id="graficaVentas"></canvas>
+
+</div>
+
+<!-- SECCIÓN LÍNEAS -->
+<div id="seccionLineas" class="card-vellum mt-4 d-none">
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3>Ventas por Línea</h3>
+        <button onclick="descargarPDF('graficaLineas', 'Ventas por Línea')" class="btn btn-dark btn-sm">
+            Descargar PDF
+        </button>
+    </div>
+
+    <canvas id="graficaLineas"></canvas>
+
+</div>
+
+<!-- SECCIÓN STOCK -->
+<div id="seccionStock" class="card-vellum mt-4 d-none">
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3>Stock Crítico</h3>
+        <button onclick="descargarTablaPDF()" class="btn btn-dark btn-sm">
+            Descargar PDF
+        </button>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>ID</th>
+                    <th>Producto</th>
+                    <th>Stock</th>
+                </tr>
+            </thead>
+            <tbody id="tablaStock"></tbody>
+        </table>
+    </div>
+
+</div>
+
+<script>
+
+// Mostrar secciones
+function mostrarSeccion(seccion) {
+
+    ["Ventas","Lineas","Stock"].forEach(s => {
+        document.getElementById("seccion" + s).classList.add("d-none");
+        document.getElementById("btn" + s).classList.remove("active");
+    });
+
+    document.getElementById("seccion" + 
+        seccion.charAt(0).toUpperCase() + seccion.slice(1)
+    ).classList.remove("d-none");
+
+    document.getElementById("btn" + 
+        seccion.charAt(0).toUpperCase() + seccion.slice(1)
+    ).classList.add("active");
+}
+
+// Descargar gráfica como PDF
+function descargarPDF(canvasId, titulo) {
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    const canvas = document.getElementById(canvasId);
+    const imgData = canvas.toDataURL("image/png");
+
+    doc.text(titulo, 10, 10);
+    doc.addImage(imgData, "PNG", 10, 20, 180, 100);
+
+    doc.save(titulo + ".pdf");
+}
+
+// Descargar tabla como PDF
+function descargarTablaPDF() {
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    doc.text("Stock Crítico", 10, 10);
+
+    let y = 20;
+
+    const filas = document.querySelectorAll("#tablaStock tr");
+
+    filas.forEach(row => {
+
+        const cols = row.querySelectorAll("td");
+
+        let texto = "";
+        cols.forEach(td => texto += td.innerText + "   ");
+
+        doc.text(texto, 10, y);
+        y += 8;
+    });
+
+    doc.save("Stock_Critico.pdf");
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+
+    mostrarSeccion("ventas");
+
+    // KPIs
+    fetch("/dashboard/ventas-totales")
+        .then(res => res.json())
+        .then(data => {
+            ventasTotales.innerText = "$" + data.ventas_totales.toFixed(2);
+        });
+
+    fetch("/dashboard/stock-critico")
+        .then(res => res.json())
+        .then(data => {
+
+            stockCritico.innerText = data.total_productos_criticos;
+
+            tablaStock.innerHTML = "";
+            data.productos.forEach(p => {
+                tablaStock.innerHTML += `
+                    <tr>
+                        <td>${p.id}</td>
+                        <td>${p.nombre}</td>
+                        <td>${p.stock}</td>
+                    </tr>`;
+            });
+        });
+
+    fetch("/dashboard/roi")
+        .then(res => res.json())
+        .then(data => {
+            roi.innerText = data.roi + "%";
+        });
+
+    // Gráfica ventas
+    fetch("/dashboard/ventas-mensuales")
+        .then(res => res.json())
+        .then(data => {
+
+            new Chart(graficaVentas, {
+                type: "line",
+                data: {
+                    labels: data.map(d => `${d.mes}/${d.anio}`),
+                    datasets: [{
+                        label: "Ventas",
+                        data: data.map(d => d.total),
+                        tension: 0.3
+                    }]
+                }
+            });
+        });
+
+    // Gráfica líneas
+    fetch("/dashboard/ventas-por-linea")
+        .then(res => res.json())
+        .then(data => {
+
+            new Chart(graficaLineas, {
+                type: "pie",
+                data: {
+                    labels: data.map(d => d.linea),
+                    datasets: [{
+                        data: data.map(d => d.total)
+                    }]
+                }
+            });
+        });
+
+});
+</script>
+
+{% endblock %}

@@ -10,6 +10,7 @@ from materiales.routes import materias_bp
 import time
 from sqlalchemy import text
 
+from KPIs.routes import dashboard_bp
 
 from caja.routes import compras_bp
 from models import db, Usuario, Producto, MateriaPrima, Venta, DetalleVenta, OrdenProduccion, crear_vista_cierre_diario
@@ -36,6 +37,8 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'clave_segura_vellum_123')
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=10)
 
+
+
 db.init_app(app)
 csrf = CSRFProtect(app)
 app.register_blueprint(proveedores_bp)
@@ -48,7 +51,7 @@ app.register_blueprint(materias_bp)
 app.register_blueprint(produccion_bp)
 
 app.register_blueprint(ventas_bp, url_prefix="/ventas")
-
+app.register_blueprint(dashboard_bp)
 app.register_blueprint(tienda_bp, url_prefix="/tienda")
 
 with app.app_context():
