@@ -22,14 +22,13 @@
                 <div class="col-md-6">
                     <label class="text-uppercase small fw-bold mb-3 tracking-widest">Estatus: {{ pedido.estado }}</label>
                     
-                    {# Lógica de la barra de progreso basada en el estado [cite: 669] #}
                     <div class="progress" style="height: 8px; border-radius: 0; background-color: #f1f0ee;">
                         {% set progreso = 25 %}
                         {% if pedido.estado == 'En confección' %}{% set progreso = 50 %}
                         {% elif pedido.estado == 'Listo para entrega' %}{% set progreso = 75 %}
                         {% elif pedido.estado == 'Entregado' %}{% set progreso = 100 %}
                         {% endif %}
-                        <div class="progress-bar bg-dark" role="progressbar" style="width: {{ progreso }}%;"></div>
+                        <div class="progress-bar bg-dark" role="progressbar"></div>
                     </div>
                     
                     <div class="d-flex justify-content-between mt-2 text-muted" style="font-size: 0.65rem;">

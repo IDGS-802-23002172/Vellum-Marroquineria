@@ -423,10 +423,14 @@ class DetalleVenta(db.Model):
     producto_id = db.Column(db.Integer, db.ForeignKey("productos.id"), nullable=False)
     cantidad = db.Column(db.Integer, nullable=False)
     precio_unitario = db.Column(db.Numeric(10,2))
-    costo_unitario = db.Column(db.Numeric(10,2))  # costo histórico
-    subtotal = db.Column(db.Numeric(10,2))
+    costo_unitario = db.Column(db.Numeric(10,2))
     producto = db.relationship(
         "Producto",back_populates="detalles")
+    @property
+    def subtotal(self):
+        if self.cantidad and self.precio_unitario:
+            return self.cantidad * self.precio_unitario
+        return 0
 
 class CarritoTemporal(db.Model):
     __tablename__ = "carrito_temporal"
@@ -502,31 +506,25 @@ def registrar_auditoria(mapper, connection, target):
 
 
 def crear_vista_cierre_diario():
-
     sql = """
     CREATE OR REPLACE VIEW vista_cierre_diario AS
     SELECT 
         DATE(v.fecha) AS fecha,
-
         SUM(d.cantidad) AS articulos_vendidos,
-
-        SUM(d.subtotal) AS total_ventas,
-
+        
+        -- CÁLCULO DIRECTO EN SQL PARA EVITAR LA REDUNDANCIA
+        SUM(d.cantidad * d.precio_unitario) AS total_ventas,
+        
         SUM(
             (d.precio_unitario - d.costo_unitario) * d.cantidad
         ) AS utilidad_total
-
     FROM ventas v
     JOIN detalle_ventas d ON v.id = d.venta_id
-
     WHERE DATE(v.fecha) = CURDATE()
-
     GROUP BY DATE(v.fecha);
     """
-
     db.session.execute(text(sql))
     db.session.commit()
-
 
 class Rol (db.Model):
     __tablename__ = "roles"
