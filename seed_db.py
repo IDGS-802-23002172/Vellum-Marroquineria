@@ -27,7 +27,9 @@ def seed():
             {"user": "maint_ange", "pass": "angel_mantenimiento_123", "rol": "Admin"}, 
             {"user": "user_emilio", "pass": "emilio_ventas_123", "rol": "Admin"},
             {"user": "maint_diego", "pass": "diego_mantenimiento_456", "rol": "Admin"},
-            {"user": "cliente_test", "pass": "Vellum2026*", "rol": "Cliente"}
+            {"user": "cliente_test", "pass": "Vellum2026*", "rol": "Cliente"},
+            {"user": "angel_cliente", "pass": "cliente123", "rol": "Cliente"},
+            {"user": "majo_cliente", "pass": "cliente456", "rol": "Cliente"}
         ]
 
         for u in usuarios_iniciales:

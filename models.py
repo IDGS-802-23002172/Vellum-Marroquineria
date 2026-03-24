@@ -416,6 +416,7 @@ class Venta(db.Model):
     iva = db.Column(db.Numeric(10, 2))
     total = db.Column(db.Numeric(10, 2))
     usuario_id = db.Column(db.Integer, db.ForeignKey("usuarios.id"), nullable=False)
+    estado = db.Column(db.String(50), default="Pagado")
     detalles = db.relationship("DetalleVenta", backref="venta", cascade="all, delete-orphan", lazy=True)
 
 class DetalleVenta(db.Model):
