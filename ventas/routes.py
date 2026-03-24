@@ -81,10 +81,6 @@ def finalizar_venta():
         flash("No hay productos en el carrito", "info")
         return redirect(url_for("ventas.punto_venta"))
 
-    subtotal = sum([item.precio * item.cantidad for item in carrito])
-    iva = subtotal * IVA_TASA
-    total = subtotal + iva
-
     usuario_id = session.get("user_id")
 
     if not usuario_id:
@@ -92,9 +88,6 @@ def finalizar_venta():
         return redirect(url_for("auth.login"))
 
     nueva_venta = Venta(
-        subtotal=subtotal,
-        iva=iva,
-        total=total,
         usuario_id=usuario_id
     )
 
@@ -110,8 +103,8 @@ def finalizar_venta():
             producto_id=item.producto_id,
             cantidad=item.cantidad,
             precio_unitario=item.precio,
-            costo_unitario=producto.costo_produccion,  # NUEVO
-            subtotal=item.precio * item.cantidad
+            costo_unitario=producto.costo_produccion,
+            subtotal=item.precio * item.cantidad  # ← este sí puede quedarse
         )
 
         db.session.add(detalle)
@@ -122,7 +115,6 @@ def finalizar_venta():
     CarritoTemporal.query.filter_by(session_id=session_id).delete()
     db.session.commit()
 
-    # guardar la venta en sesión
     session["ultima_venta_id"] = nueva_venta.id
     return redirect(url_for("ventas.ticket"))
 
@@ -147,10 +139,16 @@ def ticket():
         flash("Venta no encontrada", "danger")
         return redirect(url_for("ventas.punto_venta"))
     detalles = DetalleVenta.query.filter_by(venta_id=venta.id).all()
+    subtotal = sum([d.subtotal for d in detalles])
+    iva = subtotal * IVA_TASA
+    total = subtotal + iva
     return render_template(
         "ticket.html",
         venta=venta,
-        detalles=detalles
+        detalles=detalles,
+        subtotal=subtotal,
+        iva=iva,
+        total=total
     )
 
 @ventas_bp.route("/cierre-diario")
