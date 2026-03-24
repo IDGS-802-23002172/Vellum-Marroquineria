@@ -112,6 +112,7 @@ def login():
             flash(f"Contraseña incorrecta. Intento {user.intentos_fallidos} de 3.", "warning")
 
     return render_template('login.html', form=form)
+
 @app.route('/logout')
 def logout():
     session.clear()

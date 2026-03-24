@@ -45,8 +45,7 @@
           <th>Contacto</th>
           <th>Teléfono</th>
           <th>Estado</th>
-          <th>Materiales que provee</th>
-          <th>Estado</th>
+          <th>Estado Registro</th>
           <th style="text-align:center;">Acciones</th>
         </tr>
       </thead>
@@ -73,15 +72,6 @@
           <td>
             {{ p.ciudad or '—' }}
             {% if p.estado %}<div style="font-size:.75rem; color:#aaa;">{{ p.estado.nombre }}</div>{% endif %}
-          </td>
-          <td>
-            {% if p.tipos_material %}
-              {% for t in p.tipos_material %}
-                <span class="tag-material">{{ t.nombre }}</span>
-              {% endfor %}
-            {% else %}
-              <span style="color:#ccc; font-size:.8rem;">Sin clasificar</span>
-            {% endif %}
           </td>
           <td>
             <span class="badge-activo {{ 'si' if p.activo else 'no' }}">

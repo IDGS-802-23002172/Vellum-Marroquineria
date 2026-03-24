@@ -6,7 +6,7 @@ Empresa: Marroquinería de Autor, León Gto.
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 from sqlalchemy import or_
-from models import db, Proveedor, EstadoMexico, TipoMaterialProveedor, ProveedorTipoMaterial
+from models import db, Proveedor, EstadoMexico
 from forms import ProveedorForm
 import logging
 
@@ -20,10 +20,7 @@ def _get_catalogos():
     estados = EstadoMexico.query.filter_by(activo=True) \
                                  .order_by(EstadoMexico.nombre).all()
 
-    materiales = TipoMaterialProveedor.query.filter_by(activo=True) \
-                                            .order_by(TipoMaterialProveedor.nombre).all()
-
-    return estados, materiales
+    return estados
 
 
 def _log(accion: str, id_registro: int = None, detalle: str = None):
@@ -85,7 +82,6 @@ def index():
 def crear():
     form = ProveedorForm()
     estados = EstadoMexico.query.filter_by(activo=True).all()
-    materiales = TipoMaterialProveedor.query.filter_by(activo=True).all()
 
     if form.validate_on_submit():
         raw_estado = request.form.get('id_estado')
@@ -113,7 +109,7 @@ def crear():
     if form.errors:
         print(f"Errores: {form.errors}")
 
-    return render_template('proveedores/form.html', form=form, estados=estados, materiales=materiales, modo='crear')
+    return render_template('proveedores/form.html', form=form, estados=estados, modo='crear')
 
 
 # ─────────────────────────────────────────────
@@ -132,7 +128,7 @@ def detalle(id_proveedor):
 @proveedores_bp.route("/proveedores/<int:id_proveedor>/editar", methods=["GET", "POST"])
 def editar(id_proveedor):
     prov = Proveedor.query.get_or_404(id_proveedor)
-    estados, materiales = _get_catalogos()
+    estados = _get_catalogos()
     form = ProveedorForm(obj=prov)
 
     if form.validate_on_submit():
@@ -147,13 +143,6 @@ def editar(id_proveedor):
             prov.id_estado = form.id_estado.data or None
             prov.notas = form.notas.data or None
 
-            # Actualizar tipos de material: eliminar y reinsertar
-            ProveedorTipoMaterial.query.filter_by(id_proveedor=id_proveedor).delete()
-            materiales_ids = request.form.getlist('materiales')
-            for mat_id in materiales_ids:
-                relacion = ProveedorTipoMaterial(id_proveedor=id_proveedor, id_tipo=mat_id)
-                db.session.add(relacion)
-
             db.session.commit()
             _log("EDITAR", id_proveedor, "Proveedor actualizado")
             flash("Proveedor actualizado correctamente.", "success")
@@ -166,7 +155,7 @@ def editar(id_proveedor):
     return render_template(
         "proveedores/form.html",
         modo="editar", prov=prov, estados=estados,
-        materiales=materiales, form=form
+        form=form
     )
 
 
@@ -204,56 +193,7 @@ def reactivar(id_proveedor):
     return redirect(url_for('proveedores.detalle', id_proveedor=id_proveedor))
 
 
-# # ─────────────────────────────────────────────
-# # U — EDITAR
-# # ─────────────────────────────────────────────
-# @proveedores_bp.route("/editar/<int:id>", methods=["GET", "POST"])
-# def editar(id):
-#     proveedor = Proveedor.query.get_or_404(id)
-#     estados, materiales = _get_catalogos()
 
-#     if request.method == "POST":
-#         try:
-#             proveedor.razon_social = request.form.get("razon_social")
-#             proveedor.nombre_contacto = request.form.get("nombre_contacto")
-#             proveedor.telefono = request.form.get("telefono")
-#             proveedor.correo = request.form.get("correo")
-#             proveedor.rfc = request.form.get("rfc")
-#             proveedor.direccion = request.form.get("direccion")
-#             proveedor.ciudad = request.form.get("ciudad")
-#             proveedor.id_estado = request.form.get("id_estado") or None
-#             proveedor.notas = request.form.get("notas")
-
-#             # Actualizar materiales
-#             proveedor.materiales.clear()
-
-#             materiales_ids = request.form.getlist("materiales")
-#             for mat_id in materiales_ids:
-#                 relacion = ProveedorTipoMaterial(
-#                     id_proveedor=proveedor.id_proveedor,
-#                     id_tipo=mat_id
-#                 )
-#                 db.session.add(relacion)
-
-#             db.session.commit()
-
-#             _log("EDITAR", proveedor.id_proveedor, "Proveedor actualizado")
-#             flash("Proveedor actualizado correctamente.", "success")
-#             return redirect(url_for("proveedores.index"))
-
-#         except Exception as e:
-#             db.session.rollback()
-#             flash(f"Error al actualizar: {e}", "danger")
-
-#     return render_template(
-#         "proveedores_templates/form.html",
-#         proveedor=proveedor,
-#         estados=estados,
-#         materiales=materiales
-#     )
-
-
-# # ─────────────────────────────────────────────
 # # D — SOFT DELETE
 # # ─────────────────────────────────────────────
 # @proveedores_bp.route("/eliminar/<int:id>", methods=["POST"])

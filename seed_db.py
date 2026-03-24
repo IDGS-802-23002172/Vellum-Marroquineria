@@ -1,6 +1,6 @@
 # seed_db.py
 from app import app
-from models import db, Usuario, Rol
+from models import db, Usuario, Rol, EstadoMexico
 from werkzeug.security import generate_password_hash
 
 # aclaracion, este es un script para generar usuarios con contraseñas hasheadas
@@ -50,6 +50,27 @@ def seed():
 
         db.session.commit()
         print("--- Proceso terminado ---")
+        
+        
+        # 2. Sembrar Estados de México
+estados_mexico = [
+    "Aguascalientes", "Baja California", "Baja California Sur", "Campeche",
+    "Chiapas", "Chihuahua", "Ciudad de México", "Coahuila", "Colima",
+    "Durango", "Estado de México", "Guanajuato", "Guerrero", "Hidalgo",
+    "Jalisco", "Michoacán", "Morelos", "Nayarit", "Nuevo León", "Oaxaca",
+    "Puebla", "Querétaro", "Quintana Roo", "San Luis Potosí", "Sinaloa",
+    "Sonora", "Tabasco", "Tamaulipas", "Tlaxcala", "Veracruz",
+    "Yucatán", "Zacatecas"
+]
+
+for estado in estados_mexico:
+    existe = EstadoMexico.query.filter_by(nombre=estado).first()
+    if not existe:
+        nuevo_estado = EstadoMexico(nombre=estado)
+        db.session.add(nuevo_estado)
+
+db.session.commit()
+print("Estados de México verificados/creados.")
         
 if __name__ == '__main__':
     seed()
