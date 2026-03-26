@@ -416,8 +416,22 @@ class Venta(db.Model):
     iva = db.Column(db.Numeric(10, 2))
     total = db.Column(db.Numeric(10, 2))
     usuario_id = db.Column(db.Integer, db.ForeignKey("usuarios.id"), nullable=False)
-    estado = db.Column(db.String(50), default="Pagado")
+    estado = db.Column(db.String(50), default="Pagado") 
+    
     detalles = db.relationship("DetalleVenta", backref="venta", cascade="all, delete-orphan", lazy=True)
+    @property
+    def porcentaje_progreso(self):
+        """
+        Retorna el porcentaje numérico basado en el estatus de fabricación.
+        Ideal para el componente de Bootstrap en seguimiento.html
+        """
+        mapa_estados = {
+            "Pagado": 25,
+            "En confección": 50,
+            "Listo para entrega": 75,
+            "Entregado": 100
+        }
+        return mapa_estados.get(self.estado, 0)
 
 class DetalleVenta(db.Model):
     __tablename__ = "detalle_ventas"
