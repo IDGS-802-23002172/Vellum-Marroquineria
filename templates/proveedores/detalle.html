@@ -74,19 +74,6 @@
           </div>
         </div>
 
-        <div class="detail-row">
-          <div class="detail-label">Materiales que provee</div>
-          <div class="detail-value">
-            {% if prov.tipos_material %}
-              {% for t in prov.tipos_material %}
-                <span class="tag-material">{{ t.nombre }}</span>
-              {% endfor %}
-            {% else %}
-              <span style="color:#ccc;">Sin clasificar</span>
-            {% endif %}
-          </div>
-        </div>
-
         {% if prov.notas %}
         <div class="detail-row">
           <div class="detail-label">Notas</div>
@@ -105,6 +92,16 @@
           <div class="detail-label">Última actualización</div>
           <div class="detail-value" style="color:#999; font-size:.83rem;">
             {{ prov.actualizado_en.strftime('%d %b %Y, %H:%M') if prov.actualizado_en else '—' }}
+          </div>
+        </div>
+
+        <div class="detail-row">
+          <div class="detail-label">Estado</div>
+          <div class="detail-value">
+            <span class="badge-activo {{ 'si' if prov.activo else 'no' }}">
+              <i class="bi bi-circle-fill" style="font-size:.5rem;"></i>
+              {{ 'Activo' if prov.activo else 'Inactivo' }}
+            </span>
           </div>
         </div>
 

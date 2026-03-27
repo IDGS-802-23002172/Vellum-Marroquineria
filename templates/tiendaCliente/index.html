@@ -1,8 +1,150 @@
-{%extends "baseCliente.html"%}
+{% extends "baseCliente.html" %}
 
-{% block title %}VELLUM-Tienda en Linea{% endblock %}
-{% block page_title %}Mi tienda en linea — Vellum León{% endblock %}
+{% block title %}VELLUM - Tienda en Línea{% endblock %}
 
 {% block content %}
+<!-- HERO SECTION -->
+<div class="container-fluid bg-dark text-white py-5 mb-5">
+    <div class="container">
+        <div class="row align-items-center min-vh-50">
+            <div class="col-lg-6">
+                <h1 class="display-4 fw-bold mb-4">Bienvenido a Vellum</h1>
+                <p class="lead mb-4">Descubre nuestra colección exclusiva de artículos de marroquinería, diseñados con elegancia y calidad premium.</p>
+                <a href="{{ url_for('tiendaCliente.catalogo') }}" class="btn btn-primary btn-lg">
+                    <i class="bi bi-bag"></i> Explorar catálogo
+                </a>
+            </div>
+            <div class="col-lg-6 text-center">
+                <i class="bi bi-bag-heart-fill" style="font-size: 8rem; opacity: 0.2;"></i>
+            </div>
+        </div>
+    </div>
+</div>
 
+<!-- SECCIÓN DE CARACTERÍSTICAS -->
+<div class="container my-5">
+    <div class="row g-4 mb-5">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-shield-check text-primary" style="font-size: 2rem;"></i>
+                    <h5 class="card-title mt-3 fw-bold">Calidad Garantizada</h5>
+                    <p class="card-text text-muted">
+                        Productos elaborados con los mejores materiales y terminaciones de lujo.
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-truck text-primary" style="font-size: 2rem;"></i>
+                    <h5 class="card-title mt-3 fw-bold">Envíos Rápidos</h5>
+                    <p class="card-text text-muted">
+                        Entrega a domicilio o retiro en nuestra sucursal de forma segura.
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-headset text-primary" style="font-size: 2rem;"></i>
+                    <h5 class="card-title mt-3 fw-bold">Atención Premium</h5>
+                    <p class="card-text text-muted">
+                        Soporte personalizado para responder todas tus dudas y consultas.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- LLAMADA A ACCIÓN -->
+<div class="container my-5">
+    <div class="card bg-primary text-white border-0">
+        <div class="card-body py-5 text-center">
+            <h2 class="card-title fw-bold mb-3">¿Listo para comprar?</h2>
+            <p class="card-text mb-4">Explora nuestro completo catálogo de productos premium</p>
+            <a href="{{ url_for('tiendaCliente.catalogo') }}" class="btn btn-light btn-lg">
+                <i class="bi bi-shop"></i> Ir al catálogo
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- INFORMACIÓN DE CONTACTO -->
+<div class="container my-5">
+    <div class="row g-4">
+        <div class="col-md-6">
+            <h4 class="fw-bold mb-3">Preguntas frecuentes</h4>
+            <div class="accordion" id="faqAccordion">
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
+                            ¿Cómo hago un pedido?
+                        </button>
+                    </h2>
+                    <div id="faq1" class="accordion-collapse collapse show" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            Ingresa al catálogo, selecciona los productos que desees, agrégalos al carrito y sigue el proceso de checkout.
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
+                            ¿Cuáles son los tiempos de entrega?
+                        </button>
+                    </h2>
+                    <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            El retiro en tienda es inmediato. Para envío a domicilio, contáctanos para coordinar.
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
+                            ¿Puedo personalizar mis productos?
+                        </button>
+                    </h2>
+                    <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            Sí, tenemos servicios de personalización. Contáctanos para más detalles.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <h4 class="fw-bold mb-3">Ponte en contacto</h4>
+            <div class="card border-light">
+                <div class="card-body">
+                    <p class="mb-3">
+                        <i class="bi bi-telephone-fill text-primary"></i>
+                        <strong>Teléfono:</strong> (477) XXX-XXXX
+                    </p>
+                    <p class="mb-3">
+                        <i class="bi bi-envelope-fill text-primary"></i>
+                        <strong>Email:</strong> info@vellummarroquineria.com
+                    </p>
+                    <p class="mb-3">
+                        <i class="bi bi-geo-alt-fill text-primary"></i>
+                        <strong>Ubicación:</strong> León, Guanajuato
+                    </p>
+                    <p class="text-muted small">
+                        <strong>Horario:</strong> Lunes a Viernes 9:00 AM - 6:00 PM | Sábados 10:00 AM - 4:00 PM
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .min-vh-50 {
+        min-height: 50vh;
+    }
+</style>
 {% endblock %} 

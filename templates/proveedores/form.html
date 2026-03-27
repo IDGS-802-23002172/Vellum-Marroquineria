@@ -65,21 +65,6 @@
 
         <div class="col-lg-5">
             <div class="card-vellum h-100 bg-white">
-                <h3 class="text-xs uppercase tracking-widest text-stone-500 border-bottom pb-3 mb-4 font-bold">Materiales Suministrados</h3>
-                <p class="text-stone-400 small italic mb-4">Seleccione las materias primas que este proveedor aporta a la curtiduría.</p>
-                
-                <div class="d-flex flex-wrap gap-2 mb-5">
-                    {% for mat in materiales %}
-                    <label class="chip-vellum">
-                        <input type="checkbox" name="materiales" value="{{ mat.id_tipo }}" class="d-none"
-                               {% if mat.id_tipo in (sel_ids|default([])) %}checked{% endif %}>
-                        <span class="px-3 py-2 border border-stone-200 text-xs uppercase tracking-tighter d-inline-block transition-all cursor-pointer">
-                            {{ mat.nombre }}
-                        </span>
-                    </label>
-                    {% endfor %}
-                </div>
-
                 <div class="mt-auto">
                     <label class="text-xs uppercase tracking-widest text-stone-500 mb-2">Anotaciones de Calidad</label>
                     {{ form.notas(class="form-control border rounded-0 bg-light shadow-none", rows="4") }}

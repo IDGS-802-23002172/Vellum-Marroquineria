@@ -43,12 +43,12 @@ def crear_orden():
                 material = MateriaPrima.query.get(item.id_materia)
                 
                 # Verificamos si hay suficiente stock de cuero antes de proceder
-                if material.stock_actual < consumo_necesario:
-                    flash(f"Stock insuficiente de {material.nombre}. Necesitas {consumo_necesario} dm² y solo hay {material.stock_actual} dm².", "danger")
+                if material.stock.cantidad_actual < consumo_necesario:
+                    flash(f"Stock insuficiente de {material.nombre}. Necesitas {consumo_necesario} dm² y solo hay {material.stock.cantidad_actual} dm².", "danger")
                     return render_template("produccion/crear.html", form=form)
                 
                 # Restamos del inventario de piel
-                material.stock_actual -= consumo_necesario
+                material.stock.cantidad_actual -= consumo_necesario
 
             # 3. Registro de la Orden si el inventario fue suficiente
             nueva_orden = OrdenProduccion(

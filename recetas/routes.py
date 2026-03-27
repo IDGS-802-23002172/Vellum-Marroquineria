@@ -22,8 +22,8 @@ def crear_receta():
     form = forms.RecetaForm(request.form)
     
     # Validación de existencia de materiales (Tarea 3)
-    materiales = MateriaPrima.query.filter_by(activo=True).all()
-    form.id_materia.choices = [(m.id_materia, f"{m.nombre} ({m.unidad.abreviatura})") for m in materials]
+    materiales = MateriaPrima.query.all()
+    form.id_materia.choices = [(m.id_materia, f"{m.nombre} ({m.unidad.abreviatura})") for m in materiales]
 
     if request.method == 'POST' and form.validate():
         nueva_receta = Receta(
@@ -49,8 +49,8 @@ def modificar_receta(id):
     form = forms.RecetaForm(obj=insumo_receta)
     
     # Recargar los materiales para el SelectField
-    materiales = MateriaPrima.query.filter_by(activo=True).all()
-    form.id_materia.choices = [(m.id_materia, f"{m.nombre} ({m.unidad.abreviatura})") for m in materials]
+    materiales = MateriaPrima.query.all()
+    form.id_materia.choices = [(m.id_materia, f"{m.nombre} ({m.unidad.abreviatura})") for m in materiales]
     
     if request.method == 'POST' and form.validate():
         insumo_receta.id_materia = form.id_materia.data

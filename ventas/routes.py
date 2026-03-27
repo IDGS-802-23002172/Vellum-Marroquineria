@@ -83,9 +83,10 @@ def finalizar_venta():
 
     usuario_id = session.get("user_id")
 
+    # Ajuste: El endpoint correcto asumiendo que tu ruta de login se llama 'login' en app.py
     if not usuario_id:
         flash("Sesión inválida", "danger")
-        return redirect(url_for("auth.login"))
+        return redirect(url_for("login")) 
 
     nueva_venta = Venta(
         usuario_id=usuario_id
@@ -95,7 +96,6 @@ def finalizar_venta():
     db.session.flush()
 
     for item in carrito:
-
         producto = Producto.query.get(item.producto_id)
 
         detalle = DetalleVenta(
@@ -103,8 +103,8 @@ def finalizar_venta():
             producto_id=item.producto_id,
             cantidad=item.cantidad,
             precio_unitario=item.precio,
-            costo_unitario=producto.costo_produccion,
-            subtotal=item.precio * item.cantidad  # ← este sí puede quedarse
+            costo_unitario=producto.costo_produccion
+            # ELIMINADO: subtotal=item.precio * item.cantidad
         )
 
         db.session.add(detalle)
@@ -117,7 +117,6 @@ def finalizar_venta():
 
     session["ultima_venta_id"] = nueva_venta.id
     return redirect(url_for("ventas.ticket"))
-
 
 @ventas_bp.route("/cancelar", methods=["POST"])
 def cancelar_venta():
