@@ -9,6 +9,8 @@ from materiales.routes import unidades_bp
 from materiales.routes import materias_bp
 import time
 from sqlalchemy import text
+from pedidos import pedidos_bp
+
 
 
 from caja.routes import compras_bp
@@ -47,6 +49,7 @@ app.register_blueprint(unidades_bp)
 app.register_blueprint(materias_bp)
 app.register_blueprint(produccion_bp)
 
+app.register_blueprint(pedidos_bp)
 app.register_blueprint(ventas_bp, url_prefix="/ventas")
 
 app.register_blueprint(tienda_bp, url_prefix="/tienda")
