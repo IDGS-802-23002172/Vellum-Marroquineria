@@ -4,12 +4,14 @@
 
 {% block content %}
 
-<div class="container mt-5" style="max-width:400px">
+<div class="container mt-5" style="max-width:400px; font-family: monospace;" id="ticket">
 
-    <h3 class="text-center mb-4">VELLUM</h3>
+    <h3 class="text-center mb-2">VELLUM</h3>
+    <p class="text-center mb-3">Ticket de venta</p>
 
-    <p>Venta #{{ venta.id }}</p>
-    <p>Fecha: {{ venta.fecha }}</p>
+    <!-- FOLIO -->
+    <p><strong>Ticket:</strong> {{ venta.folio }}</p>
+    <p><strong>Fecha:</strong> {{ venta.fecha.strftime("%Y-%m-%d %H:%M") }}</p>
 
     <hr>
 
@@ -18,6 +20,7 @@
             <tr>
                 <th>Producto</th>
                 <th>Cant</th>
+                <th>P.U.</th>
                 <th>Total</th>
             </tr>
         </thead>
@@ -27,7 +30,8 @@
         <tr>
             <td>{{ d.producto.nombre }}</td>
             <td>{{ d.cantidad }}</td>
-            <td>${{ d.subtotal }}</td>
+            <td>${{ "%.2f"|format(d.precio_unitario) }}</td>
+            <td>${{ "%.2f"|format(d.precio_unitario * d.cantidad) }}</td>
         </tr>
         {% endfor %}
 
@@ -36,16 +40,61 @@
 
     <hr>
 
-    <p>Subtotal: ${{ venta.subtotal }}</p>
-    <p>IVA: ${{ venta.iva }}</p>
-    <h5>Total: ${{ venta.total }}</h5>
+    <p>Subtotal: ${{ "%.2f"|format(subtotal) }}</p>
+    <p>IVA: ${{ "%.2f"|format(iva) }}</p>
+    <h5>Total: ${{ "%.2f"|format(total) }}</h5>
 
-    <div class="text-center mt-4">
-        <a href="{{ url_for('ventas.punto_venta') }}" class="btn btn-dark">
-            Nueva Venta
-        </a>
-    </div>
+    <hr>
+
+    <p class="text-center">¡Gracias por su compra!</p>
 
 </div>
+
+<!-- BOTONES -->
+<div class="text-center mt-4">
+
+    <!-- Descargar PDF -->
+    <button onclick="descargarPDF()" class="btn btn-success me-2">
+        Descargar PDF
+    </button>
+
+    <!-- Nueva venta -->
+    <a href="{{ url_for('ventas.punto_venta') }}" class="btn btn-dark">
+        Nueva Venta
+    </a>
+
+</div>
+
+<!-- SCRIPT -->
+<script>
+function descargarPDF() {
+    window.print();
+}
+</script>
+
+<!-- ESTILO PARA IMPRESIÓN -->
+<style>
+@media print {
+
+    body * {
+        visibility: hidden;
+    }
+
+    #ticket, #ticket * {
+        visibility: visible;
+    }
+
+    #ticket {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+    }
+
+    button, a {
+        display: none !important;
+    }
+}
+</style>
 
 {% endblock %}
