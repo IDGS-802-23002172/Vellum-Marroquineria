@@ -4,8 +4,30 @@ from models import CarritoTemporal, Venta, DetalleVenta, db, Producto
 from decimal import Decimal
 import uuid
 from sqlalchemy import text
+from datetime import datetime
 
 IVA_TASA = Decimal("0.16")
+
+
+def generar_folio():
+    fecha = datetime.now().strftime("%Y%m%d")
+    ultima_venta = Venta.query.order_by(Venta.id.desc()).first()
+    numero = (ultima_venta.id + 1) if ultima_venta else 1
+    return f"T-{fecha}-{numero:04d}"
+
+
+
+def calcular_totales(detalles):
+    subtotal = sum([
+        d.precio_unitario * d.cantidad for d in detalles
+    ]) if detalles else Decimal("0.00")
+
+    iva = subtotal * IVA_TASA
+    total = subtotal + iva
+
+    return subtotal, iva, total
+
+
 
 @ventas_bp.route("/pos", methods=["GET"])
 def punto_venta():
@@ -18,7 +40,6 @@ def punto_venta():
     productos = []
 
     if busqueda:
-        # Sincronizado con tus modelos de Marroquinería
         productos = Producto.query.filter(
             (Producto.nombre.ilike(f"%{busqueda}%")) |
             (Producto.sku.ilike(f"%{busqueda}%"))
@@ -63,7 +84,7 @@ def agregar_producto():
             session_id=session_id,
             producto_id=producto.id,
             nombre=producto.nombre,
-            precio=producto.precio_venta, # Usar precio_venta del modelo Producto
+            precio=producto.precio_venta,
             cantidad=cantidad
         )
         db.session.add(item)
@@ -88,7 +109,13 @@ def finalizar_venta():
         flash("Sesión inválida", "danger")
         return redirect(url_for("login")) 
 
+    folio = generar_folio()
+    
     nueva_venta = Venta(
+<<<<<<< HEAD
+=======
+        folio=folio,
+>>>>>>> origin/feature/vista-mis-pedidos
         usuario_id=usuario_id
     )
 
@@ -104,7 +131,10 @@ def finalizar_venta():
             cantidad=item.cantidad,
             precio_unitario=item.precio,
             costo_unitario=producto.costo_produccion
+<<<<<<< HEAD
             # ELIMINADO: subtotal=item.precio * item.cantidad
+=======
+>>>>>>> origin/feature/vista-mis-pedidos
         )
 
         db.session.add(detalle)
@@ -128,19 +158,28 @@ def cancelar_venta():
 
 @ventas_bp.route("/ticket")
 def ticket():
-
     venta_id = session.get("ultima_venta_id")
+
     if not venta_id:
         flash("No hay ticket disponible", "warning")
         return redirect(url_for("ventas.punto_venta"))
+
     venta = Venta.query.get(venta_id)
+
     if not venta:
         flash("Venta no encontrada", "danger")
         return redirect(url_for("ventas.punto_venta"))
+
     detalles = DetalleVenta.query.filter_by(venta_id=venta.id).all()
+<<<<<<< HEAD
     subtotal = sum([d.subtotal for d in detalles])
     iva = subtotal * IVA_TASA
     total = subtotal + iva
+=======
+
+    subtotal, iva, total = calcular_totales(detalles)
+
+>>>>>>> origin/feature/vista-mis-pedidos
     return render_template(
         "ticket.html",
         venta=venta,
@@ -155,11 +194,14 @@ def cierre_diario():
 
     resultado = db.session.execute(text("""
         SELECT 
-            fecha,
-            articulos_vendidos,
-            total_ventas,
-            utilidad_total
-        FROM vista_cierre_diario
+            DATE(v.fecha) AS fecha,
+            SUM(d.cantidad) AS articulos_vendidos,
+            SUM(d.precio_unitario * d.cantidad) AS total_ventas,
+            SUM((d.precio_unitario - d.costo_unitario) * d.cantidad) AS utilidad_total
+        FROM ventas v
+        JOIN detalle_ventas d ON v.id = d.venta_id
+        WHERE DATE(v.fecha) = CURDATE()
+        GROUP BY DATE(v.fecha);
     """))
 
     cierre = resultado.mappings().first()

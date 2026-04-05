@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}Mis Pedidos{% endblock %}
+{% block page_title %}Mis Pedidos{% endblock %}
+
+{% block content %}
+
+<div class="card-vellum">
+    <h5 class="mb-4">Historial de pedidos</h5>
+
+    <div class="table-responsive">
+        <table class="table">
+            <thead class="table-dark">
+                <tr>
+                    <th>Número</th>
+                    <th>Fecha</th>
+                    <th>Subtotal</th>
+                    <th>IVA</th>
+                    <th>Total</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in pedidos %}
+                <tr>
+                    <td>#{{ p.id }}</td>
+                    <td>{{ p.fecha.strftime("%Y-%m-%d %H:%M:%S") }}</td>
+                    <td>${{ "%.2f"|format(p.subtotal or 0) }}</td>
+                    <td>${{ "%.2f"|format(p.iva or 0) }}</td>
+                    <td><strong>${{ "%.2f"|format(p.total or 0) }}</strong></td>
+                    <td>
+                        <a href="{{ url_for('pedidos.vista_pedidos', pedido_id=p.id) }}"
+                           class="btn btn-sm btn-dark">
+                           Ver
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+
+                {% if pedidos|length == 0 %}
+                <tr>
+                    <td colspan="6" class="text-center text-muted">
+                        No tienes pedidos registrados
+                    </td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card-vellum mt-4">
+    <h6 class="mb-3">Detalle del pedido</h6>
+
+    {% if pedido_detalle %}
+        <div class="mb-3">
+            <strong>Pedido #{{ pedido_detalle.id }}</strong><br>
+            <span class="text-muted">
+                {{ pedido_detalle.fecha.strftime("%Y-%m-%d %H:%M:%S") }}
+            </span><br>
+            <span>Total: ${{ "%.2f"|format(pedido_detalle.total or 0) }}</span>
+        </div>
+
+        {% for d in pedido_detalle.detalles %}
+            <div class="border-bottom py-2">
+                <strong>{{ d.producto.nombre }}</strong><br>
+                {{ d.cantidad }} x ${{ "%.2f"|format(d.precio_unitario) }}
+                = ${{ "%.2f"|format(d.subtotal) }}
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="text-muted small">
+            Selecciona un pedido para ver el detalle
+        </div>
+    {% endif %}
+</div>
+
+{% endblock %}

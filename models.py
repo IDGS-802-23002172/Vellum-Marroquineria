@@ -273,6 +273,7 @@ class Producto(db.Model):
 class Venta(db.Model):
     __tablename__ = "ventas"
     id = db.Column(db.Integer, primary_key=True)
+    folio = db.Column(db.String(30), unique=True, nullable=False)
     fecha = db.Column(db.DateTime, default=datetime.utcnow)
     usuario_id = db.Column(db.Integer, db.ForeignKey("usuarios.id"), nullable=False)
     estado = db.Column(db.String(50), default="Pagado") 
@@ -299,7 +300,7 @@ class DetalleVenta(db.Model):
     producto_id = db.Column(db.Integer, db.ForeignKey("productos.id"), nullable=False)
     cantidad = db.Column(db.Integer, nullable=False)
     precio_unitario = db.Column(db.Numeric(10,2))
-    costo_unitario = db.Column(db.Numeric(10,2))
+    costo_unitario = db.Column(db.Numeric(10,2))  # costo histórico
     producto = db.relationship(
         "Producto",back_populates="detalles")
     @property
