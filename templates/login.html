@@ -1,23 +1,77 @@
 {% extends "layout.html" %}
 {% block content %}
-
 {% import "_macros.html" as macros %}
 
+<div class="row justify-content-center" style="padding-top: 40px;">
+  <div class="col-sm-10 col-md-7 col-lg-5 col-xl-4">
 
-<form class="max-w-sm mx-auto py-10" method="POST">
-    {{form.csrf_token}}
+    <div class="text-center" style="margin-bottom: 32px;">
+      <p style="font-size:0.72rem; text-transform:uppercase; letter-spacing:0.14em; color:var(--v-mid); margin-bottom:6px;">
+        Acceso al sistema
+      </p>
+      <h1 style="font-family:'Playfair Display',serif; font-size:1.6rem; font-weight:500; font-style:italic; margin:0;">
+        Bienvenido a Vellum
+      </h1>
+    </div>
+
+    <div style="background:#fff; border:1px solid var(--v-border); border-radius:2px; padding:36px 32px; box-shadow:0 1px 4px rgba(0,0,0,.06);">
+      <form method="POST" novalidate>
+        {{ form.csrf_token }}
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-    <div class="mb-5">
-        {{macros.nuevoMacro(form.username, class="block py-2.5 px-0 w-full text-sm text-heading bg-transparent border-0 border-b-2 border-default-medium appearance-none focus:outline-none focus:ring-0 focus:border-brand peer")}}
-    </div>
-    <div class="mb-5">
-        {{macros.nuevoMacro(form.password, class="block py-2.5 px-0 w-full text-sm text-heading bg-transparent border-0 border-b-2 border-default-medium appearance-none focus:outline-none focus:ring-0 focus:border-brand peer")}}
-    </div>
-    </div>
-    <button type="submit"
-        class="text-white bg-black hover:bg-blue-70 box-border border border-transparent focus:ring-4 focus:ring-brand-medium shadow-xs font-medium leading-5 rounded-base text-sm px-4 py-2.5 focus:outline-none">Entrar a Vellum</button>
-</form>
 
+        <div style="margin-bottom:20px;">
+          <label for="{{ form.username.id }}" style="display:block; font-size:0.7rem; font-weight:600; text-transform:uppercase; letter-spacing:0.1em; color:#4a4a4a; margin-bottom:6px;">
+            {{ form.username.label.text }}
+          </label>
+          {{ form.username(id=form.username.id, class="form-control" + (" is-invalid" if form.username.errors else ""), placeholder="tu_usuario", autocomplete="username", autofocus=True) }}
+          {% for error in form.username.errors %}
+            <div style="font-size:0.78rem; color:#991b1b; margin-top:4px; display:flex; align-items:center; gap:4px;">
+              <i class="bi bi-exclamation-circle"></i> {{ error }}
+            </div>
+          {% endfor %}
+        </div>
 
+        <div style="margin-bottom:28px;">
+          <label for="{{ form.password.id }}" style="display:block; font-size:0.7rem; font-weight:600; text-transform:uppercase; letter-spacing:0.1em; color:#4a4a4a; margin-bottom:6px;">
+            {{ form.password.label.text }}
+          </label>
+          {{ form.password(id=form.password.id, class="form-control" + (" is-invalid" if form.password.errors else ""), placeholder="••••••••", autocomplete="current-password") }}
+          {% for error in form.password.errors %}
+            <div style="font-size:0.78rem; color:#991b1b; margin-top:4px; display:flex; align-items:center; gap:4px;">
+              <i class="bi bi-exclamation-circle"></i> {{ error }}
+            </div>
+          {% endfor %}
+        </div>
 
+        <button type="submit" class="btn-login">Entrar a Vellum</button>
+      </form>
+    </div>
+
+    <p style="text-align:center; font-size:0.75rem; color:var(--v-mid); margin-top:20px;">
+      &copy; 2026 Marroquinería Vellum &middot; León, Gto.
+    </p>
+  </div>
+</div>
+
+<style>
+  .form-control {
+    border: 1px solid #e2e0db; border-radius: 2px;
+    padding: 9px 12px; font-family: 'DM Sans',sans-serif;
+    font-size: 0.875rem; width: 100%;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .form-control:focus {
+    border-color: #8b6f47;
+    box-shadow: 0 0 0 3px rgba(139,111,71,.12); outline: none;
+  }
+  .form-control.is-invalid { border-color: #dc2626; }
+  .btn-login {
+    width: 100%; background: #0a0a0a; color: #fff;
+    border: none; border-radius: 2px; padding: 11px 16px;
+    font-family: 'DM Sans',sans-serif; font-size: 0.72rem;
+    font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.12em; cursor: pointer; transition: background .2s;
+  }
+  .btn-login:hover { background: #8b6f47; }
+</style>
 {% endblock %}

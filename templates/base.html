@@ -8,154 +8,512 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link
-    href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,500&family=DM+Sans:wght@300;400;500;600&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,500&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap"
     rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css"
     rel="stylesheet">
 
   <style>
+    /* ═══════════════════════════════════════════
+       TOKENS DE DISEÑO
+    ═══════════════════════════════════════════ */
     :root {
-      --v-black: #000000;
-      --v-deep: #121212;
-      /* Gris casi negro */
-      --v-stone: #4a4a4a;
-      /* Gris medio */
-      --v-paper: #f4f4f4;
-      /* Fondo vitela */
-      --v-border: #e0e0e0;
-      /* Líneas finas */
+      --v-black:   #0a0a0a;
+      --v-deep:    #1a1a1a;
+      --v-stone:   #4a4a4a;
+      --v-mid:     #767676;   /* mínimo AA sobre blanco */
+      --v-paper:   #f5f4f0;   /* vitela cálida */
+      --v-white:   #ffffff;
+      --v-border:  #e2e0db;
+      --v-tan:     #8b6f47;   /* acento cuero */
+      --v-tan-lt:  #f0e9df;   /* fondo acento claro */
+
+      /* Semánticos */
+      --v-success: #166534;
+      --v-success-bg: #dcfce7;
+      --v-danger:  #991b1b;
+      --v-danger-bg: #fee2e2;
+      --v-warn:    #854d0e;
+      --v-warn-bg: #fef9c3;
+      --v-info:    #1e40af;
+      --v-info-bg: #dbeafe;
+
+      --v-radius:  2px;       /* esquinas casi rectas = elegancia */
+      --v-shadow:  0 1px 4px rgba(0,0,0,.07), 0 4px 16px rgba(0,0,0,.04);
     }
+
+    /* ═══════════════════════════════════════════
+       BASE
+    ═══════════════════════════════════════════ */
+    *, *::before, *::after { box-sizing: border-box; }
 
     body {
       font-family: 'DM Sans', sans-serif;
       background: var(--v-paper);
       color: var(--v-black);
+      font-size: 0.9375rem;   /* 15px — legible sin ser grande */
+      line-height: 1.6;
       min-height: 100vh;
       overflow-x: hidden;
     }
 
-    /* ── Sidebar Monocromática ──────────────── */
+    a { color: var(--v-tan); text-underline-offset: 3px; }
+    a:hover { color: var(--v-black); }
+
+    /* Foco visible para teclado */
+    :focus-visible {
+      outline: 2px solid var(--v-tan);
+      outline-offset: 2px;
+    }
+
+    /* ═══════════════════════════════════════════
+       SIDEBAR
+    ═══════════════════════════════════════════ */
     .sidebar {
-      width: 260px;
+      width: 240px;
       height: 100vh;
-      /* Cambiamos min-height por height fijo */
       background: var(--v-black);
       position: fixed;
-      top: 0;
-      left: 0;
-      z-index: 100;
-      border-right: 1px solid #222;
-
-      /* Habilitamos el scroll solo vertical y escondemos la barra si es posible */
+      top: 0; left: 0;
+      z-index: 200;
+      border-right: 1px solid #1e1e1e;
       overflow-y: auto;
       display: flex;
       flex-direction: column;
+      scrollbar-width: thin;
+      scrollbar-color: #2e2e2e transparent;
     }
+    .sidebar::-webkit-scrollbar { width: 4px; }
+    .sidebar::-webkit-scrollbar-thumb { background: #2e2e2e; border-radius: 2px; }
 
     .sidebar-brand {
-      padding: 25px 24px;
-      /* Bajamos de 40px a 25px */
+      padding: 28px 20px 22px;
       text-align: center;
-      border-bottom: 1px solid #222;
+      border-bottom: 1px solid #1e1e1e;
       flex-shrink: 0;
-      /* Evita que el logo se aplaste */
     }
-
     .brand-name {
+      display: block;
       font-family: 'Playfair Display', serif;
-      font-size: 1.5rem;
+      font-size: 1.45rem;
       color: #fff;
-      letter-spacing: 0.2em;
+      letter-spacing: 0.25em;
       text-transform: uppercase;
     }
-
-    .brand-small-name {
-      font-family: 'Playfair Display', serif;
-      font-size: 0.7rem;
-      color: #fff;
-      letter-spacing: 0.2em;
+    .brand-tagline {
+      display: block;
+      font-size: 0.6rem;
+      color: #555;
+      letter-spacing: 0.18em;
       text-transform: uppercase;
+      margin-top: 4px;
+    }
+
+    .sidebar-section {
+      padding: 20px 20px 6px;
+      font-size: 0.58rem;
+      color: #444;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      font-weight: 600;
     }
 
     .sidebar-link {
       display: flex;
       align-items: center;
-      gap: 12px;
-      padding: 10px 24px;
-      /* Bajamos de 14px a 10px */
-      color: #888;
+      gap: 10px;
+      padding: 9px 20px;
+      color: #777;
       text-decoration: none;
-      font-size: .7rem;
-      /* Un pelín más pequeña la fuente */
+      font-size: 0.72rem;
       text-transform: uppercase;
-      letter-spacing: 0.1em;
-      transition: all .3s ease;
+      letter-spacing: 0.09em;
+      font-weight: 500;
+      transition: color .2s, background .2s;
+      border-left: 2px solid transparent;
     }
-
-    .sidebar-link:hover,
+    .sidebar-link i {
+      font-size: 0.85rem;
+      flex-shrink: 0;
+      width: 16px;
+      text-align: center;
+    }
+    .sidebar-link:hover {
+      color: #fff;
+      background: rgba(255,255,255,.04);
+      border-left-color: #333;
+    }
     .sidebar-link.active {
       color: #fff;
-      background: rgba(255, 255, 255, 0.05);
+      background: rgba(255,255,255,.07);
+      border-left-color: var(--v-tan);
     }
 
-    .sidebar::-webkit-scrollbar {
-      width: 4px;
+    .sidebar-footer {
+      margin-top: auto;
+      border-top: 1px solid #1e1e1e;
+      padding: 8px 0;
     }
+    .sidebar-link.danger { color: #7f3535; }
+    .sidebar-link.danger:hover { color: #ef4444; background: rgba(239,68,68,.06); }
 
-    .sidebar::-webkit-scrollbar-thumb {
-      background: #333;
-    }
-
-    /* ── Main Content ──────────────────────── */
+    /* ═══════════════════════════════════════════
+       LAYOUT PRINCIPAL
+    ═══════════════════════════════════════════ */
     .main-wrap {
-      margin-left: 260px;
+      margin-left: 240px;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
     }
 
     .topbar {
-      background: #fff;
+      background: var(--v-white);
       border-bottom: 1px solid var(--v-border);
-      padding: 20px 40px;
+      padding: 0 40px;
+      height: 60px;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
     }
+
+    .topbar-left {
+      display: flex;
+      flex-direction: column;
+    }
+    .topbar-breadcrumb {
+      font-size: 0.7rem;
+      color: var(--v-mid);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .topbar-breadcrumb a {
+      color: var(--v-mid);
+      text-decoration: none;
+    }
+    .topbar-breadcrumb a:hover { color: var(--v-tan); }
 
     .topbar-title {
       font-family: 'Playfair Display', serif;
-      font-size: 1.2rem;
+      font-size: 1.05rem;
       font-weight: 500;
       font-style: italic;
+      color: var(--v-black);
+      line-height: 1.2;
+    }
+
+    .topbar-user {
+      font-size: 0.72rem;
+      color: var(--v-mid);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
 
     .page-body {
-      padding: 40px;
+      padding: 36px 40px;
+      flex: 1;
     }
 
-    /* ── Componentes Premium ───────────────── */
-    .card-vellum {
-      background: #fff;
+    /* ═══════════════════════════════════════════
+       CARD — componente base
+    ═══════════════════════════════════════════ */
+    .card-piel {
+      background: var(--v-white);
       border: 1px solid var(--v-border);
-      border-radius: 0;
-      /* Bordes rectos para elegancia */
-      padding: 30px;
+      border-radius: var(--v-radius);
+      box-shadow: var(--v-shadow);
+    }
+    .card-header {
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--v-border);
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--v-stone);
+      display: flex;
+      align-items: center;
+      background: transparent;
     }
 
-    .btn-vellum {
+    /* ═══════════════════════════════════════════
+       BOTONES
+    ═══════════════════════════════════════════ */
+    .btn-piel {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
       background: var(--v-black);
       color: #fff;
-      border-radius: 0;
-      padding: 12px 24px;
-      font-size: .7rem;
-      text-transform: uppercase;
-      letter-spacing: 0.15em;
       border: 1px solid var(--v-black);
-      transition: all 0.3s;
+      border-radius: var(--v-radius);
+      padding: 8px 18px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      text-decoration: none;
+      cursor: pointer;
+      transition: background .2s, color .2s, border-color .2s;
+      white-space: nowrap;
+    }
+    .btn-piel:hover {
+      background: var(--v-tan);
+      border-color: var(--v-tan);
+      color: #fff;
+    }
+    .btn-piel:disabled, .btn-piel[disabled] {
+      opacity: .45;
+      cursor: not-allowed;
     }
 
-    .btn-vellum:hover {
+    .btn-outline-piel {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
       background: transparent;
+      color: var(--v-stone);
+      border: 1px solid var(--v-border);
+      border-radius: var(--v-radius);
+      padding: 7px 14px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.72rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      text-decoration: none;
+      cursor: pointer;
+      transition: border-color .2s, color .2s, background .2s;
+      white-space: nowrap;
+    }
+    .btn-outline-piel:hover {
+      border-color: var(--v-black);
       color: var(--v-black);
+      background: rgba(0,0,0,.02);
+    }
+
+    .btn-icon-piel {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 30px; height: 30px;
+      background: transparent;
+      color: var(--v-mid);
+      border: 1px solid var(--v-border);
+      border-radius: var(--v-radius);
+      cursor: pointer;
+      transition: all .2s;
+      font-size: 0.8rem;
+      padding: 0;
+    }
+    .btn-icon-piel:hover {
+      background: var(--v-danger-bg);
+      border-color: #fecaca;
+      color: var(--v-danger);
+    }
+
+    /* ═══════════════════════════════════════════
+       TABLA
+    ═══════════════════════════════════════════ */
+    .table-piel {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+    }
+    .table-piel thead tr {
+      border-bottom: 2px solid var(--v-border);
+    }
+    .table-piel th {
+      padding: 10px 16px;
+      font-size: 0.65rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--v-mid);
+      background: var(--v-paper);
+      white-space: nowrap;
+    }
+    .table-piel td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--v-border);
+      color: var(--v-black);
+      vertical-align: middle;
+    }
+    .table-piel tbody tr:last-child td {
+      border-bottom: none;
+    }
+    .table-piel tbody tr:hover td {
+      background: #fafaf8;
+    }
+
+    /* ═══════════════════════════════════════════
+       FORMULARIOS
+    ═══════════════════════════════════════════ */
+    .form-label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--v-stone);
+      margin-bottom: 6px;
+      display: block;
+    }
+    .form-control,
+    .form-select {
+      border: 1px solid var(--v-border);
+      border-radius: var(--v-radius);
+      padding: 9px 12px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.875rem;
+      color: var(--v-black);
+      background: var(--v-white);
+      transition: border-color .2s, box-shadow .2s;
+      width: 100%;
+    }
+    .form-control:focus,
+    .form-select:focus {
+      border-color: var(--v-tan);
+      box-shadow: 0 0 0 3px rgba(139,111,71,.12);
+      outline: none;
+    }
+    .form-control::placeholder { color: #bbb; }
+    .invalid-feedback {
+      font-size: 0.78rem;
+      color: var(--v-danger);
+      margin-top: 4px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .search-wrap {
+      position: relative;
+    }
+    .search-wrap i {
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--v-mid);
+      font-size: 0.85rem;
+      pointer-events: none;
+    }
+    .search-wrap input {
+      padding-left: 32px;
+    }
+
+    /* ═══════════════════════════════════════════
+       BADGES / TAGS
+    ═══════════════════════════════════════════ */
+    .tag-material {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 99px;
+      font-size: 0.68rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      white-space: nowrap;
+    }
+    .tag-confirmada { background: var(--v-success-bg); color: var(--v-success); }
+    .tag-cancelada  { background: var(--v-danger-bg);  color: var(--v-danger); }
+    .tag-borrador   { background: var(--v-warn-bg);    color: var(--v-warn); }
+    .tag-entrada    { background: var(--v-success-bg); color: var(--v-success); }
+    .tag-salida     { background: var(--v-danger-bg);  color: var(--v-danger); }
+
+    /* ═══════════════════════════════════════════
+       STAT CARDS (caja / resumen)
+    ═══════════════════════════════════════════ */
+    .stat-card {
+      background: var(--v-white);
+      border: 1px solid var(--v-border);
+      border-radius: var(--v-radius);
+      padding: 20px 24px;
+      box-shadow: var(--v-shadow);
+      border-left-width: 3px;
+    }
+    .stat-label {
+      font-size: 0.62rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--v-mid);
+      margin-bottom: 8px;
+    }
+    .stat-value {
+      font-size: 1.7rem;
+      font-weight: 700;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ═══════════════════════════════════════════
+       PAGINACIÓN
+    ═══════════════════════════════════════════ */
+    .pagination-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      border-top: 1px solid var(--v-border);
+      font-size: 0.78rem;
+      color: var(--v-mid);
+    }
+
+    /* ═══════════════════════════════════════════
+       ESTADO VACÍO
+    ═══════════════════════════════════════════ */
+    .empty-state {
+      padding: 60px 24px;
+      text-align: center;
+      color: var(--v-mid);
+    }
+    .empty-state i {
+      font-size: 2.2rem;
+      color: var(--v-border);
+      display: block;
+      margin-bottom: 14px;
+    }
+    .empty-state p {
+      font-size: 0.9rem;
+      margin-bottom: 20px;
+    }
+
+    /* ═══════════════════════════════════════════
+       FLASH MESSAGES
+    ═══════════════════════════════════════════ */
+    .flash {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 12px 16px;
+      border-radius: var(--v-radius);
+      font-size: 0.875rem;
+      margin-bottom: 20px;
+      border-left: 3px solid;
+    }
+    .flash-success { background: var(--v-success-bg); color: var(--v-success); border-color: #16a34a; }
+    .flash-danger  { background: var(--v-danger-bg);  color: var(--v-danger);  border-color: #dc2626; }
+    .flash-warning { background: var(--v-warn-bg);    color: var(--v-warn);    border-color: #d97706; }
+    .flash-info    { background: var(--v-info-bg);    color: var(--v-info);    border-color: #2563eb; }
+
+    /* ═══════════════════════════════════════════
+       RESPONSIVE
+    ═══════════════════════════════════════════ */
+    @media (max-width: 991px) {
+      .sidebar { transform: translateX(-100%); transition: transform .25s ease; }
+      .sidebar.open { transform: translateX(0); }
+      .main-wrap { margin-left: 0; }
+      .topbar { padding: 0 20px; }
+      .page-body { padding: 24px 20px; }
     }
   </style>
   {% block extra_head %}{% endblock %}
@@ -163,30 +521,25 @@
 
 <body>
 
-  <aside class="sidebar">
+  <!-- ── Sidebar ───────────────────────────────────── -->
+  <aside class="sidebar" id="sidebar" aria-label="Navegación principal">
     <div class="sidebar-brand">
       <span class="brand-name">Vellum</span>
-      <span class="brand-small-name">Especialistas en cuero</span>
+      <span class="brand-tagline">Especialistas en cuero</span>
     </div>
 
-    <nav class="mt-4">
-      <div class="px-4 mb-2 text-muted small text-uppercase" style="font-size: 0.6rem; letter-spacing: 0.1em;">
-        Administración</div>
+    <nav>
+      <div class="sidebar-section">Administración</div>
       <a href="{{ url_for('index') }}" class="sidebar-link"><i class="bi bi-house-door"></i> Inicio</a>
-      <a href="{{ url_for('listar_productos') }}" class="sidebar-link"><i class="bi bi-box-seam"></i> Catálogo
-        Productos</a>
-      <a href="{{ url_for('recetas.listar_recetas') }}" class="sidebar-link"><i class="bi bi-diagram-3"></i> Recetas
-        Técnicas</a>
+      <a href="{{ url_for('listar_productos') }}" class="sidebar-link"><i class="bi bi-box-seam"></i> Catálogo Productos</a>
+      <a href="{{ url_for('recetas.listar_recetas') }}" class="sidebar-link"><i class="bi bi-diagram-3"></i> Recetas Técnicas</a>
       <a href="{{ url_for('unidades.listar') }}" class="sidebar-link"><i class="bi bi-rulers"></i> Unidades Medida</a>
 
-      <div class="px-4 mt-4 mb-2 text-muted small text-uppercase" style="font-size: 0.6rem; letter-spacing: 0.1em;">
-        Taller y Logística</div>
+      <div class="sidebar-section" style="margin-top: 8px;">Taller y Logística</div>
       <a href="{{ url_for('proveedores.index') }}" class="sidebar-link"><i class="bi bi-truck"></i> Proveedores</a>
-      <a href="{{ url_for('materias.index') }}" class="sidebar-link"><i class="bi bi-boxes"></i> Almacén Materia
-        Prima</a>
+      <a href="{{ url_for('materias.index') }}" class="sidebar-link"><i class="bi bi-boxes"></i> Almacén Materia Prima</a>
       <a href="{{ url_for('compras.index') }}" class="sidebar-link"><i class="bi bi-cart-plus"></i> Orden de Compra</a>
-      <a href="{{ url_for('produccion.listar_ordenes') }}" class="sidebar-link"><i class="bi bi-hammer"></i> Órdenes de
-        Producción</a>
+      <a href="{{ url_for('produccion.listar_ordenes') }}" class="sidebar-link"><i class="bi bi-hammer"></i> Órdenes de Producción</a>
 
       <div class="px-4 mt-4 mb-2 text-muted small text-uppercase" style="font-size: 0.6rem; letter-spacing: 0.1em;">
         Punto de Venta</div>
@@ -204,21 +557,44 @@
     </nav>
   </aside>
 
+  <!-- ── Contenido principal ──────────────────────── -->
   <div class="main-wrap">
     <header class="topbar">
-      <div class="topbar-title">{% block page_title %}{% endblock %}</div>
-      <div class="small text-uppercase tracking-widest">
-        <i class="bi bi-person me-2"></i> {{ g.user.username if g.user else 'Artesano' }}
+      <div class="topbar-left">
+        <span class="topbar-breadcrumb">{% block breadcrumb %}{% endblock %}</span>
+        <span class="topbar-title">{% block page_title %}{% endblock %}</span>
+      </div>
+      <div class="topbar-user">
+        <i class="bi bi-person-circle" style="font-size:1rem;"></i>
+        {{ g.user.username if g.user else 'Artesano' }}
       </div>
     </header>
 
-    <main class="page-body">
+    <main class="page-body" id="main-content">
+      {# Flash messages #}
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="flash flash-{{ category }}" role="alert">
+              <i class="bi bi-{% if category == 'success' %}check-circle{% elif category == 'danger' %}exclamation-circle{% elif category == 'warning' %}exclamation-triangle{% else %}info-circle{% endif %} flex-shrink-0"></i>
+              {{ message }}
+            </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
       {% block content %}{% endblock %}
     </main>
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.js"></script>
+  <script>
+    // Marcar enlace activo en sidebar
+    document.querySelectorAll('.sidebar-link').forEach(link => {
+      if (link.href === window.location.href) link.classList.add('active');
+    });
+  </script>
+  {% block extra_scripts %}{% endblock %}
 </body>
 
 </html>

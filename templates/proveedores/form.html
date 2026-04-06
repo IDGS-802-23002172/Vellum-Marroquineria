@@ -1,92 +1,212 @@
 {% extends "base.html" %}
-
-{% block title %}{{ 'Nuevo Proveedor' if modo == 'crear' else 'Editar Proveedor' }}{% endblock %}
-{% block page_title %}{{ 'Registrar Proveedor' if modo == 'crear' else 'Edición de Cuenta' }}{% endblock %}
+{% block title %}{{ 'Nuevo Proveedor' if modo == 'crear' else 'Editar — ' ~ prov.razon_social }}{% endblock %}
+{% block breadcrumb %}
+  <a href="#">Suministros</a> /
+  <a href="{{ url_for('proveedores.index') }}">Proveedores</a> /
+  {{ 'Nuevo' if modo == 'crear' else prov.razon_social }}
+{% endblock %}
+{% block page_title %}
+  {{ 'Registrar Proveedor' if modo == 'crear' else 'Editar Proveedor' }}
+{% endblock %}
 
 {% block content %}
-<form method="POST" action="{{ url_for('proveedores.crear') if modo == 'crear' else url_for('proveedores.editar', id_proveedor=prov.id_proveedor) }}" novalidate>
-    {{ form.csrf_token }}
+<div class="row justify-content-center">
+<div class="col-xl-9 col-lg-11">
 
-    <div class="row g-5">
-        <div class="col-lg-7">
-            <div class="card-vellum mb-5">
-                <h3 class="text-xs uppercase tracking-widest text-stone-500 border-bottom pb-3 mb-4">Perfil del Proveedor</h3>
-                
-                <div class="row g-4">
-                    <div class="col-12">
-                        <label class="small uppercase tracking-widest text-stone-400 mb-2">Razón Social</label>
-                        {{ form.razon_social(class="form-control border-0 border-bottom rounded-0 shadow-none px-0", placeholder="Nombre Legal") }}
-                    </div>
+<form method="POST"
+      action="{{ url_for('proveedores.crear') if modo == 'crear' else url_for('proveedores.editar', id_proveedor=prov.id_proveedor) }}"
+      novalidate>
+  {{ form.csrf_token }}
 
-                    <div class="col-md-6">
-                        <label class="small uppercase tracking-widest text-stone-400 mb-2">Contacto Directo</label>
-                        {{ form.nombre_contacto(class="form-control border-0 border-bottom rounded-0 shadow-none px-0") }}
-                    </div>
+  <div class="row g-4">
 
-                    <div class="col-md-6">
-                        <label class="small uppercase tracking-widest text-stone-400 mb-2">Teléfono de Enlace</label>
-                        {{ form.telefono(class="form-control border-0 border-bottom rounded-0 shadow-none px-0") }}
-                    </div>
+    {# ── Columna izquierda ── #}
+    <div class="col-lg-7">
 
-                    <div class="col-md-6">
-                        <label class="small uppercase tracking-widest text-stone-400 mb-2">Correo Electrónico</label>
-                        {{ form.correo(class="form-control border-0 border-bottom rounded-0 shadow-none px-0") }}
-                    </div>
-
-                    <div class="col-md-6">
-                        <label class="small uppercase tracking-widest text-stone-400 mb-2">Identificador Fiscal (RFC)</label>
-                        {{ form.rfc(class="form-control border-0 border-bottom rounded-0 shadow-none px-0 uppercase") }}
-                    </div>
-                </div>
-            </div>
-
-            <div class="card-vellum">
-                <h3 class="text-xs uppercase tracking-widest text-stone-500 border-bottom pb-3 mb-4">Ubicación y Logística</h3>
-                <div class="row g-4">
-                    <div class="col-12">
-                        {{ form.direccion(class="form-control border-0 border-bottom rounded-0 shadow-none px-0", placeholder="Dirección Completa") }}
-                    </div>
-                    <div class="col-md-6">
-                        {{ form.ciudad(class="form-control border-0 border-bottom rounded-0 shadow-none px-0", placeholder="Ciudad") }}
-                    </div>
-                    <div class="col-md-6">
-                        <select name="id_estado" class="form-select border-0 border-bottom rounded-0 shadow-none px-0">
-                            <option value="">ESTADO</option>
-                            {% for est in estados %}
-                            <option value="{{ est.id_estado }}" {% if prov and prov.id_estado == est.id_estado %}selected{% endif %}>
-                                {{ est.nombre|upper }}
-                            </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                </div>
-            </div>
+      {# Datos de contacto #}
+      <div class="card-piel mb-4">
+        <div class="card-header">
+          <i class="bi bi-person-badge me-2" style="color:var(--v-tan);"></i>
+          Datos de Contacto
         </div>
+        <div class="p-4">
+          <div class="row g-4">
 
-        <div class="col-lg-5">
-            <div class="card-vellum h-100 bg-white">
-                <div class="mt-auto">
-                    <label class="text-xs uppercase tracking-widest text-stone-500 mb-2">Anotaciones de Calidad</label>
-                    {{ form.notas(class="form-control border rounded-0 bg-light shadow-none", rows="4") }}
-                </div>
-
-                <div class="mt-5 d-grid gap-3">
-                    <button type="submit" class="btn-vellum py-3">Confirmar Registro</button>
-                    <a href="{{ url_for('proveedores.index') }}" class="text-center text-xs uppercase tracking-widest text-stone-400 text-decoration-none">Anular Proceso</a>
-                </div>
+            <div class="col-12">
+              <label class="form-label" for="{{ form.razon_social.id }}">
+                Razón Social <span style="color:#dc2626;" aria-hidden="true">*</span>
+              </label>
+              {{ form.razon_social(
+                  id=form.razon_social.id,
+                  class="form-control" + (" is-invalid" if form.razon_social.errors else ""),
+                  placeholder="Nombre legal del proveedor"
+                ) }}
+              {% for e in form.razon_social.errors %}
+                <div class="field-error"><i class="bi bi-exclamation-circle"></i> {{ e }}</div>
+              {% endfor %}
             </div>
+
+            <div class="col-md-6">
+              <label class="form-label" for="{{ form.nombre_contacto.id }}">
+                Contacto directo <span style="color:#dc2626;" aria-hidden="true">*</span>
+              </label>
+              {{ form.nombre_contacto(
+                  id=form.nombre_contacto.id,
+                  class="form-control" + (" is-invalid" if form.nombre_contacto.errors else ""),
+                  placeholder="Nombre completo"
+                ) }}
+              {% for e in form.nombre_contacto.errors %}
+                <div class="field-error"><i class="bi bi-exclamation-circle"></i> {{ e }}</div>
+              {% endfor %}
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label" for="{{ form.telefono.id }}">
+                Teléfono <span style="color:#dc2626;" aria-hidden="true">*</span>
+              </label>
+              {{ form.telefono(
+                  id=form.telefono.id,
+                  class="form-control" + (" is-invalid" if form.telefono.errors else ""),
+                  placeholder="477 000 0000",
+                  inputmode="tel"
+                ) }}
+              {% for e in form.telefono.errors %}
+                <div class="field-error"><i class="bi bi-exclamation-circle"></i> {{ e }}</div>
+              {% endfor %}
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label" for="{{ form.correo.id }}">Correo electrónico</label>
+              {{ form.correo(
+                  id=form.correo.id,
+                  class="form-control" + (" is-invalid" if form.correo.errors else ""),
+                  placeholder="proveedor@ejemplo.com",
+                  inputmode="email"
+                ) }}
+              {% for e in form.correo.errors %}
+                <div class="field-error"><i class="bi bi-exclamation-circle"></i> {{ e }}</div>
+              {% endfor %}
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label" for="{{ form.rfc.id }}">RFC</label>
+              {{ form.rfc(
+                  id=form.rfc.id,
+                  class="form-control" + (" is-invalid" if form.rfc.errors else ""),
+                  placeholder="XAXX010101000",
+                  style="text-transform:uppercase; font-family:monospace; letter-spacing:.04em;"
+                ) }}
+              {% for e in form.rfc.errors %}
+                <div class="field-error"><i class="bi bi-exclamation-circle"></i> {{ e }}</div>
+              {% endfor %}
+            </div>
+
+          </div>
         </div>
+      </div>
+
+      {# Ubicación #}
+      <div class="card-piel">
+        <div class="card-header">
+          <i class="bi bi-geo-alt me-2" style="color:var(--v-tan);"></i>
+          Ubicación
+        </div>
+        <div class="p-4">
+          <div class="row g-4">
+
+            <div class="col-12">
+              <label class="form-label" for="{{ form.direccion.id }}">Dirección</label>
+              {{ form.direccion(
+                  id=form.direccion.id,
+                  class="form-control",
+                  placeholder="Calle, número, colonia…"
+                ) }}
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label" for="{{ form.ciudad.id }}">Ciudad</label>
+              {{ form.ciudad(
+                  id=form.ciudad.id,
+                  class="form-control",
+                  placeholder="León"
+                ) }}
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label" for="id_estado">Estado</label>
+              <select name="id_estado" id="id_estado" class="form-select">
+                <option value="">Seleccionar…</option>
+                {% for est in estados %}
+                <option value="{{ est.id_estado }}"
+                  {% if prov and prov.id_estado == est.id_estado %}selected{% endif %}>
+                  {{ est.nombre }}
+                </option>
+                {% endfor %}
+              </select>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
     </div>
-</form>
 
+    {# ── Columna derecha ── #}
+    <div class="col-lg-5">
+
+      {# Notas #}
+      <div class="card-piel mb-4">
+        <div class="card-header">
+          <i class="bi bi-journal-text me-2" style="color:var(--v-tan);"></i>
+          Notas internas
+        </div>
+        <div class="p-4">
+          <label class="form-label" for="{{ form.notas.id }}">
+            Condiciones, calidad, tiempos de entrega…
+          </label>
+          {{ form.notas(
+              id=form.notas.id,
+              class="form-control",
+              rows=6,
+              placeholder="Ej: Entrega en 3 días hábiles. Mínimo de pedido $500. Calidad A en cueros bovinos."
+            ) }}
+        </div>
+      </div>
+
+      {# Acciones #}
+      <div class="card-piel">
+        <div class="p-4 d-flex flex-column gap-3">
+          <button type="submit" class="btn-piel w-100 justify-content-center">
+            <i class="bi bi-check-circle"></i>
+            {{ 'Registrar proveedor' if modo == 'crear' else 'Guardar cambios' }}
+          </button>
+          <a href="{{ url_for('proveedores.index') }}"
+             class="btn-outline-piel w-100 justify-content-center">
+            <i class="bi bi-arrow-left"></i> Cancelar
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</form>
+</div>
+</div>
+
+{% block extra_head %}
 <style>
-    .chip-vellum input:checked + span {
-        background: var(--v-black);
-        color: white;
-        border-color: var(--v-black);
-    }
-    .form-control:focus {
-        border-bottom-color: var(--v-black) !important;
-    }
+  .field-error {
+    font-size: 0.78rem;
+    color: var(--v-danger);
+    margin-top: 5px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  /* RFC en mayúsculas automático */
+  input[name="rfc"] { text-transform: uppercase; }
 </style>
+{% endblock %}
+
 {% endblock %}

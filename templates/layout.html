@@ -1,25 +1,93 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <title>Vellum - Marroquinería</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.css" rel="stylesheet" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vellum — Marroquinería León, Gto.</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,500&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+
+  <style>
+    :root {
+      --v-black:  #0a0a0a;
+      --v-paper:  #f5f4f0;
+      --v-border: #e2e0db;
+      --v-tan:    #8b6f47;
+      --v-mid:    #767676;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--v-paper);
+      color: var(--v-black);
+      font-size: 0.9375rem;
+      line-height: 1.6;
+    }
+    :focus-visible { outline: 2px solid var(--v-tan); outline-offset: 2px; }
+
+    .navbar-vellum {
+      background: var(--v-black);
+      padding: 0 40px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .navbar-brand-vellum {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.4rem;
+      color: #fff;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      text-decoration: none;
+    }
+    .navbar-brand-vellum:hover { color: #d4b896; }
+    .navbar-tagline {
+      font-size: 0.6rem;
+      color: #555;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+    main.container { padding-top: 48px; padding-bottom: 64px; }
+    .footer-vellum {
+      border-top: 1px solid var(--v-border);
+      padding: 28px 40px;
+      text-align: center;
+      font-size: 0.78rem;
+      color: var(--v-mid);
+    }
+    /* Carousel */
+    .carousel-img {
+      width: 100%; max-height: 70vh;
+      object-fit: cover; object-position: center; display: block;
+    }
+    .carousel-indicators [data-bs-target] {
+      background-color: var(--v-black);
+      width: 24px; height: 2px; border: none; opacity: .35;
+    }
+    .carousel-indicators [data-bs-target].active { opacity: 1; }
+  </style>
 </head>
-<body class="bg-gray-50 text-gray-900">
-    <nav class="bg-black text-white p-4 shadow-lg">
-        <div class="container mx-auto flex justify-between">
-            <h1 class="text-2xl font-bold tracking-widest">VELLUM</h1>
-            </div>
-    </nav>
+<body>
 
-    <main class="container mx-auto p-6">
-        {% block content %}{% endblock %}
-    </main>
+  <nav class="navbar-vellum" aria-label="Navegación principal">
+    <div>
+      <a href="/" class="navbar-brand-vellum">Vellum</a>
+      <span class="navbar-tagline d-block" style="margin-top:2px;">León, Guanajuato</span>
+    </div>
+  </nav>
 
-    <footer class="text-center p-10 text-gray-500 text-sm">
-        &copy; 2026 Marroquinería Vellum - León, Gto.
-    </footer>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.js"></script>
+  <main class="container">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="footer-vellum">
+    &copy; 2026 Marroquinería Vellum · León, Gto.
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
