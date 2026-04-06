@@ -112,10 +112,7 @@ def finalizar_venta():
     folio = generar_folio()
     
     nueva_venta = Venta(
-<<<<<<< HEAD
-=======
         folio=folio,
->>>>>>> origin/feature/vista-mis-pedidos
         usuario_id=usuario_id
     )
 
@@ -131,10 +128,6 @@ def finalizar_venta():
             cantidad=item.cantidad,
             precio_unitario=item.precio,
             costo_unitario=producto.costo_produccion
-<<<<<<< HEAD
-            # ELIMINADO: subtotal=item.precio * item.cantidad
-=======
->>>>>>> origin/feature/vista-mis-pedidos
         )
 
         db.session.add(detalle)
@@ -171,15 +164,9 @@ def ticket():
         return redirect(url_for("ventas.punto_venta"))
 
     detalles = DetalleVenta.query.filter_by(venta_id=venta.id).all()
-<<<<<<< HEAD
-    subtotal = sum([d.subtotal for d in detalles])
-    iva = subtotal * IVA_TASA
-    total = subtotal + iva
-=======
 
     subtotal, iva, total = calcular_totales(detalles)
 
->>>>>>> origin/feature/vista-mis-pedidos
     return render_template(
         "ticket.html",
         venta=venta,

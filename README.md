@@ -50,6 +50,11 @@ Los siguientes usuarios están pre-registrados en el sistema con permisos:
 | **`user_emilio`** | `emilio_ventas_123` | Operador / Ventas |
 | **`maint_diego`** | `diego_mantenimientp_456` | Consulta / Mantenimiento / Respaldos |
 | **`maint_ange`** | `angel_mantenimiento_123` | Consulta / Mantenimiento / Respaldos |
+| **`cliente_test`** | `Vellum2026*` | Consulta / Mantenimiento / Respaldos |
+| **`angel_cliente`** | `cliente123` | Consulta / Mantenimiento / Respaldos |
+| **`majo_cliente`** | `cliente456` | Consulta / Mantenimiento / Respaldos |
+
+
 
 ---
 
