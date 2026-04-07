@@ -20,26 +20,27 @@ def listar_recetas():
 @recetas_bp.route("/recetas/nuevo", methods=['GET', 'POST'])
 def crear_receta():
     form = forms.RecetaForm(request.form)
-    
-    # Validación de existencia de materiales (Tarea 3)
     materiales = MateriaPrima.query.all()
     form.id_materia.choices = [(m.id_materia, f"{m.nombre} ({m.unidad.abreviatura})") for m in materiales]
+    productos = Producto.query.all()
+    form.id_producto.choices = [(p.id, p.nombre) for p in productos]
 
     if request.method == 'POST' and form.validate():
         nueva_receta = Receta(
             id_producto=form.id_producto.data,
             id_materia=form.id_materia.data,
-            area_plantilla_dm2=form.area_plantilla.data, # Área útil
-            area_reticula_corte_dm2=form.area_reticula.data # Área con merma
+            area_plantilla_dm2=form.area_plantilla.data, 
+            area_reticula_corte_dm2=form.area_reticula.data 
         )
         
         db.session.add(nueva_receta)
         db.session.commit()
         flash("Insumo agregado a la receta exitosamente", "success")
         return redirect(url_for('recetas.listar_recetas'))
-    
+    if request.method == 'POST' and not form.validate():
+        print("Errores de validación:", form.errors)
+        
     return render_template("recetas/crear.html", form=form)
-
 # ─────────────────────────────────────────────
 # MODIFICAR (U) - Permitir edición (Tarea 4)
 # ─────────────────────────────────────────────
@@ -47,6 +48,7 @@ def crear_receta():
 def modificar_receta(id):
     insumo_receta = Receta.query.get_or_404(id)
     form = forms.RecetaForm(obj=insumo_receta)
+    productos = Producto.query.all()
     
     # Recargar los materiales para el SelectField
     materiales = MateriaPrima.query.all()
