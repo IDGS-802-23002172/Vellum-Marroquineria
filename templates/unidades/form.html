@@ -1,113 +1,101 @@
 {% extends "base.html" %}
-
-{% block title %}
-{{ 'Nueva Unidad' if modo == 'crear' else 'Editar Unidad' }}
+{% block title %}{{ 'Nueva Unidad' if modo == 'crear' else 'Editar — ' ~ unidad.nombre }}{% endblock %}
+{% block breadcrumb %}
+  <a href="#">Catálogos</a> /
+  <a href="{{ url_for('unidades.listar') }}">Unidades de Medida</a> /
+  {{ 'Nueva' if modo == 'crear' else unidad.nombre }}
 {% endblock %}
-
 {% block page_title %}
-{{ 'Registrar Unidad de Medida' if modo == 'crear' else 'Editar Unidad de Medida' }}
+  {{ 'Registrar Unidad de Medida' if modo == 'crear' else 'Editar Unidad de Medida' }}
 {% endblock %}
 
 {% block content %}
+<div class="row justify-content-center">
+<div class="col-lg-5 col-md-7">
 
 <form method="POST"
-action="{{ url_for('unidades.crear') if modo == 'crear' else url_for('unidades.editar', id=unidad.id_unidad) }}"
-novalidate>
+      action="{{ url_for('unidades.crear') if modo == 'crear' else url_for('unidades.editar', id=unidad.id_unidad) }}"
+      novalidate>
+  {{ form.csrf_token }}
 
-{{ form.csrf_token }}
+  <div class="card-piel">
+    <div class="card-header">
+      <i class="bi bi-rulers me-2" style="color:var(--v-tan);"></i>
+      Definición de Unidad
+    </div>
 
-<div class="row justify-content-center">
+    <div class="p-4">
+      <div class="row g-4">
 
-<div class="col-lg-6">
+        <div class="col-12">
+          <label class="form-label" for="{{ form.nombre.id }}">
+            Nombre <span style="color:#dc2626;" aria-hidden="true">*</span>
+          </label>
+          {{ form.nombre(
+              id=form.nombre.id,
+              class="form-control" + (" is-invalid" if form.nombre.errors else ""),
+              placeholder="Ej: Decímetro cuadrado"
+            ) }}
+          {% for e in form.nombre.errors %}
+            <div class="field-error"><i class="bi bi-exclamation-circle"></i> {{ e }}</div>
+          {% endfor %}
+        </div>
 
-<div class="card-vellum">
+        <div class="col-md-6">
+          <label class="form-label" for="{{ form.abreviatura.id }}">
+            Abreviatura <span style="color:#dc2626;" aria-hidden="true">*</span>
+          </label>
+          {{ form.abreviatura(
+              id=form.abreviatura.id,
+              class="form-control" + (" is-invalid" if form.abreviatura.errors else ""),
+              placeholder="dm²",
+              style="font-family:monospace; font-weight:600; letter-spacing:.04em;"
+            ) }}
+          {% for e in form.abreviatura.errors %}
+            <div class="field-error"><i class="bi bi-exclamation-circle"></i> {{ e }}</div>
+          {% endfor %}
+        </div>
 
-<h3 class="text-xs uppercase tracking-widest text-stone-500 border-bottom pb-3 mb-4">
-Definición de Unidad
-</h3>
+        <div class="col-md-6">
+          <label class="form-label" for="{{ form.tipo.id }}">
+            Tipo <span style="color:#dc2626;" aria-hidden="true">*</span>
+          </label>
+          {{ form.tipo(
+              id=form.tipo.id,
+              class="form-select" + (" is-invalid" if form.tipo.errors else "")
+            ) }}
+          {% for e in form.tipo.errors %}
+            <div class="field-error"><i class="bi bi-exclamation-circle"></i> {{ e }}</div>
+          {% endfor %}
+        </div>
 
-<div class="row g-4">
+      </div>
 
-<!-- NOMBRE -->
+      <div class="d-flex gap-3 mt-4 pt-4" style="border-top:1px solid var(--v-border);">
+        <button type="submit" class="btn-piel flex-grow-1 justify-content-center">
+          <i class="bi bi-check-circle"></i>
+          {{ 'Registrar unidad' if modo == 'crear' else 'Guardar cambios' }}
+        </button>
+        <a href="{{ url_for('unidades.listar') }}"
+           class="btn-outline-piel flex-grow-1 justify-content-center">
+          <i class="bi bi-arrow-left"></i> Cancelar
+        </a>
+      </div>
 
-<div class="col-12">
-<label class="small uppercase tracking-widest text-stone-400 mb-2">
-Nombre de la unidad
-</label>
-
-{{ form.nombre(
-class="form-control border-0 border-bottom rounded-0 shadow-none px-0",
-placeholder="Ejemplo: Decímetro cuadrado"
-) }}
-
-</div>
-
-
-<!-- ABREVIATURA -->
-
-<div class="col-md-6">
-
-<label class="small uppercase tracking-widest text-stone-400 mb-2">
-Abreviatura
-</label>
-
-{{ form.abreviatura(
-class="form-control border-0 border-bottom rounded-0 shadow-none px-0",
-placeholder="dm²"
-) }}
-
-</div>
-
-
-<!-- TIPO -->
-
-<div class="col-md-6">
-
-<label class="small uppercase tracking-widest text-stone-400 mb-2">
-Tipo de unidad
-</label>
-
-{{ form.tipo(
-class="form-select border-0 border-bottom rounded-0 shadow-none px-0"
-) }}
-
-</div>
-
-</div>
-
-
-<!-- BOTONES -->
-
-<div class="mt-5 d-grid gap-3">
-
-<button type="submit" class="btn-vellum py-3">
-{{ 'Registrar Unidad' if modo == 'crear' else 'Guardar Cambios' }}
-</button>
-
-<a href="{{ url_for('unidades.listar') }}"
-class="text-center text-xs uppercase tracking-widest text-stone-400 text-decoration-none">
-
-Cancelar
-
-</a>
-
-</div>
-
-</div>
-
-</div>
-
-</div>
+    </div>
+  </div>
 
 </form>
+</div>
+</div>
 
-
+{% block extra_head %}
 <style>
-
-.form-control:focus {
-border-bottom-color: var(--v-black) !important;
-}
-
+  .field-error {
+    font-size: .78rem; color: var(--v-danger);
+    margin-top: 5px; display: flex; align-items: center; gap: 4px;
+  }
 </style>
+{% endblock %}
 
 {% endblock %}

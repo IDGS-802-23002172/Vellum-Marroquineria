@@ -1,34 +1,29 @@
 {% extends "base.html" %}
-
 {% block title %}Órdenes de Compra{% endblock %}
 {% block breadcrumb %}<a href="#">Compras</a> / Órdenes{% endblock %}
 {% block page_title %}Órdenes de Compra{% endblock %}
 
 {% block content %}
 
-{# ── Barra superior ──────────────────────────────────────────────────────── #}
+{# ── Barra superior ── #}
 <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
 
-  <form method="GET" class="d-flex gap-2 align-items-center" style="flex:1; max-width:560px;">
-
-    <div class="search-wrap" style="flex:1;">
-      <i class="bi bi-search"></i>
-      <input type="text" name="q" class="form-control"
-             placeholder="Buscar por folio, proveedor, factura…"
-             value="{{ q }}">
+  <form method="GET" class="d-flex gap-2 align-items-center" style="flex:1; max-width:540px;">
+    <div class="search-wrap" style="flex:1; position:relative;">
+      <i class="bi bi-search" style="position:absolute; left:10px; top:50%; transform:translateY(-50%); color:#767676; font-size:.85rem; pointer-events:none;"></i>
+      <input type="text" name="q" class="form-control" style="padding-left:32px;"
+             placeholder="Buscar por folio, proveedor, factura…" value="{{ q }}"
+             aria-label="Buscar órdenes">
     </div>
-
-    <select name="estado" class="form-select" style="width:160px;">
+    <select name="estado" class="form-select" style="width:160px;" aria-label="Filtrar por estado">
       <option value="">Todos</option>
       <option value="BORRADOR"   {% if estado == 'BORRADOR'   %}selected{% endif %}>Borrador</option>
       <option value="CONFIRMADA" {% if estado == 'CONFIRMADA' %}selected{% endif %}>Confirmada</option>
       <option value="CANCELADA"  {% if estado == 'CANCELADA'  %}selected{% endif %}>Cancelada</option>
     </select>
-
-    <button type="submit" class="btn-piel">
+    <button type="submit" class="btn-outline-piel">
       <i class="bi bi-funnel"></i> Filtrar
     </button>
-
   </form>
 
   <div class="d-flex gap-2">
@@ -42,115 +37,100 @@
 
 </div>
 
-
-{# ── Tabla ───────────────────────────────────────────────────────────────── #}
+{# ── Tabla ── #}
 <div class="card-piel">
 
   <div class="card-header d-flex align-items-center justify-content-between">
-    <span>
-      <i class="bi bi-cart3 me-2" style="color:var(--piel-tan)"></i>
-      Órdenes registradas
-    </span>
-    <span style="font-size:.8rem; color:#999; font-weight:400;">
+    <span><i class="bi bi-cart3 me-2" style="color:var(--v-tan);"></i>Órdenes registradas</span>
+    <span style="font-size:.75rem; color:var(--v-mid); font-weight:400;">
       {{ paginacion.total }} resultado{{ 's' if paginacion.total != 1 }}
     </span>
   </div>
 
   {% if ordenes %}
-
   <div style="overflow-x:auto;">
     <table class="table-piel">
       <thead>
         <tr>
-          <th>Folio</th>
-          <th>Proveedor</th>
-          <th>Fecha</th>
-          <th>Factura / Ref.</th>
-          <th style="text-align:right;">Total</th>
-          <th style="text-align:center;">Estado</th>
-          <th style="text-align:center;">Acciones</th>
+          <th scope="col">Folio</th>
+          <th scope="col">Proveedor</th>
+          <th scope="col">Fecha</th>
+          <th scope="col">Factura / Ref.</th>
+          <th scope="col" style="text-align:right;">Total</th>
+          <th scope="col" style="text-align:center;">Estado</th>
+          <th scope="col" style="text-align:center; width:90px;">Acciones</th>
         </tr>
       </thead>
       <tbody>
       {% for o in ordenes %}
         <tr>
-
           <td>
             <a href="{{ url_for('compras.detalle', id=o.id_orden) }}"
-               style="color:var(--piel-brown); font-weight:600; text-decoration:none;">
+               style="color:var(--v-tan); font-weight:600; text-decoration:none; font-size:.875rem;">
               {{ o.folio }}
             </a>
           </td>
-
-          <td style="font-size:.9rem;">{{ o.proveedor.razon_social }}</td>
-
-          <td style="font-size:.85rem; color:#888;">
-            {{ o.fecha.strftime('%d/%m/%Y') }}
-          </td>
-
-          <td style="font-size:.85rem; color:#888;">
-            {{ o.referencia_doc or '—' }}
-          </td>
-
-          <td style="text-align:right; font-weight:600;">
+          <td style="font-size:.875rem;">{{ o.proveedor.razon_social }}</td>
+          <td style="font-size:.825rem; color:var(--v-mid);">{{ o.fecha.strftime('%d/%m/%Y') }}</td>
+          <td style="font-size:.825rem; color:var(--v-mid);">{{ o.referencia_doc or '—' }}</td>
+          <td style="text-align:right; font-weight:600; font-size:.875rem; font-variant-numeric:tabular-nums;">
             ${{ "%.2f"|format(o.total) }}
           </td>
-
           <td style="text-align:center;">
             {% if o.estado == 'CONFIRMADA' %}
-              <span class="tag-material" style="background:#d1fae5; color:#065f46;">Confirmada</span>
+              <span class="tag-material tag-confirmada">Confirmada</span>
             {% elif o.estado == 'CANCELADA' %}
-              <span class="tag-material" style="background:#fee2e2; color:#991b1b;">Cancelada</span>
+              <span class="tag-material tag-cancelada">Cancelada</span>
             {% else %}
-              <span class="tag-material" style="background:#fef9c3; color:#854d0e;">Borrador</span>
+              <span class="tag-material tag-borrador">Borrador</span>
             {% endif %}
           </td>
-
           <td>
-            <div class="d-flex gap-2 justify-content-center">
+            <div class="d-flex gap-1 justify-content-center">
               <a href="{{ url_for('compras.detalle', id=o.id_orden) }}"
-                 class="btn-outline-piel" title="Ver detalle">
+                 class="btn-icon-piel" title="Ver detalle" aria-label="Ver detalle de {{ o.folio }}">
                 <i class="bi bi-eye"></i>
               </a>
               {% if o.estado == 'BORRADOR' %}
               <a href="{{ url_for('compras.editar', id=o.id_orden) }}"
-                 class="btn-outline-piel" title="Editar">
+                 class="btn-icon-piel" title="Editar" aria-label="Editar {{ o.folio }}"
+                 style="color:var(--v-stone);">
                 <i class="bi bi-pencil"></i>
               </a>
               {% endif %}
             </div>
           </td>
-
         </tr>
       {% endfor %}
       </tbody>
     </table>
   </div>
 
-  {# ── Paginación ── #}
+  {# Paginación #}
   {% if paginacion.pages > 1 %}
-  <div class="d-flex align-items-center justify-content-between p-3"
-       style="border-top:1px solid var(--piel-border);">
-    <span style="font-size:.82rem; color:#999;">
-      Página {{ paginacion.page }} de {{ paginacion.pages }}
-    </span>
+  <div class="pagination-bar">
+    <span>Página {{ paginacion.page }} de {{ paginacion.pages }}</span>
     <div class="d-flex gap-2">
       {% if paginacion.has_prev %}
         <a href="{{ url_for('compras.index', pagina=paginacion.prev_num, q=q, estado=estado) }}"
-           class="btn-outline-piel"><i class="bi bi-chevron-left"></i></a>
+           class="btn-outline-piel" aria-label="Página anterior">
+          <i class="bi bi-chevron-left"></i>
+        </a>
       {% endif %}
       {% if paginacion.has_next %}
         <a href="{{ url_for('compras.index', pagina=paginacion.next_num, q=q, estado=estado) }}"
-           class="btn-outline-piel"><i class="bi bi-chevron-right"></i></a>
+           class="btn-outline-piel" aria-label="Página siguiente">
+          <i class="bi bi-chevron-right"></i>
+        </a>
       {% endif %}
     </div>
   </div>
   {% endif %}
 
   {% else %}
-  <div style="padding:48px; text-align:center; color:#ccc;">
-    <i class="bi bi-cart3" style="font-size:2.5rem; color:var(--piel-border);"></i>
-    <p style="margin-top:12px; font-size:.95rem;">
+  <div class="empty-state">
+    <i class="bi bi-cart3"></i>
+    <p>
       {% if q or estado %}
         No se encontraron órdenes con esos criterios.
       {% else %}
@@ -164,5 +144,4 @@
   {% endif %}
 
 </div>
-
 {% endblock %}

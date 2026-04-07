@@ -1,56 +1,98 @@
 {% extends "base.html" %}
-
-{% block title %}Monitoreo de Producción{% endblock %}
+{% block title %}Producción{% endblock %}
+{% block breadcrumb %}<a href="#">Taller</a> / Órdenes de Producción{% endblock %}
+{% block page_title %}Órdenes de Producción{% endblock %}
 
 {% block content %}
-<div class="container-fluid px-0">
-    <div class="d-flex justify-content-between align-items-end mb-5 border-bottom pb-4">
-        <div>
-            <h2 class="text-premium text-uppercase m-0">Órdenes Activas</h2>
-            <p class="text-uppercase tracking-widest text-muted mb-0" style="font-size: 0.65rem;">Flujo de trabajo en tiempo real</p>
-        </div>
-        <a href="{{ url_for('produccion.crear_orden') }}" class="btn-vellum">
-            <i class="bi bi-hammer me-2"></i> Nueva Orden
-        </a>
-    </div>
 
-    <div class="table-responsive">
-        <table class="table table-hover align-middle">
-            <thead class="bg-light small text-uppercase tracking-wider">
-                <tr>
-                    <th>ID</th>
-                    <th>Producto</th>
-                    <th>Cantidad</th>
-                    <th>Estado</th>
-                    <th>Progreso</th>
-                    <th class="text-end">Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for o in ordenes %}
-                <tr>
-                    <td class="font-monospace">#{{ o.id_orden }}</td>
-                    <td class="fw-bold">{{ o.producto.nombre }}</td>
-                    <td>{{ o.cantidad }} unidades</td>
-                    <td>
-                        <span class="badge {% if o.estado == 'En Corte' %}bg-warning text-dark{% else %}bg-success{% endif %} text-uppercase p-2" style="font-size: 0.6rem;">
-                            {{ o.estado }}
-                        </span>
-                    </td>
-                    <td style="width: 200px;">
-                        <div class="progress" style="height: 5px; border-radius: 0;">
-                            <div class="progress-bar bg-dark" style="width: {% if o.estado == 'Terminado' %}100%{% else %}50%{% endif %}"></div>
-                        </div>
-                    </td>
-                    <td class="text-end">
-                        <a href="{{ url_for('produccion.actualizar_produccion', id=o.id_orden) }}" class="btn btn-sm btn-outline-dark" style="border-radius: 0;">
-                            <i class="bi bi-gear-fill"></i> Gestionar
-                        </a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+<div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
+  <p style="font-size:.78rem; color:var(--v-mid); margin:0; text-transform:uppercase; letter-spacing:.1em;">
+    Flujo de trabajo en tiempo real
+  </p>
+  <a href="{{ url_for('produccion.crear_orden') }}" class="btn-piel">
+    <i class="bi bi-hammer"></i> Nueva Orden
+  </a>
 </div>
+
+<div class="card-piel">
+
+  <div class="card-header">
+    <i class="bi bi-hammer me-2" style="color:var(--v-tan);"></i>
+    Órdenes activas
+  </div>
+
+  {% if ordenes %}
+  <div style="overflow-x:auto;">
+    <table class="table-piel">
+      <thead>
+        <tr>
+          <th scope="col">Orden</th>
+          <th scope="col">Producto</th>
+          <th scope="col" style="text-align:center;">Cantidad</th>
+          <th scope="col" style="text-align:center;">Estado</th>
+          <th scope="col">Progreso</th>
+          <th scope="col" style="text-align:center; width:100px;">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for o in ordenes %}
+        <tr>
+          <td style="font-family:monospace; font-size:.825rem; color:var(--v-mid);">
+            #{{ o.id_orden }}
+          </td>
+          <td style="font-weight:600; font-size:.875rem;">{{ o.producto.nombre }}</td>
+          <td style="text-align:center; font-size:.875rem; font-variant-numeric:tabular-nums;">
+            {{ o.cantidad }}
+            <span style="font-size:.75rem; color:var(--v-mid);">uds.</span>
+          </td>
+          <td style="text-align:center;">
+            {% if o.estado == 'Terminado' %}
+              <span class="tag-material tag-confirmada">Terminado</span>
+            {% elif o.estado == 'Cancelado' %}
+              <span class="tag-material tag-cancelada">Cancelado</span>
+            {% else %}
+              <span class="tag-material tag-borrador">{{ o.estado }}</span>
+            {% endif %}
+          </td>
+          <td style="min-width:140px;">
+            <div style="background:var(--v-border); border-radius:1px; height:4px; overflow:hidden;">
+              <div style="height:100%; background:{% if o.estado == 'Terminado' %}var(--v-success){% elif o.estado == 'Cancelado' %}var(--v-danger){% else %}var(--v-tan){% endif %};
+                          width:{% if o.estado == 'Terminado' %}100%{% elif o.estado == 'Cancelado' %}100%{% else %}50%{% endif %};
+                          transition: width .4s ease;">
+              </div>
+            </div>
+            <span style="font-size:.68rem; color:var(--v-mid); margin-top:3px; display:block;">
+              {% if o.estado == 'Terminado' %}Completado
+              {% elif o.estado == 'Cancelado' %}Cancelado
+              {% else %}En proceso{% endif %}
+            </span>
+          </td>
+          <td>
+            <div class="d-flex gap-1 justify-content-center">
+              <a href="{{ url_for('produccion.actualizar_produccion', id=o.id_orden) }}"
+                 class="btn-icon-piel" title="Gestionar orden" aria-label="Gestionar orden #{{ o.id_orden }}"
+                 style="width:auto; padding:6px 10px; font-size:.7rem; gap:4px;">
+                <i class="bi bi-gear-fill"></i>
+                <span style="font-size:.68rem; text-transform:uppercase; letter-spacing:.06em;">Gestionar</span>
+              </a>
+            </div>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% else %}
+  <div class="empty-state">
+    <i class="bi bi-hammer"></i>
+    <p>No hay órdenes de producción activas.</p>
+    <a href="{{ url_for('produccion.crear_orden') }}" class="btn-piel">
+      <i class="bi bi-plus-lg"></i> Crear primera orden
+    </a>
+  </div>
+  {% endif %}
+
+</div>
+
 {% endblock %}

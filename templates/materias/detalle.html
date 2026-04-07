@@ -1,51 +1,62 @@
 {% extends "base.html" %}
-
 {% block title %}{{ materia.nombre }}{% endblock %}
-
 {% block breadcrumb %}
   <a href="#">Inventario</a> /
   <a href="{{ url_for('materias.index') }}">Materias Primas</a> /
   {{ materia.nombre }}
 {% endblock %}
-
 {% block page_title %}{{ materia.nombre }}{% endblock %}
 
 {% block content %}
+
+{# Variables reutilizables #}
+{% if materia.tipo_control == 'pieza' %}
+  {% set stock_val = materia.piezas | selectattr('disponible') | list | length %}
+  {% set stock_label = 'pieza' + ('s' if stock_val != 1 else '') %}
+{% else %}
+  {% set stock_val = materia.stock.cantidad_actual if materia.stock else 0 %}
+  {% set stock_label = materia.unidad.abreviatura %}
+{% endif %}
+{% set bajo_reorden = materia.stock and stock_val < materia.stock.punto_reorden %}
+
 <div class="row g-4">
 
-  <!-- ── Columna principal ───────────────────── -->
+  {# ── Columna principal ── #}
   <div class="col-lg-8">
 
+    {# Datos generales #}
     <div class="card-piel mb-4">
-
-      <div class="card-header d-flex align-items-center justify-content-between">
-        <span>
-          <i class="bi bi-box-seam me-2" style="color:var(--piel-tan)"></i>
-          Información de la Materia Prima
-        </span>
+      <div class="card-header">
+        <i class="bi bi-box-seam me-2" style="color:var(--v-tan);"></i>
+        Información de la Materia Prima
       </div>
 
-      <div class="p-4">
+      <div class="detail-grid">
 
         <div class="detail-row">
           <div class="detail-label">Nombre</div>
-          <div class="detail-value" style="font-weight:600;">
-            {{ materia.nombre }}
-          </div>
+          <div class="detail-value" style="font-weight:600;">{{ materia.nombre }}</div>
         </div>
 
         <div class="detail-row">
           <div class="detail-label">Descripción</div>
-          <div class="detail-value">
-            {{ materia.descripcion or '—' }}
-          </div>
+          <div class="detail-value">{{ materia.descripcion or '—' }}</div>
         </div>
 
         <div class="detail-row">
           <div class="detail-label">Unidad de medida</div>
           <div class="detail-value">
-            <span class="tag-material">
+            <span class="tag-material" style="background:var(--v-paper); color:var(--v-stone); border:1px solid var(--v-border);">
               {{ materia.unidad.nombre }} ({{ materia.unidad.abreviatura }})
+            </span>
+          </div>
+        </div>
+
+        <div class="detail-row">
+          <div class="detail-label">Control</div>
+          <div class="detail-value">
+            <span class="tag-material" style="{% if materia.tipo_control == 'pieza' %}background:#ede9fe; color:#5b21b6;{% else %}background:#e0f2fe; color:#075985;{% endif %}">
+              {{ 'Por pieza' if materia.tipo_control == 'pieza' else 'Acumulable' }}
             </span>
           </div>
         </div>
@@ -53,291 +64,315 @@
         <div class="detail-row">
           <div class="detail-label">Stock actual</div>
           <div class="detail-value">
-
-            {% if materia.tipo_control == 'pieza' %}
-              {% set piezas_disponibles = materia.piezas | selectattr('disponible') | list | length %}
-              <strong>{{ piezas_disponibles }}</strong>
-              pieza{{ 's' if piezas_disponibles != 1 }}
-            {% else %}
-              {% if materia.stock %}
-                <strong>{{ materia.stock.cantidad_actual }}</strong>
-                {{ materia.unidad.abreviatura }}
-              {% else %}
-                —
-              {% endif %}
-            {% endif %}
-
-          </div>
-        </div>
-
-        <div class="detail-row">
-          <div class="detail-label">Punto de reorden</div>
-          <div class="detail-value" style="display:flex; align-items:center; gap:12px;">
-
-            <span id="punto-reorden-display">
-            {% if materia.tipo_control == 'pieza' %}
-              {% set piezas_disponibles = materia.piezas | selectattr('disponible') | list | length %}
-              {% if piezas_disponibles < materia.stock.punto_reorden %}
-                <span style="color:#dc2626; font-weight:600;">
-                ⚠️ {{ materia.stock.punto_reorden | int }} pieza{{ 's' if materia.stock.punto_reorden != 1 }}
-                </span>
-              {% else %}
-                {{ materia.stock.punto_reorden | int }} pieza{{ 's' if materia.stock.punto_reorden != 1 }}
-              {% endif %}
-            {% else %}
-              {% if materia.stock %}
-                {% if materia.stock.cantidad_actual < materia.stock.punto_reorden %}
-                  <span style="color:#dc2626; font-weight:600;">
-                  ⚠️ {{ materia.stock.punto_reorden }}
-                  {{ materia.unidad.abreviatura }}
-                  </span>
-                {% else %}
-                  {{ materia.stock.punto_reorden }}
-                  {{ materia.unidad.abreviatura }}
-                {% endif %}
-              {% else %}
-                —
-              {% endif %}
-            {% endif %}
+            <span style="font-size:1.15rem; font-weight:700; {% if bajo_reorden %}color:var(--v-danger);{% else %}color:var(--v-black);{% endif %}">
+              {{ stock_val }}
             </span>
-
-            <button 
-              type="button"
-              class="btn btn-sm" 
-              style="padding:4px 8px; font-size:0.8rem; background:#f5f1ed; border:1px solid #ddd; border-radius:4px; cursor:pointer; color:var(--piel-brown);"
-              onclick="toggleEditPuntoReorden()"
-            >
-              Editar
-            </button>
-
+            <span style="font-size:.825rem; color:var(--v-mid); margin-left:4px;">{{ stock_label }}</span>
+            {% if bajo_reorden %}
+              <span style="display:inline-flex; align-items:center; gap:4px; margin-left:10px;
+                           font-size:.72rem; font-weight:600; color:var(--v-danger);
+                           background:var(--v-danger-bg); padding:2px 8px; border-radius:99px;">
+                <i class="bi bi-exclamation-triangle-fill" style="font-size:.65rem;"></i> Bajo mínimo
+              </span>
+            {% endif %}
           </div>
         </div>
 
-        <!-- Modal de edición de punto de reorden -->
-        <div id="edit-punto-reorden-container" style="display:none; margin-top:16px; padding:12px; background:#f9f7f5; border:1px solid #e8ddd3; border-radius:6px;">
-          <label class="form-label" style="font-size:0.9rem; margin-bottom:8px;">Nuevo punto de reorden</label>
-          <div style="display:flex; gap:8px;">
-            <input 
-              type="number" 
-              id="nuevo-punto-reorden" 
-              min="0" 
-              step="0.01"
-              value="{{ materia.stock.punto_reorden }}"
-              class="form-control"
-              style="font-size:0.9rem;"
-            >
-            <button 
-              type="button"
-              onclick="guardarPuntoReorden({{ materia.id_materia }})"
-              class="btn-piel"
-              style="padding:6px 12px; font-size:0.9rem;"
-            >
-              Guardar
-            </button>
-            <button 
-              type="button"
-              onclick="toggleEditPuntoReorden()"
-              class="btn-outline-piel"
-              style="padding:6px 12px; font-size:0.9rem;"
-            >
-              Cancelar
-            </button>
-          </div>
-        </div>
-
-        {% if materia.tipo_control == 'pieza' %}
-        <div class="detail-row">
-          <div class="detail-label">Piezas disponibles</div>
+        {# Punto de reorden con edición inline #}
+        <div class="detail-row" id="row-punto-reorden">
+          <div class="detail-label">Punto de reorden</div>
           <div class="detail-value">
+            <div class="d-flex align-items-center gap-3" id="pr-display">
+              <span id="pr-valor">
+                {% if materia.stock %}
+                  {{ materia.stock.punto_reorden | int }} {{ stock_label }}
+                {% else %}—{% endif %}
+              </span>
+              {% if materia.stock %}
+              <button type="button" class="btn-edit-inline" onclick="abrirEditPR()" aria-label="Editar punto de reorden">
+                <i class="bi bi-pencil"></i> Editar
+              </button>
+              {% endif %}
+            </div>
 
-            <ul style="margin:0; padding-left:16px; color:#333;">
-            {% for pieza in materia.piezas %}
-              <li style="margin-bottom:6px; color: {% if not pieza.disponible %}#999{% else %}#000{% endif %};">
-                ID {{ pieza.id_pieza }} — {{ pieza.area }} {{ materia.unidad.abreviatura }}
+            {# Panel de edición (oculto por defecto) #}
+            {% if materia.stock %}
+            <div id="pr-edit" style="display:none; margin-top:10px;">
+              <div class="d-flex gap-2 align-items-center flex-wrap">
+                <div style="position:relative;">
+                  <input type="number" id="pr-input" min="0" step="0.01"
+                         value="{{ materia.stock.punto_reorden }}"
+                         class="form-control" style="width:140px;"
+                         aria-label="Nuevo punto de reorden">
+                  <span style="position:absolute; right:10px; top:50%; transform:translateY(-50%);
+                               font-size:.75rem; color:var(--v-mid); pointer-events:none;">
+                    {{ materia.unidad.abreviatura }}
+                  </span>
+                </div>
+                <button type="button" class="btn-piel" style="padding:7px 14px;"
+                        onclick="guardarPR({{ materia.id_materia }})">
+                  <i class="bi bi-check-lg"></i> Guardar
+                </button>
+                <button type="button" class="btn-outline-piel" style="padding:7px 14px;"
+                        onclick="cerrarEditPR()">
+                  Cancelar
+                </button>
+              </div>
+              <p id="pr-feedback" style="font-size:.78rem; margin-top:6px; display:none;"></p>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+
+        {# Listado de piezas (solo tipo pieza) #}
+        {% if materia.tipo_control == 'pieza' %}
+        <div class="detail-row detail-row-full">
+          <div class="detail-label">Piezas registradas</div>
+          <div class="detail-value">
+            {% if materia.piezas %}
+            <div style="display:flex; flex-direction:column; gap:4px;">
+              {% for pieza in materia.piezas %}
+              <div style="display:flex; align-items:center; gap:10px; padding:6px 10px;
+                          background:{% if pieza.disponible %}var(--v-paper){% else %}#fafafa{% endif %};
+                          border:1px solid var(--v-border); border-radius:2px;
+                          {% if not pieza.disponible %}opacity:.55;{% endif %}">
+                <span style="font-size:.75rem; color:var(--v-mid); min-width:60px;">ID {{ pieza.id_pieza }}</span>
+                <span style="font-weight:500; font-size:.875rem;">{{ pieza.area }} {{ materia.unidad.abreviatura }}</span>
                 {% if not pieza.disponible %}
-                  <small style="color:#999;">(consumida)</small>
+                  <span class="tag-material" style="background:var(--v-danger-bg); color:var(--v-danger); margin-left:auto;">Consumida</span>
+                {% else %}
+                  <span class="tag-material" style="background:var(--v-success-bg); color:var(--v-success); margin-left:auto;">Disponible</span>
                 {% endif %}
-              </li>
+              </div>
+              {% endfor %}
+            </div>
             {% else %}
-              <li>—</li>
-            {% endfor %}
-            </ul>
-
+              <span style="color:var(--v-mid);">—</span>
+            {% endif %}
           </div>
         </div>
         {% endif %}
 
         <div class="detail-row">
           <div class="detail-label">Registrado el</div>
-          <div class="detail-value" style="color:#999; font-size:.83rem;">
+          <div class="detail-value" style="color:var(--v-mid); font-size:.825rem;">
             {{ materia.creado_en.strftime('%d %b %Y, %H:%M') }}
           </div>
         </div>
 
         <div class="detail-row">
           <div class="detail-label">Última actualización</div>
-          <div class="detail-value" style="color:#999; font-size:.83rem;">
+          <div class="detail-value" style="color:var(--v-mid); font-size:.825rem;">
             {{ materia.actualizado_en.strftime('%d %b %Y, %H:%M') }}
           </div>
         </div>
 
       </div>
-
     </div>
 
-
-    <!-- Historial de movimientos -->
+    {# Historial de movimientos #}
     <div class="card-piel">
-
       <div class="card-header">
-        <i class="bi bi-arrow-left-right me-2" style="color:var(--piel-tan)"></i>
+        <i class="bi bi-arrow-left-right me-2" style="color:var(--v-tan);"></i>
         Movimientos recientes
       </div>
 
       {% if movimientos %}
-
       <div style="overflow-x:auto;">
-
         <table class="table-piel">
-
           <thead>
             <tr>
-              <th>Fecha</th>
-              <th>Tipo</th>
-              <th>Cantidad</th>
-              <th>Proveedor</th>
-              <th>Referencia</th>
+              <th scope="col">Fecha</th>
+              <th scope="col">Tipo</th>
+              <th scope="col" style="text-align:right;">Cantidad</th>
+              <th scope="col">Proveedor</th>
+              <th scope="col">Referencia</th>
             </tr>
           </thead>
-
           <tbody>
-
           {% for mov in movimientos %}
-
           <tr>
-
-            <td style="font-size:.85rem; color:#777;">
+            <td style="font-size:.825rem; color:var(--v-mid); white-space:nowrap;">
               {{ mov.fecha.strftime('%d/%m/%Y') }}
             </td>
-
             <td>
-              <span class="tag-material">
+              <span class="tag-material" style="{% if mov.cantidad > 0 %}background:var(--v-success-bg); color:var(--v-success);{% else %}background:var(--v-danger-bg); color:var(--v-danger);{% endif %}">
                 {{ mov.tipo }}
               </span>
             </td>
-
-            <td>
-
-              {% if mov.cantidad > 0 %}
-                <span style="color:#059669;">
-                  +{{ mov.cantidad }}
-                </span>
-              {% else %}
-                <span style="color:#dc2626;">
-                  {{ mov.cantidad }}
-                </span>
-              {% endif %}
-
-              {{ materia.unidad.abreviatura }}
-
+            <td style="text-align:right; font-weight:600; font-variant-numeric:tabular-nums; white-space:nowrap;">
+              <span style="color:{% if mov.cantidad > 0 %}var(--v-success){% else %}var(--v-danger){% endif %};">
+                {{ '+' if mov.cantidad > 0 else '' }}{{ mov.cantidad }}
+              </span>
+              <span style="font-size:.78rem; color:var(--v-mid); margin-left:2px;">{{ materia.unidad.abreviatura }}</span>
             </td>
-
-            <td style="font-size:.85rem; color:#777;">
+            <td style="font-size:.875rem;">
               {% if mov.proveedor %}
-                <a href="{{ url_for('proveedores.detalle', id_proveedor=mov.proveedor.id_proveedor) }}" 
-                   style="color:var(--piel-brown); text-decoration:none;">
+                <a href="{{ url_for('proveedores.detalle', id_proveedor=mov.proveedor.id_proveedor) }}"
+                   style="color:var(--v-tan); text-decoration:none;">
                   {{ mov.proveedor.razon_social }}
                 </a>
               {% else %}
-                <span style="color:#ccc;">—</span>
+                <span style="color:var(--v-mid);">—</span>
               {% endif %}
             </td>
-
-            <td style="color:#777;">
-              {{ mov.referencia or '—' }}
-            </td>
-
+            <td style="font-size:.825rem; color:var(--v-mid);">{{ mov.referencia or '—' }}</td>
           </tr>
-
           {% endfor %}
-
           </tbody>
-
         </table>
-
       </div>
-
       {% else %}
-
-      <div style="padding:24px; color:#bbb;">
-        No hay movimientos registrados.
+      <div class="empty-state" style="padding:32px;">
+        <i class="bi bi-inbox"></i>
+        <p style="margin:0;">Sin movimientos registrados aún.</p>
       </div>
-
       {% endif %}
-
     </div>
 
   </div>
 
-
-  <!-- ── Columna lateral ─────────────────────── -->
+  {# ── Columna lateral ── #}
   <div class="col-lg-4">
-
-    <div class="card-piel mb-4">
-
+    <div class="card-piel" style="position:sticky; top:76px;">
       <div class="card-header">
-        <i class="bi bi-sliders me-2" style="color:var(--piel-tan)"></i>
-        Acciones
+        <i class="bi bi-sliders me-2" style="color:var(--v-tan);"></i>Acciones
       </div>
-
       <div class="p-4 d-flex flex-column gap-2">
 
-        <a href="{{ url_for('materias.editar', id=materia.id_materia) }}"
+        <a href="{{ url_for('materias.movimiento', id_materia=materia.id_materia) }}"
            class="btn-piel w-100 justify-content-center">
-
-          <i class="bi bi-pencil"></i>
-          Editar materia
-
+          <i class="bi bi-plus-circle"></i> Registrar movimiento
         </a>
 
-
-        <form method="POST"
-              action="{{ url_for('materias.eliminar', id=materia.id_materia) }}"
-              onsubmit="return confirm('¿Eliminar {{ materia.nombre }}?')">
-
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-
-          <button type="submit"
-                  class="btn-danger-piel w-100 justify-content-center">
-
-            <i class="bi bi-trash"></i>
-            Eliminar materia
-
-          </button>
-
-        </form>
+        <a href="{{ url_for('materias.editar', id=materia.id_materia) }}"
+           class="btn-outline-piel w-100 justify-content-center">
+          <i class="bi bi-pencil"></i> Editar materia
+        </a>
 
         <a href="{{ url_for('materias.index') }}"
            class="btn-outline-piel w-100 justify-content-center">
-
-          <i class="bi bi-arrow-left"></i>
-          Volver al listado
-
+          <i class="bi bi-arrow-left"></i> Volver al listado
         </a>
 
-        <a href="{{ url_for('materias.movimiento', id_materia=materia.id_materia) }}"
-          class="btn-piel w-100 justify-content-center">
-
-          <i class="bi bi-plus-circle"></i>
-          Registrar movimiento
-
-        </a>
+        <div style="border-top:1px solid var(--v-border); padding-top:12px; margin-top:4px;">
+          <form method="POST" action="{{ url_for('materias.eliminar', id=materia.id_materia) }}"
+                onsubmit="return confirm('¿Eliminar «{{ materia.nombre }}»? Esta acción no se puede deshacer.')">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn-danger-piel w-100 justify-content-center">
+              <i class="bi bi-trash"></i> Eliminar materia
+            </button>
+          </form>
+        </div>
 
       </div>
-
     </div>
-
   </div>
 
 </div>
+
+{% block extra_head %}
+<style>
+  /* ── Detail grid (reutilizable) ── */
+  .detail-grid { padding: 4px 0; }
+  .detail-row {
+    display: grid;
+    grid-template-columns: 180px 1fr;
+    gap: 8px 20px;
+    padding: 13px 20px;
+    border-bottom: 1px solid var(--v-border);
+    align-items: start;
+  }
+  .detail-row:last-child { border-bottom: none; }
+  .detail-row-full { grid-template-columns: 1fr; }
+  .detail-label {
+    font-size: 0.68rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.09em;
+    color: var(--v-mid); padding-top: 2px;
+  }
+  .detail-value { font-size: 0.875rem; color: var(--v-black); line-height: 1.5; }
+  @media (max-width: 576px) {
+    .detail-row { grid-template-columns: 1fr; gap: 4px; }
+  }
+
+  /* ── Botón danger ── */
+  .btn-danger-piel {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--v-danger-bg); color: var(--v-danger);
+    border: 1px solid #fecaca; border-radius: var(--v-radius);
+    padding: 8px 18px; font-family: 'DM Sans', sans-serif;
+    font-size: 0.72rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.1em; cursor: pointer;
+    transition: background .2s, border-color .2s; width: 100%; justify-content: center;
+  }
+  .btn-danger-piel:hover { background: #fee2e2; border-color: #f87171; }
+
+  /* ── Botón edición inline ── */
+  .btn-edit-inline {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: var(--v-paper); color: var(--v-stone);
+    border: 1px solid var(--v-border); border-radius: var(--v-radius);
+    padding: 4px 10px; font-family: 'DM Sans', sans-serif;
+    font-size: 0.7rem; font-weight: 500; cursor: pointer;
+    transition: border-color .2s, color .2s;
+  }
+  .btn-edit-inline:hover { border-color: var(--v-tan); color: var(--v-tan); }
+</style>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  function abrirEditPR() {
+    document.getElementById('pr-display').style.display = 'none';
+    document.getElementById('pr-edit').style.display = 'block';
+    document.getElementById('pr-input').focus();
+  }
+
+  function cerrarEditPR() {
+    document.getElementById('pr-edit').style.display = 'none';
+    document.getElementById('pr-display').style.display = 'flex';
+    document.getElementById('pr-feedback').style.display = 'none';
+  }
+
+  async function guardarPR(idMateria) {
+    const input = document.getElementById('pr-input');
+    const feedback = document.getElementById('pr-feedback');
+    const valor = parseFloat(input.value);
+
+    if (isNaN(valor) || valor < 0) {
+      feedback.textContent = 'Ingresa un valor válido mayor o igual a 0.';
+      feedback.style.color = 'var(--v-danger)';
+      feedback.style.display = 'block';
+      return;
+    }
+
+    try {
+      const resp = await fetch(`/materias/${idMateria}/punto-reorden`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token() }}' },
+        body: JSON.stringify({ punto_reorden: valor })
+      });
+
+      if (resp.ok) {
+        // Actualizar el valor visible
+        const span = document.getElementById('pr-valor');
+        span.textContent = valor + ' {{ materia.unidad.abreviatura }}';
+        feedback.textContent = 'Guardado correctamente.';
+        feedback.style.color = 'var(--v-success)';
+        feedback.style.display = 'block';
+        setTimeout(cerrarEditPR, 1200);
+      } else {
+        feedback.textContent = 'Error al guardar. Intenta de nuevo.';
+        feedback.style.color = 'var(--v-danger)';
+        feedback.style.display = 'block';
+      }
+    } catch {
+      feedback.textContent = 'Sin conexión. Verifica tu red.';
+      feedback.style.color = 'var(--v-danger)';
+      feedback.style.display = 'block';
+    }
+  }
+</script>
+{% endblock %}
+
 {% endblock %}

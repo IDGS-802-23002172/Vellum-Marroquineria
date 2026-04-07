@@ -1,66 +1,67 @@
 {% extends "base.html" %}
-
 {% block title %}Orden {{ orden.folio }}{% endblock %}
 {% block breadcrumb %}<a href="#">Compras</a> / <a href="{{ url_for('compras.index') }}">Órdenes</a> / {{ orden.folio }}{% endblock %}
-{% block page_title %}Orden de Compra - {{ orden.folio }}{% endblock %}
+{% block page_title %}Orden de Compra — {{ orden.folio }}{% endblock %}
 
 {% block content %}
 
 <div class="row g-4">
-  {# ── columna izquierda: datos e items ────────────────────────────────────── #}
+
+  {# ── Columna izquierda ── #}
   <div class="col-lg-8">
 
-    {# ── sección: cabecera ────────────────────────────────────────────────── #}
+    {# Datos de la orden #}
     <div class="card-piel mb-4">
       <div class="card-header d-flex justify-content-between align-items-center">
-        <span>
-          <i class="bi bi-truck me-2" style="color:var(--piel-tan)"></i>
-          Datos de la Orden
-        </span>
+        <span><i class="bi bi-truck me-2" style="color:var(--v-tan);"></i>Datos de la Orden</span>
         <div class="d-flex gap-2 align-items-center">
-          <a href="{{ url_for('compras.index') }}" class="btn-outline-piel" style="padding:6px 12px; font-size:.9rem;">
+          <a href="{{ url_for('compras.index') }}" class="btn-outline-piel" aria-label="Volver a órdenes">
             <i class="bi bi-arrow-left"></i>
           </a>
-          <span class="tag-material" style="background:{% if orden.estado == 'BORRADOR' %}#fef3c7; color:#92400e;{% elif orden.estado == 'CONFIRMADA' %}#d1fae5; color:#065f46;{% else %}#fee2e2; color:#991b1b;{% endif %}">
-            {{ orden.estado }}
-          </span>
+          {% if orden.estado == 'BORRADOR' %}
+            <span class="tag-material tag-borrador">{{ orden.estado }}</span>
+          {% elif orden.estado == 'CONFIRMADA' %}
+            <span class="tag-material tag-confirmada">{{ orden.estado }}</span>
+          {% else %}
+            <span class="tag-material tag-cancelada">{{ orden.estado }}</span>
+          {% endif %}
         </div>
       </div>
+
       <div class="p-4">
         <div class="row g-3 mb-3">
           <div class="col-md-6">
-            <div style="font-size:.8rem; color:#999; margin-bottom:4px;">PROVEEDOR</div>
+            <div style="font-size:.68rem; text-transform:uppercase; letter-spacing:.09em; color:var(--v-mid); margin-bottom:4px;">Proveedor</div>
             <div style="font-weight:600;">{{ orden.proveedor.razon_social }}</div>
           </div>
           <div class="col-md-6">
-            <div style="font-size:.8rem; color:#999; margin-bottom:4px;">REFERENCIA</div>
+            <div style="font-size:.68rem; text-transform:uppercase; letter-spacing:.09em; color:var(--v-mid); margin-bottom:4px;">Referencia / Factura</div>
             <div style="font-weight:600;">{{ orden.referencia_doc or '—' }}</div>
           </div>
           <div class="col-md-6">
-            <div style="font-size:.8rem; color:#999; margin-bottom:4px;">FECHA</div>
+            <div style="font-size:.68rem; text-transform:uppercase; letter-spacing:.09em; color:var(--v-mid); margin-bottom:4px;">Fecha</div>
             <div style="font-weight:600;">{{ orden.fecha.strftime('%d/%m/%Y %H:%M') }}</div>
           </div>
           {% if orden.notas %}
           <div class="col-12">
-            <div style="font-size:.8rem; color:#999; margin-bottom:4px;">NOTAS</div>
-            <div style="font-size:.9rem; padding:8px; background:var(--piel-bg); border-radius:4px;">
+            <div style="font-size:.68rem; text-transform:uppercase; letter-spacing:.09em; color:var(--v-mid); margin-bottom:4px;">Notas</div>
+            <div style="font-size:.875rem; padding:10px 14px; background:var(--v-paper); border-radius:2px; border:1px solid var(--v-border); line-height:1.6;">
               {{ orden.notas }}
             </div>
           </div>
           {% endif %}
         </div>
 
-        {# botones de acción (solo BORRADOR) #}
         {% if orden.estado == 'BORRADOR' %}
-        <div class="d-flex gap-2" style="border-top:1px solid var(--piel-border); padding-top:16px; margin-top:16px;">
+        <div class="d-flex gap-2" style="border-top:1px solid var(--v-border); padding-top:16px; margin-top:4px;">
           <a href="{{ url_for('compras.editar', id=orden.id_orden) }}" class="btn-outline-piel flex-grow-1 justify-content-center">
             <i class="bi bi-pencil"></i> Editar
           </a>
-          <form method="POST" action="{{ url_for('compras.cancelar', id=orden.id_orden) }}" style="flex: 1;">
+          <form method="POST" action="{{ url_for('compras.cancelar', id=orden.id_orden) }}" style="flex:1;">
             {{ form.csrf_token }}
-            <button type="submit" class="btn-outline-piel w-100 justify-content-center" 
-                    style="background:#fee2e2; color:#991b1b; border-color:#fecaca;"
-                    onclick="return confirm('¿Cancelar esta orden?')">
+            <button type="submit" class="btn-outline-piel w-100 justify-content-center"
+                    style="background:var(--v-danger-bg); color:var(--v-danger); border-color:#fecaca;"
+                    onclick="return confirm('¿Cancelar esta orden? Esta acción no se puede deshacer.')">
               <i class="bi bi-x-circle"></i> Cancelar Orden
             </button>
           </form>
@@ -69,38 +70,43 @@
       </div>
     </div>
 
-    {# ── sección: materiales agregados ─────────────────────────────────────── #}
+    {# Materiales #}
     <div class="card-piel mb-4">
       <div class="card-header">
-        <i class="bi bi-stack me-2" style="color:var(--piel-tan)"></i>
-        Materiales en la Orden
+        <i class="bi bi-stack me-2" style="color:var(--v-tan);"></i>Materiales en la Orden
       </div>
-      <div class="table-responsive">
+      <div style="overflow-x:auto;">
         <table class="table-piel">
           <thead>
             <tr>
-              <th>Material</th>
-              <th style="text-align:center;">Cantidad</th>
-              <th style="text-align:right;">Precio Unitario</th>
-              <th style="text-align:right;">Subtotal</th>
-              {% if orden.estado == 'BORRADOR' %}<th style="width:50px;"></th>{% endif %}
+              <th scope="col">Material</th>
+              <th scope="col" style="text-align:center;">Cantidad</th>
+              <th scope="col" style="text-align:right;">Precio Unit.</th>
+              <th scope="col" style="text-align:right;">Subtotal</th>
+              {% if orden.estado == 'BORRADOR' %}<th scope="col" style="width:48px;"></th>{% endif %}
             </tr>
           </thead>
           <tbody>
             {% for detalle in orden.detalles %}
             <tr>
               <td style="font-weight:500;">{{ detalle.materia.nombre }}</td>
-              <td style="text-align:center;">
-                {{ detalle.cantidad }} {{ detalle.materia.unidad }}
+              <td style="text-align:center; font-size:.875rem;">
+                {{ detalle.cantidad }} <span style="color:var(--v-mid); font-size:.8rem;">{{ detalle.materia.unidad }}</span>
               </td>
-              <td style="text-align:right;">{{ "%.2f"|format(detalle.costo_unitario) }}</td>
-              <td style="text-align:right; font-weight:600;">{{ "%.2f"|format(detalle.subtotal) }}</td>
+              <td style="text-align:right; font-size:.875rem; font-variant-numeric:tabular-nums;">
+                ${{ "%.2f"|format(detalle.costo_unitario) }}
+              </td>
+              <td style="text-align:right; font-weight:600; font-variant-numeric:tabular-nums;">
+                ${{ "%.2f"|format(detalle.subtotal) }}
+              </td>
               {% if orden.estado == 'BORRADOR' %}
               <td style="text-align:center;">
                 <form method="POST" action="{{ url_for('compras.eliminar_linea', id_detalle=detalle.id_detalle) }}" style="display:inline;">
                   {{ form.csrf_token }}
-                  <button type="submit" class="btn-icon-piel" title="Eliminar" onclick="return confirm('¿Eliminar esta línea?')">
-                    <i class="bi bi-trash-fill"></i>
+                  <button type="submit" class="btn-icon-piel" title="Eliminar línea"
+                          aria-label="Eliminar {{ detalle.materia.nombre }}"
+                          onclick="return confirm('¿Eliminar esta línea?')">
+                    <i class="bi bi-trash"></i>
                   </button>
                 </form>
               </td>
@@ -108,8 +114,11 @@
             </tr>
             {% else %}
             <tr>
-              <td colspan="{% if orden.estado == 'BORRADOR' %}5{% else %}4{% endif %}" class="text-center py-4" style="color:#999;">
-                Sin materiales
+              <td colspan="{% if orden.estado == 'BORRADOR' %}5{% else %}4{% endif %}">
+                <div class="empty-state" style="padding:32px;">
+                  <i class="bi bi-inbox"></i>
+                  <p style="margin:0;">Sin materiales. Agrega uno abajo.</p>
+                </div>
               </td>
             </tr>
             {% endfor %}
@@ -118,33 +127,32 @@
       </div>
     </div>
 
-    {# ── sección: agregar material (solo BORRADOR) ────────────────────────── #}
+    {# Agregar material (solo BORRADOR) #}
     {% if orden.estado == 'BORRADOR' %}
     <div class="card-piel">
       <div class="card-header">
-        <i class="bi bi-plus-circle me-2" style="color:var(--piel-tan)"></i>
-        Agregar Material
+        <i class="bi bi-plus-circle me-2" style="color:var(--v-tan);"></i>Agregar Material
       </div>
       <form method="POST" action="{{ url_for('compras.agregar_linea', id=orden.id_orden) }}" class="p-4" novalidate>
         {{ detalle_form.csrf_token }}
         <div class="row g-3">
           <div class="col-lg-6">
-            <label class="form-label">Material <span style="color:#dc2626;">*</span></label>
+            <label class="form-label">Material <span style="color:#dc2626;" aria-hidden="true">*</span></label>
             {{ detalle_form.id_materia(class="form-select") }}
             {% for e in detalle_form.id_materia.errors %}
               <div class="invalid-feedback d-block">{{ e }}</div>
             {% endfor %}
           </div>
           <div class="col-lg-3">
-            <label class="form-label">Cantidad <span style="color:#dc2626;">*</span></label>
-            {{ detalle_form.cantidad(class="form-control", inputmode="decimal") }}
+            <label class="form-label">Cantidad <span style="color:#dc2626;" aria-hidden="true">*</span></label>
+            {{ detalle_form.cantidad(class="form-control", inputmode="decimal", placeholder="0.00") }}
             {% for e in detalle_form.cantidad.errors %}
               <div class="invalid-feedback d-block">{{ e }}</div>
             {% endfor %}
           </div>
           <div class="col-lg-3">
-            <label class="form-label">Precio <span style="color:#dc2626;">*</span></label>
-            {{ detalle_form.costo_unitario(class="form-control", inputmode="decimal") }}
+            <label class="form-label">Precio Unit. <span style="color:#dc2626;" aria-hidden="true">*</span></label>
+            {{ detalle_form.costo_unitario(class="form-control", inputmode="decimal", placeholder="0.00") }}
             {% for e in detalle_form.costo_unitario.errors %}
               <div class="invalid-feedback d-block">{{ e }}</div>
             {% endfor %}
@@ -161,50 +169,51 @@
 
   </div>
 
-  {# ── columna derecha: resumen de totales ────────────────────────────────── #}
+  {# ── Columna derecha: totales ── #}
   <div class="col-lg-4">
-    <div class="card-piel sticky-top" style="top:20px;">
+    <div class="card-piel" style="position:sticky; top:76px;">
       <div class="card-header">
-        <i class="bi bi-calculator me-2" style="color:var(--piel-tan)"></i>
-        Totales
+        <i class="bi bi-calculator me-2" style="color:var(--v-tan);"></i>Resumen
       </div>
       <div class="p-4">
-        <div class="d-flex justify-content-between mb-3">
-          <span>Subtotal:</span>
-          <span style="font-weight:600;">${{ "%.2f"|format(orden.subtotal) }}</span>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <span style="font-size:.875rem; color:var(--v-stone);">Subtotal</span>
+          <span style="font-weight:600; font-variant-numeric:tabular-nums;">${{ "%.2f"|format(orden.subtotal) }}</span>
         </div>
-        <div class="d-flex justify-content-between mb-3 pb-3" style="border-bottom:1px solid var(--piel-border);">
-          <span>IVA (16%):</span>
-          <span style="font-weight:600;">${{ "%.2f"|format(orden.iva) }}</span>
+        <div class="d-flex justify-content-between align-items-center pb-3 mb-3"
+             style="border-bottom:1px solid var(--v-border);">
+          <span style="font-size:.875rem; color:var(--v-stone);">IVA (16%)</span>
+          <span style="font-weight:600; font-variant-numeric:tabular-nums;">${{ "%.2f"|format(orden.iva) }}</span>
         </div>
-        <div class="d-flex justify-content-between mb-4">
-          <span style="font-weight:700; font-size:1.1rem;">Total:</span>
-          <span style="font-weight:700; font-size:1.1rem; color:var(--piel-tan);">${{ "%.2f"|format(orden.total) }}</span>
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <span style="font-weight:700; font-size:1rem;">Total</span>
+          <span style="font-weight:700; font-size:1.2rem; color:var(--v-tan); font-variant-numeric:tabular-nums;">
+            ${{ "%.2f"|format(orden.total) }}
+          </span>
         </div>
 
-        {# botón confirmar (solo BORRADOR) #}
         {% if orden.estado == 'BORRADOR' %}
-        {% if orden.detalles %}
-        <form method="POST" action="{{ url_for('compras.confirmar', id=orden.id_orden) }}">
-          {{ form.csrf_token }}
-          <button type="submit" class="btn-piel w-100 justify-content-center"
-                  onclick="return confirm('¿Confirmar esta compra? Se registrará el movimiento de caja.')">
-            <i class="bi bi-check-square"></i> Confirmar Orden
-          </button>
-        </form>
+          {% if orden.detalles %}
+          <form method="POST" action="{{ url_for('compras.confirmar', id=orden.id_orden) }}">
+            {{ form.csrf_token }}
+            <button type="submit" class="btn-piel w-100 justify-content-center"
+                    onclick="return confirm('¿Confirmar esta orden? Se registrará el movimiento de caja.')">
+              <i class="bi bi-check-square"></i> Confirmar Orden
+            </button>
+          </form>
+          {% else %}
+          <div style="text-align:center; padding:14px; background:var(--v-paper); border-radius:2px; font-size:.825rem; color:var(--v-mid);">
+            Agrega materiales para confirmar
+          </div>
+          {% endif %}
         {% else %}
-        <div class="text-center p-3" style="background:var(--piel-bg); border-radius:6px; color:#999;">
-          Agrega materiales para confirmar
-        </div>
-        {% endif %}
-        {% else %}
-        <div class="text-center p-3" style="background:var(--piel-bg); border-radius:6px; color:#999;">
+        <div style="text-align:center; padding:14px; background:var(--v-paper); border-radius:2px; font-size:.825rem; color:var(--v-mid);">
           Orden {{ orden.estado | lower }}
         </div>
         {% endif %}
       </div>
     </div>
   </div>
-</div>
 
+</div>
 {% endblock %}

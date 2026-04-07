@@ -1,42 +1,84 @@
 {% extends "base.html" %}
-
-{% block title %}Iniciar Fabricación{% endblock %}
-{% block page_title %}Flujo de Trabajo — Vellum{% endblock %}
+{% block title %}Nueva Orden de Producción{% endblock %}
+{% block breadcrumb %}
+  <a href="#">Taller</a> /
+  <a href="{{ url_for('produccion.listar_ordenes') }}">Producción</a> /
+  Nueva orden
+{% endblock %}
+{% block page_title %}Nueva Orden de Producción{% endblock %}
 
 {% block content %}
-<div class="container py-5">
-    <div class="row justify-content-center">
-        <div class="col-lg-5">
-            <div class="text-center mb-5">
-                <span class="text-uppercase tracking-widest text-muted" style="font-size: 0.7rem;">Etapa de Transformación</span>
-                <h2 class="text-premium mt-2" style="font-size: 2.2rem;">Nueva Orden</h2>
-                <div class="mx-auto bg-dark" style="width: 50px; height: 2px;"></div>
-            </div>
+<div class="row justify-content-center">
+<div class="col-lg-5 col-md-7">
 
-            <div class="card border-0 shadow-sm p-5" style="border-radius: 0; border: 1px solid #eee !important;">
-                <form method="POST">
-                    {{ form.hidden_tag() }}
-
-                    <div class="mb-4">
-                        <label class="form-label text-uppercase small fw-bold tracking-wider">¿Qué vamos a fabricar?</label>
-                        {{ form.id_producto(class="form-select", style="border-radius: 0; height: 50px;") }}
-                    </div>
-
-                    <div class="mb-5">
-                        <label class="form-label text-uppercase small fw-bold tracking-wider">Cantidad de piezas</label>
-                        {{ form.cantidad(class="form-control", style="border-radius: 0; height: 50px;", placeholder="Mínimo 1") }}
-                    </div>
-
-                    <div class="p-3 bg-light mb-4 text-center">
-                        <p class="text-muted mb-0 small italic">Al iniciar, el sistema pasará la orden a estado <strong>"En Corte"</strong>.</p>
-                    </div>
-
-                    <div class="d-grid">
-                        <button type="submit" class="btn-vellum">Lanzar Orden a Taller</button>
-                    </div>
-                </form>
-            </div>
-        </div>
+  <div class="card-piel">
+    <div class="card-header">
+      <i class="bi bi-hammer me-2" style="color:var(--v-tan);"></i>
+      Lanzar orden al taller
     </div>
+
+    <div class="p-4">
+      <form method="POST" novalidate>
+        {{ form.hidden_tag() }}
+
+        <div style="margin-bottom:20px;">
+          <label class="form-label" for="{{ form.id_producto.id }}">
+            Producto a fabricar <span style="color:#dc2626;" aria-hidden="true">*</span>
+          </label>
+          {{ form.id_producto(
+              id=form.id_producto.id,
+              class="form-select" + (" is-invalid" if form.id_producto.errors else "")
+            ) }}
+          {% for e in form.id_producto.errors %}
+            <div class="field-error"><i class="bi bi-exclamation-circle"></i> {{ e }}</div>
+          {% endfor %}
+        </div>
+
+        <div style="margin-bottom:28px;">
+          <label class="form-label" for="{{ form.cantidad.id }}">
+            Cantidad de piezas <span style="color:#dc2626;" aria-hidden="true">*</span>
+          </label>
+          {{ form.cantidad(
+              id=form.cantidad.id,
+              class="form-control" + (" is-invalid" if form.cantidad.errors else ""),
+              placeholder="Mínimo 1",
+              inputmode="numeric"
+            ) }}
+          {% for e in form.cantidad.errors %}
+            <div class="field-error"><i class="bi bi-exclamation-circle"></i> {{ e }}</div>
+          {% endfor %}
+        </div>
+
+        {# Aviso de estado inicial #}
+        <div class="flash flash-info" role="note" style="margin-bottom:24px;">
+          <i class="bi bi-info-circle flex-shrink-0"></i>
+          <span>Al lanzar, la orden pasará automáticamente a estado <strong>En Corte</strong>.</span>
+        </div>
+
+        <div class="d-flex gap-3">
+          <button type="submit" class="btn-piel flex-grow-1 justify-content-center">
+            <i class="bi bi-hammer"></i> Lanzar orden
+          </button>
+          <a href="{{ url_for('produccion.listar_ordenes') }}"
+             class="btn-outline-piel flex-grow-1 justify-content-center">
+            <i class="bi bi-arrow-left"></i> Cancelar
+          </a>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
 </div>
+</div>
+
+{% block extra_head %}
+<style>
+  .field-error {
+    font-size:.78rem; color:var(--v-danger);
+    margin-top:5px; display:flex; align-items:center; gap:4px;
+  }
+</style>
+{% endblock %}
+
 {% endblock %}

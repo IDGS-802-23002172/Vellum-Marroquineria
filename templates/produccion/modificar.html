@@ -1,40 +1,87 @@
 {% extends "base.html" %}
-
-{% block title %}Actualizar Producción{% endblock %}
-{% block page_title %}Control de Taller — Vellum{% endblock %}
+{% block title %}Gestionar Orden #{{ orden.id_orden }}{% endblock %}
+{% block breadcrumb %}
+  <a href="#">Taller</a> /
+  <a href="{{ url_for('produccion.listar_ordenes') }}">Producción</a> /
+  Orden #{{ orden.id_orden }}
+{% endblock %}
+{% block page_title %}Gestionar Orden #{{ orden.id_orden }}{% endblock %}
 
 {% block content %}
-<div class="container py-5">
-    <div class="row justify-content-center">
-        <div class="col-lg-6">
-            <div class="card border-0 shadow-sm p-5" style="border-radius: 0; border: 1px solid #eee !important;">
-                <h2 class="text-premium text-uppercase mb-4">Actualizar Estado</h2>
-                
-                <div class="mb-4 pb-3 border-bottom">
-                    <span class="text-muted small tracking-widest uppercase">Orden de Fabricación</span>
-                    <h4 class="text-dark">{{ orden.producto.nombre }}</h4>
-                    <p class="mb-0">Cantidad: <strong>{{ orden.cantidad }} unidades</strong></p>
-                </div>
+<div class="row justify-content-center">
+<div class="col-lg-5 col-md-7">
 
-                <form method="POST">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    
-                    <div class="mb-5">
-                        <label class="form-label text-uppercase small fw-bold tracking-wider">Fase de Producción</label>
-                        <select name="estado" class="form-select" style="border-radius: 0; height: 50px;">
-                            <option value="En Corte" {% if orden.estado == 'En Corte' %}selected{% endif %}>En Corte</option>
-                            <option value="Terminado" {% if orden.estado == 'Terminado' %}selected{% endif %}>Terminado (Mover a Almacén)</option>
-                        </select>
-                        <div class="form-text italic mt-2">Al marcar como "Terminado", se sumará el stock al catálogo.</div>
-                    </div>
-
-                    <div class="d-grid gap-2">
-                        <button type="submit" class="btn-vellum">Actualizar Proceso</button>
-                        <a href="{{ url_for('produccion.listar_ordenes') }}" class="btn btn-link text-muted small text-decoration-none">Regresar al monitoreo</a>
-                    </div>
-                </form>
-            </div>
-        </div>
+  <div class="card-piel">
+    <div class="card-header">
+      <i class="bi bi-gear-fill me-2" style="color:var(--v-tan);"></i>
+      Actualizar estado de fabricación
     </div>
+
+    <div class="p-4">
+
+      {# Resumen de la orden #}
+      <div style="background:var(--v-paper); border:1px solid var(--v-border); border-radius:2px;
+                  padding:14px 16px; margin-bottom:24px;">
+        <div style="font-size:.65rem; text-transform:uppercase; letter-spacing:.1em; color:var(--v-mid); margin-bottom:8px;">
+          Orden de fabricación
+        </div>
+        <div style="font-weight:700; font-size:1rem; margin-bottom:4px;">{{ orden.producto.nombre }}</div>
+        <div style="font-size:.825rem; color:var(--v-stone);">
+          {{ orden.cantidad }} unidades &nbsp;·&nbsp;
+          Estado actual:
+          {% if orden.estado == 'Terminado' %}
+            <span class="tag-material tag-confirmada">{{ orden.estado }}</span>
+          {% elif orden.estado == 'Cancelado' %}
+            <span class="tag-material tag-cancelada">{{ orden.estado }}</span>
+          {% else %}
+            <span class="tag-material tag-borrador">{{ orden.estado }}</span>
+          {% endif %}
+        </div>
+      </div>
+
+      <form method="POST" novalidate>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div style="margin-bottom:28px;">
+          <label class="form-label" for="estado-select">
+            Nueva fase de producción <span style="color:#dc2626;" aria-hidden="true">*</span>
+          </label>
+          <select name="estado" id="estado-select" class="form-select">
+            <option value="En Corte"  {% if orden.estado == 'En Corte'  %}selected{% endif %}>En Corte</option>
+            <option value="Terminado" {% if orden.estado == 'Terminado' %}selected{% endif %}>Terminado — mover a almacén</option>
+          </select>
+          <p style="font-size:.75rem; color:var(--v-mid); margin-top:6px; line-height:1.5;">
+            Al marcar como <strong>Terminado</strong>, el stock del producto se actualizará automáticamente.
+          </p>
+        </div>
+
+        <div class="d-flex gap-3">
+          <button type="submit" class="btn-piel flex-grow-1 justify-content-center">
+            <i class="bi bi-check-circle"></i> Actualizar estado
+          </button>
+          <a href="{{ url_for('produccion.listar_ordenes') }}"
+             class="btn-outline-piel flex-grow-1 justify-content-center">
+            <i class="bi bi-arrow-left"></i> Regresar
+          </a>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+  {# Zona de peligro — cancelar orden #}
+  {% if orden.estado not in ['Terminado', 'Cancelado'] %}
+  <div style="margin-top:16px;">
+    <a href="{{ url_for('produccion.cancelar_orden', id=orden.id_orden) }}"
+       style="display:block; text-align:center; font-size:.72rem; color:var(--v-mid);
+              text-transform:uppercase; letter-spacing:.08em; text-decoration:none;
+              padding:10px; border:1px dashed var(--v-border); border-radius:2px;
+              transition: color .2s, border-color .2s;">
+      <i class="bi bi-x-octagon me-1"></i> Cancelar esta orden de producción
+    </a>
+  </div>
+  {% endif %}
+
+</div>
 </div>
 {% endblock %}

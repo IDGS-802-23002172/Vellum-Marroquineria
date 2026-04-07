@@ -1,240 +1,187 @@
 {% extends "base.html" %}
-
-{% block title %}Materias primas{% endblock %}
-{% block breadcrumb %}<a href="#">Inventario</a> / Materias primas{% endblock %}
-{% block page_title %}Directorio de Materias Primas{% endblock %}
+{% block title %}Materias Primas{% endblock %}
+{% block breadcrumb %}<a href="#">Inventario</a> / Materias Primas{% endblock %}
+{% block page_title %}Almacén de Materias Primas{% endblock %}
 
 {% block content %}
-<div class="d-flex align-items-center justify-content-between mb-4">
 
-  <!-- Búsqueda -->
-  <form method="GET" class="d-flex gap-2 align-items-center" style="flex:1; max-width:520px;">
-    
-    <div class="search-wrap" style="flex:1;">
-      <i class="bi bi-search"></i>
-      <input type="text"
-             name="q"
-             class="form-control"
-             placeholder="Buscar materia prima…"
-             value="{{ q }}">
+{# ── Barra superior ── #}
+<div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
+
+  <form method="GET" class="d-flex gap-2 align-items-center" style="flex:1; max-width:480px;">
+    <div style="flex:1; position:relative;">
+      <i class="bi bi-search" style="position:absolute; left:10px; top:50%; transform:translateY(-50%); color:var(--v-mid); font-size:.85rem; pointer-events:none;"></i>
+      <input type="text" name="q" class="form-control" style="padding-left:32px;"
+             placeholder="Buscar materia prima…" value="{{ q }}" aria-label="Buscar">
     </div>
-
-    <button type="submit" class="btn-piel">
+    <button type="submit" class="btn-outline-piel">
       <i class="bi bi-funnel"></i> Filtrar
     </button>
-
   </form>
 
-  <a href="{{ url_for('materias.crear') }}" class="btn-piel ms-3">
+  <a href="{{ url_for('materias.crear') }}" class="btn-piel">
     <i class="bi bi-plus-lg"></i> Nueva materia prima
   </a>
 
-  
-
 </div>
 
-
+{# ── Tabla ── #}
 <div class="card-piel">
 
-<div class="card-header d-flex align-items-center justify-content-between">
-<span>
-<i class="bi bi-box-seam me-2" style="color:var(--piel-tan)"></i>
-Materias primas registradas
-</span>
-
-<span style="font-size:.8rem; font-weight:400; color:#999;">
-{{ paginacion.total }} resultado{{ 's' if paginacion.total != 1 }}
-</span>
-</div>
-
-
-{% if materias %}
-
-<div style="overflow-x:auto;">
-
-<table class="table-piel">
-
-<thead>
-<tr>
-<th>#</th>
-<th>Nombre</th>
-<th>Unidad</th>
-<th>Stock</th>
-<th>Punto reorden</th>
-<th>Fecha registro</th>
-<th style="text-align:center;">Acciones</th>
-</tr>
-</thead>
-
-<tbody>
-
-{% for m in materias %}
-
-<tr>
-
-<td style="color:#bbb; font-size:.8rem;">
-{{ m.id_materia }}
-</td>
-
-<td>
-<a href="{{ url_for('materias.detalle', id=m.id_materia) }}"
-   style="color:var(--piel-brown); font-weight:600; text-decoration:none;">
-{{ m.nombre }}
-</a>
-</td>
-
-<td>
-<span class="tag-material">
-{{ m.unidad.abreviatura }}
-</span>
-</td>
-
-<td>
-
-{% if m.stock %}
-  {% if m.tipo_control == 'pieza' %}
-    <span style="font-weight:600;">
-    {{ (m.piezas | selectattr('disponible') | list | length) }}
+  <div class="card-header d-flex align-items-center justify-content-between">
+    <span>
+      <i class="bi bi-box-seam me-2" style="color:var(--v-tan);"></i>
+      Materias primas registradas
     </span>
-    pieza{{ 's' if (m.piezas | selectattr('disponible') | list | length) != 1 }}
-  {% else %}
-    <span style="font-weight:600;">
-    {{ m.stock.cantidad_actual }}
+    <span style="font-size:.75rem; color:var(--v-mid); font-weight:400;">
+      {{ paginacion.total }} resultado{{ 's' if paginacion.total != 1 }}
     </span>
-    {{ m.unidad.abreviatura }}
+  </div>
+
+  {% if materias %}
+  <div style="overflow-x:auto;">
+    <table class="table-piel">
+      <thead>
+        <tr>
+          <th scope="col">Nombre</th>
+          <th scope="col">Unidad</th>
+          <th scope="col">Control</th>
+          <th scope="col" style="text-align:right;">Stock actual</th>
+          <th scope="col" style="text-align:right;">Punto reorden</th>
+          <th scope="col">Registro</th>
+          <th scope="col" style="text-align:center; width:90px;">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for m in materias %}
+        {% if m.tipo_control == 'pieza' %}
+          {% set stock_val = m.piezas | selectattr('disponible') | list | length %}
+        {% else %}
+          {% set stock_val = m.stock.cantidad_actual if m.stock else 0 %}
+        {% endif %}
+        {% set bajo_reorden = m.stock and stock_val < m.stock.punto_reorden %}
+
+        <tr>
+          <td>
+            <a href="{{ url_for('materias.detalle', id=m.id_materia) }}"
+               style="color:var(--v-tan); font-weight:600; text-decoration:none; font-size:.875rem;">
+              {{ m.nombre }}
+            </a>
+            {% if m.descripcion %}
+              <div style="font-size:.75rem; color:var(--v-mid); margin-top:1px;">{{ m.descripcion | truncate(50) }}</div>
+            {% endif %}
+          </td>
+
+          <td>
+            <span class="tag-material" style="background:var(--v-paper); color:var(--v-stone); border:1px solid var(--v-border);">
+              {{ m.unidad.abreviatura }}
+            </span>
+          </td>
+
+          <td>
+            <span class="tag-material" style="{% if m.tipo_control == 'pieza' %}background:#ede9fe; color:#5b21b6;{% else %}background:#e0f2fe; color:#075985;{% endif %}">
+              {{ 'Pieza' if m.tipo_control == 'pieza' else 'Acumulable' }}
+            </span>
+          </td>
+
+          <td style="text-align:right; font-variant-numeric:tabular-nums;">
+            {% if m.stock %}
+              <strong style="{% if bajo_reorden %}color:var(--v-danger);{% endif %}">
+                {{ stock_val }}
+              </strong>
+              <span style="font-size:.78rem; color:var(--v-mid);">
+                {{ 'pieza' + ('s' if stock_val != 1 else '') if m.tipo_control == 'pieza' else m.unidad.abreviatura }}
+              </span>
+            {% else %}
+              <span style="color:var(--v-mid);">—</span>
+            {% endif %}
+          </td>
+
+          <td style="text-align:right; font-size:.875rem; font-variant-numeric:tabular-nums;">
+            {% if m.stock %}
+              {% if bajo_reorden %}
+                <span style="color:var(--v-danger); font-weight:600; display:inline-flex; align-items:center; gap:4px;">
+                  <i class="bi bi-exclamation-triangle-fill" style="font-size:.75rem;"></i>
+                  {{ m.stock.punto_reorden }}
+                </span>
+              {% else %}
+                <span style="color:var(--v-mid);">{{ m.stock.punto_reorden }}</span>
+              {% endif %}
+              <span style="font-size:.75rem; color:var(--v-mid);">
+                {{ 'pz' if m.tipo_control == 'pieza' else m.unidad.abreviatura }}
+              </span>
+            {% else %}—{% endif %}
+          </td>
+
+          <td style="font-size:.825rem; color:var(--v-mid);">
+            {{ m.creado_en.strftime('%d/%m/%Y') }}
+          </td>
+
+          <td>
+            <div class="d-flex gap-1 justify-content-center">
+              <a href="{{ url_for('materias.detalle', id=m.id_materia) }}"
+                 class="btn-icon-piel" title="Ver detalle" aria-label="Ver {{ m.nombre }}">
+                <i class="bi bi-eye"></i>
+              </a>
+              <a href="{{ url_for('materias.editar', id=m.id_materia) }}"
+                 class="btn-icon-piel" title="Editar" aria-label="Editar {{ m.nombre }}">
+                <i class="bi bi-pencil"></i>
+              </a>
+              <form method="POST" action="{{ url_for('materias.eliminar', id=m.id_materia) }}"
+                    onsubmit="return confirm('¿Eliminar «{{ m.nombre }}»? Esta acción no se puede deshacer.')">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn-icon-piel" title="Eliminar" aria-label="Eliminar {{ m.nombre }}"
+                        style="--hover-bg:var(--v-danger-bg); --hover-color:var(--v-danger); --hover-border:#fecaca;">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if paginacion.pages > 1 %}
+  <div class="pagination-bar">
+    <span>Página {{ paginacion.page }} de {{ paginacion.pages }}</span>
+    <div class="d-flex gap-2">
+      {% if paginacion.has_prev %}
+        <a href="{{ url_for('materias.index', pagina=paginacion.prev_num, q=q) }}"
+           class="btn-outline-piel" aria-label="Página anterior"><i class="bi bi-chevron-left"></i></a>
+      {% endif %}
+      {% if paginacion.has_next %}
+        <a href="{{ url_for('materias.index', pagina=paginacion.next_num, q=q) }}"
+           class="btn-outline-piel" aria-label="Página siguiente"><i class="bi bi-chevron-right"></i></a>
+      {% endif %}
+    </div>
+  </div>
   {% endif %}
-{% else %}
-  <span style="color:#ccc;">—</span>
-{% endif %}
 
-</td>
-
-<td>
-
-{% if m.stock %}
-  {% set stock_value = m.stock.cantidad_actual if m.tipo_control == 'acumulable' else (m.piezas | selectattr('disponible') | list | length) %}
-  {% if stock_value < m.stock.punto_reorden %}
-    <span style="color:#dc2626; font-weight:600;">
-    ⚠️ {{ m.stock.punto_reorden }} {{ 'pieza' if m.tipo_control == 'pieza' else m.unidad.abreviatura }}
-    </span>
   {% else %}
-    <span style="color:#777;">
-    {{ m.stock.punto_reorden }} {{ 'pieza' if m.tipo_control == 'pieza' else m.unidad.abreviatura }}
-    </span>
+  <div class="empty-state">
+    <i class="bi bi-box-seam"></i>
+    <p>
+      {% if q %}No se encontraron materias primas con «{{ q }}».
+      {% else %}Aún no hay materias primas registradas.{% endif %}
+    </p>
+    <a href="{{ url_for('materias.crear') }}" class="btn-piel">
+      <i class="bi bi-plus-lg"></i> Registrar primera materia prima
+    </a>
+  </div>
   {% endif %}
-{% else %}
-  —
-{% endif %}
-
-</td>
-
-<td style="font-size:.85rem; color:#aaa;">
-{{ m.creado_en.strftime('%d/%m/%Y') }}
-</td>
-
-
-<td>
-
-<div class="d-flex gap-2 justify-content-center">
-
-<a href="{{ url_for('materias.detalle', id=m.id_materia) }}"
-   class="btn-outline-piel"
-   title="Ver detalle">
-<i class="bi bi-eye"></i>
-</a>
-
-
-<a href="{{ url_for('materias.editar', id=m.id_materia) }}"
-   class="btn-outline-piel"
-   title="Editar">
-<i class="bi bi-pencil"></i>
-</a>
-
-
-<form method="POST"
-      action="{{ url_for('materias.eliminar', id=m.id_materia) }}"
-      onsubmit="return confirm('¿Eliminar materia prima {{ m.nombre }}?')">
-
-<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-
-<button type="submit"
-        class="btn-danger-piel"
-        title="Eliminar">
-<i class="bi bi-trash"></i>
-</button>
-
-</form>
 
 </div>
 
-</td>
-
-</tr>
-
-{% endfor %}
-
-</tbody>
-</table>
-
-</div>
-
-
-{% if paginacion.pages > 1 %}
-
-<div class="d-flex align-items-center justify-content-between p-3"
-style="border-top:1px solid var(--piel-border);">
-
-<span style="font-size:.82rem; color:#999;">
-Página {{ paginacion.page }} de {{ paginacion.pages }}
-</span>
-
-<div class="d-flex gap-2">
-
-{% if paginacion.has_prev %}
-<a href="{{ url_for('materias.index', pagina=paginacion.prev_num, q=q) }}"
-class="btn-outline-piel">
-<i class="bi bi-chevron-left"></i>
-</a>
-{% endif %}
-
-{% if paginacion.has_next %}
-<a href="{{ url_for('materias.index', pagina=paginacion.next_num, q=q) }}"
-class="btn-outline-piel">
-<i class="bi bi-chevron-right"></i>
-</a>
-{% endif %}
-
-</div>
-
-</div>
-
-{% endif %}
-
-{% else %}
-
-<div style="padding:48px; text-align:center; color:#ccc;">
-
-<i class="bi bi-box-seam"
-style="font-size:2.5rem; color:var(--piel-border);"></i>
-
-<p style="margin-top:12px; font-size:.95rem;">
-
-{% if q %}
-No se encontraron materias primas con «{{ q }}».
-{% else %}
-Aún no hay materias primas registradas.
-{% endif %}
-
-</p>
-
-<a href="{{ url_for('materias.crear') }}" class="btn-piel">
-<i class="bi bi-plus-lg"></i> Registrar primera materia prima
-</a>
-
-</div>
-
-{% endif %}
-
-</div>
+{% block extra_head %}
+<style>
+  .btn-icon-piel:hover {
+    background: var(--hover-bg, var(--v-danger-bg));
+    border-color: var(--hover-border, #fecaca);
+    color: var(--hover-color, var(--v-danger));
+  }
+</style>
+{% endblock %}
 
 {% endblock %}

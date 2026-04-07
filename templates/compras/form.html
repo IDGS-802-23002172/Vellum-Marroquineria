@@ -1,33 +1,27 @@
 {% extends "base.html" %}
-
 {% block title %}
   {{ 'Nueva Orden de Compra' if modo == 'crear' else 'Editar Orden ' ~ orden.folio }}
 {% endblock %}
-
 {% block breadcrumb %}
   <a href="#">Compras</a> /
   <a href="{{ url_for('compras.index') }}">Órdenes</a> /
   {{ 'Nueva' if modo == 'crear' else orden.folio }}
 {% endblock %}
-
 {% block page_title %}
-  {{ 'Nueva Orden de Compra' if modo == 'crear' else 'Editar Orden ' ~ orden.folio }}
+  {{ 'Nueva Orden de Compra' if modo == 'crear' else 'Editar Orden — ' ~ orden.folio }}
 {% endblock %}
 
 {% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-6 col-md-8">
+    <form method="POST"
+          action="{{ url_for('compras.crear') if modo == 'crear' else url_for('compras.editar', id=orden.id_orden) }}"
+          novalidate>
+      {{ form.csrf_token }}
 
-<form method="POST"
-      action="{{ url_for('compras.crear') if modo == 'crear' else url_for('compras.editar', id=orden.id_orden) }}"
-      novalidate>
-
-  {{ form.csrf_token }}
-
-  <div class="row justify-content-center">
-    <div class="col-lg-6">
       <div class="card-piel">
-
         <div class="card-header">
-          <i class="bi bi-cart3 me-2" style="color:var(--piel-tan)"></i>
+          <i class="bi bi-cart3 me-2" style="color:var(--v-tan);"></i>
           Datos de la Orden
         </div>
 
@@ -36,10 +30,10 @@
 
             {# Proveedor #}
             <div class="col-12">
-              <label class="form-label">
-                Proveedor <span style="color:#dc2626;">*</span>
+              <label class="form-label" for="{{ form.id_proveedor.id }}">
+                Proveedor <span style="color:#dc2626;" aria-hidden="true">*</span>
               </label>
-              {{ form.id_proveedor(class="form-select") }}
+              {{ form.id_proveedor(class="form-select" + (" is-invalid" if form.id_proveedor.errors else ""), id=form.id_proveedor.id) }}
               {% for e in form.id_proveedor.errors %}
                 <div class="invalid-feedback d-block">{{ e }}</div>
               {% endfor %}
@@ -47,20 +41,22 @@
 
             {# Factura #}
             <div class="col-12">
-              <label class="form-label">Folio / Factura del proveedor</label>
-              {{ form.referencia_doc(class="form-control", placeholder="Ej: FAC-2025-00123") }}
+              <label class="form-label" for="{{ form.referencia_doc.id }}">
+                Folio / Factura del proveedor
+              </label>
+              {{ form.referencia_doc(class="form-control", id=form.referencia_doc.id, placeholder="Ej: FAC-2025-00123") }}
             </div>
 
             {# Notas #}
             <div class="col-12">
-              <label class="form-label">Notas</label>
-              {{ form.notas(class="form-control", rows=3,
+              <label class="form-label" for="{{ form.notas.id }}">Notas</label>
+              {{ form.notas(class="form-control", id=form.notas.id, rows=3,
                             placeholder="Condiciones, observaciones, etc.") }}
             </div>
 
           </div>
 
-          <div class="mt-5 d-flex gap-3">
+          <div class="d-flex gap-3 mt-4 pt-4" style="border-top:1px solid var(--v-border);">
             <button type="submit" class="btn-piel flex-grow-1 justify-content-center">
               <i class="bi bi-check-circle"></i>
               {{ 'Crear orden' if modo == 'crear' else 'Guardar cambios' }}
@@ -73,9 +69,8 @@
 
         </div>
       </div>
-    </div>
+
+    </form>
   </div>
-
-</form>
-
+</div>
 {% endblock %}
