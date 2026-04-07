@@ -1,111 +1,117 @@
 {% extends "base.html" %}
-
 {% block title %}Flujo de Caja{% endblock %}
 {% block breadcrumb %}<a href="#">Compras</a> / <a href="{{ url_for('compras.index') }}">Órdenes</a> / Caja{% endblock %}
 {% block page_title %}Historial de Caja{% endblock %}
 
 {% block content %}
 
-{# ── Resumen ──────────────────────────────────────────────────────────────── #}
-<div class="row g-4 mb-5">
-  <div class="col-md-3">
-    <div class="card-piel" style="border-left:4px solid #10b981;">
-      <div class="p-4">
-        <div style="font-size:.85rem; color:#888; margin-bottom:8px;">ENTRADAS</div>
-        <div style="font-size:1.8rem; font-weight:700; color:#10b981;">
-          ${{ "%.2f"|format(entradas) }}
-        </div>
-      </div>
+{# ── Resumen ── #}
+<div class="row g-3 mb-4">
+  <div class="col-sm-4">
+    <div class="stat-card" style="border-left-color:#16a34a;">
+      <div class="stat-label">Entradas</div>
+      <div class="stat-value" style="color:#16a34a;">${{ "%.2f"|format(entradas) }}</div>
     </div>
   </div>
-  <div class="col-md-3">
-    <div class="card-piel" style="border-left:4px solid #ef4444;">
-      <div class="p-4">
-        <div style="font-size:.85rem; color:#888; margin-bottom:8px;">SALIDAS</div>
-        <div style="font-size:1.8rem; font-weight:700; color:#ef4444;">
-          ${{ "%.2f"|format(salidas) }}
-        </div>
-      </div>
+  <div class="col-sm-4">
+    <div class="stat-card" style="border-left-color:#dc2626;">
+      <div class="stat-label">Salidas</div>
+      <div class="stat-value" style="color:#dc2626;">${{ "%.2f"|format(salidas) }}</div>
     </div>
   </div>
-  <div class="col-md-3">
-    <div class="card-piel" style="border-left:4px solid #3b82f6;">
-      <div class="p-4">
-        <div style="font-size:.85rem; color:#888; margin-bottom:8px;">SALDO</div>
-        <div style="font-size:1.8rem; font-weight:700; color:{% if saldo >= 0 %}#10b981{% else %}#ef4444{% endif %};">
-          ${{ "%.2f"|format(saldo) }}
-        </div>
+  <div class="col-sm-4">
+    <div class="stat-card" style="border-left-color:#2563eb;">
+      <div class="stat-label">Saldo</div>
+      <div class="stat-value" style="color:{% if saldo >= 0 %}#16a34a{% else %}#dc2626{% endif %};">
+        ${{ "%.2f"|format(saldo) }}
       </div>
     </div>
   </div>
 </div>
 
-{# ── Filtros ──────────────────────────────────────────────────────────────── #}
+{# ── Filtros ── #}
 <div class="card-piel mb-4">
-  <div class="p-3" style="border-bottom:1px solid var(--piel-border);">
-    <form method="GET" class="d-flex gap-2">
-      <input type="text" name="q" class="form-control" placeholder="Buscar..." value="{{ q }}">
-      <select name="tipo" class="form-select" style="max-width:180px;">
-        <option value="">Todos</option>
-        <option value="ENTRADA" {% if tipo == 'ENTRADA' %}selected{% endif %}>Entradas</option>
-        <option value="SALIDA" {% if tipo == 'SALIDA' %}selected{% endif %}>Salidas</option>
+  <div class="p-3">
+    <form method="GET" class="d-flex gap-2 flex-wrap" role="search">
+      <input type="text" name="q" class="form-control" style="max-width:280px;"
+             placeholder="Buscar concepto o referencia…" value="{{ q }}"
+             aria-label="Buscar movimientos">
+      <select name="tipo" class="form-select" style="max-width:180px;" aria-label="Filtrar por tipo">
+        <option value="">Todos los movimientos</option>
+        <option value="ENTRADA" {% if tipo == 'ENTRADA' %}selected{% endif %}>Solo entradas</option>
+        <option value="SALIDA"  {% if tipo == 'SALIDA'  %}selected{% endif %}>Solo salidas</option>
       </select>
-      <button type="submit" class="btn-piel">Filtrar</button>
+      <button type="submit" class="btn-outline-piel">
+        <i class="bi bi-funnel"></i> Filtrar
+      </button>
     </form>
   </div>
 </div>
 
-{# ── Tabla ──────────────────────────────────────────────────────────────── #}
+{# ── Tabla ── #}
 <div class="card-piel">
-  <div class="table-responsive">
+  <div class="card-header">
+    <i class="bi bi-arrow-left-right me-2" style="color:var(--v-tan);"></i>Movimientos
+  </div>
+  <div style="overflow-x:auto;">
     <table class="table-piel">
       <thead>
         <tr>
-          <th>Fecha</th>
-          <th>Tipo</th>
-          <th>Concepto</th>
-          <th>Referencia</th>
-          <th style="text-align:right;">Monto</th>
+          <th scope="col">Fecha</th>
+          <th scope="col">Tipo</th>
+          <th scope="col">Concepto</th>
+          <th scope="col">Referencia</th>
+          <th scope="col" style="text-align:right;">Monto</th>
         </tr>
       </thead>
       <tbody>
         {% for m in movimientos %}
         <tr>
-          <td style="font-size:.85rem;">{{ m.fecha.strftime('%d/%m/%Y %H:%M') }}</td>
+          <td style="font-size:.825rem; color:var(--v-mid); white-space:nowrap;">
+            {{ m.fecha.strftime('%d/%m/%Y') }}<br>
+            <span style="font-size:.75rem;">{{ m.fecha.strftime('%H:%M') }}</span>
+          </td>
           <td>
             {% if m.tipo == 'ENTRADA' %}
-              <span class="tag-material" style="background:#d1fae5; color:#065f46;">Entrada</span>
+              <span class="tag-material tag-entrada">Entrada</span>
             {% else %}
-              <span class="tag-material" style="background:#fee2e2; color:#991b1b;">Salida</span>
+              <span class="tag-material tag-salida">Salida</span>
             {% endif %}
           </td>
-          <td style="font-size:.9rem;">{{ m.concepto }}</td>
-          <td style="font-size:.85rem; color:#888;">{{ m.referencia or '—' }}</td>
-          <td style="text-align:right; font-weight:600; color:{% if m.tipo == 'ENTRADA' %}#10b981{% else %}#ef4444{% endif %};">
-            {% if m.tipo == 'ENTRADA' %}+{% else %}-{% endif %} ${{ "%.2f"|format(m.monto) }}
+          <td style="font-size:.875rem;">{{ m.concepto }}</td>
+          <td style="font-size:.825rem; color:var(--v-mid);">{{ m.referencia or '—' }}</td>
+          <td style="text-align:right; font-weight:600; font-size:.875rem; white-space:nowrap;
+                     color:{% if m.tipo == 'ENTRADA' %}#16a34a{% else %}#dc2626{% endif %};">
+            {% if m.tipo == 'ENTRADA' %}+{% else %}−{% endif %}&thinsp;${{ "%.2f"|format(m.monto) }}
           </td>
         </tr>
         {% else %}
         <tr>
-          <td colspan="5" class="text-center py-4" style="color:#999;">No hay movimientos</td>
+          <td colspan="5">
+            <div class="empty-state">
+              <i class="bi bi-inbox"></i>
+              <p>No hay movimientos registrados.</p>
+            </div>
+          </td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
 
-  {# Paginación #}
   {% if paginacion.pages > 1 %}
-  <div class="d-flex align-items-center justify-content-between p-3" style="border-top:1px solid var(--piel-border);">
-    <span style="font-size:.82rem; color:#999;">Página {{ paginacion.page }} de {{ paginacion.pages }}</span>
+  <div class="pagination-bar">
+    <span>Página {{ paginacion.page }} de {{ paginacion.pages }}</span>
     <div class="d-flex gap-2">
       {% if paginacion.has_prev %}
-        <a href="{{ url_for('compras.caja', pagina=paginacion.prev_num, q=q, tipo=tipo) }}" class="btn-outline-piel">
+        <a href="{{ url_for('compras.caja', pagina=paginacion.prev_num, q=q, tipo=tipo) }}"
+           class="btn-outline-piel" aria-label="Página anterior">
           <i class="bi bi-chevron-left"></i>
         </a>
       {% endif %}
       {% if paginacion.has_next %}
-        <a href="{{ url_for('compras.caja', pagina=paginacion.next_num, q=q, tipo=tipo) }}" class="btn-outline-piel">
+        <a href="{{ url_for('compras.caja', pagina=paginacion.next_num, q=q, tipo=tipo) }}"
+           class="btn-outline-piel" aria-label="Página siguiente">
           <i class="bi bi-chevron-right"></i>
         </a>
       {% endif %}

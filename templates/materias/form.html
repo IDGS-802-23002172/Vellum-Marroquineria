@@ -1,126 +1,117 @@
 {% extends "base.html" %}
-
-{% block title %}
-{{ 'Nueva Materia Prima' if modo == 'crear' else 'Editar Materia Prima' }}
+{% block title %}{{ 'Nueva Materia Prima' if modo == 'crear' else 'Editar — ' ~ materia.nombre }}{% endblock %}
+{% block breadcrumb %}
+  <a href="#">Inventario</a> /
+  <a href="{{ url_for('materias.index') }}">Materias Primas</a> /
+  {{ 'Nueva' if modo == 'crear' else materia.nombre }}
 {% endblock %}
-
 {% block page_title %}
-{{ 'Registrar Materia Prima' if modo == 'crear' else 'Editar Materia Prima' }}
+  {{ 'Registrar Materia Prima' if modo == 'crear' else 'Editar Materia Prima' }}
 {% endblock %}
 
 {% block content %}
+<div class="row justify-content-center">
+<div class="col-lg-6 col-md-8">
 
 <form method="POST"
-action="{{ url_for('materias.crear') if modo == 'crear' else url_for('materias.editar', id=materia.id_materia) }}"
-novalidate>
+      action="{{ url_for('materias.crear') if modo == 'crear' else url_for('materias.editar', id=materia.id_materia) }}"
+      novalidate>
+  {{ form.csrf_token }}
 
-{{ form.csrf_token }}
+  <div class="card-piel">
+    <div class="card-header">
+      <i class="bi bi-box-seam me-2" style="color:var(--v-tan);"></i>
+      Definición de Materia Prima
+    </div>
 
-<div class="row justify-content-center">
+    <div class="p-4">
+      <div class="row g-4">
 
-<div class="col-lg-6">
+        {# Nombre #}
+        <div class="col-12">
+          <label class="form-label" for="{{ form.nombre.id }}">
+            Nombre <span style="color:#dc2626;" aria-hidden="true">*</span>
+          </label>
+          {{ form.nombre(
+              id=form.nombre.id,
+              class="form-control" + (" is-invalid" if form.nombre.errors else ""),
+              placeholder="Ej: Piel vacuna negra"
+            ) }}
+          {% for e in form.nombre.errors %}
+            <div class="field-error"><i class="bi bi-exclamation-circle"></i> {{ e }}</div>
+          {% endfor %}
+        </div>
 
-<div class="card-vellum">
+        {# Descripción #}
+        <div class="col-12">
+          <label class="form-label" for="{{ form.descripcion.id }}">Descripción</label>
+          {{ form.descripcion(
+              id=form.descripcion.id,
+              class="form-control",
+              placeholder="Tipo de cuero, acabado, color, calibre, etc.",
+              rows=3
+            ) }}
+        </div>
 
-<h3 class="text-xs uppercase tracking-widest text-stone-500 border-bottom pb-3 mb-4">
-Definición de Materia Prima
-</h3>
+        {# Unidad #}
+        <div class="col-md-6">
+          <label class="form-label" for="{{ form.id_unidad.id }}">
+            Unidad de medida <span style="color:#dc2626;" aria-hidden="true">*</span>
+          </label>
+          {{ form.id_unidad(
+              id=form.id_unidad.id,
+              class="form-select" + (" is-invalid" if form.id_unidad.errors else "")
+            ) }}
+          {% for e in form.id_unidad.errors %}
+            <div class="field-error"><i class="bi bi-exclamation-circle"></i> {{ e }}</div>
+          {% endfor %}
+        </div>
 
-<div class="row g-4">
+        {# Tipo de control #}
+        <div class="col-md-6">
+          <label class="form-label" for="{{ form.tipo_control.id }}">
+            Control de existencia <span style="color:#dc2626;" aria-hidden="true">*</span>
+          </label>
+          {{ form.tipo_control(
+              id=form.tipo_control.id,
+              class="form-select" + (" is-invalid" if form.tipo_control.errors else "")
+            ) }}
+          {% for e in form.tipo_control.errors %}
+            <div class="field-error"><i class="bi bi-exclamation-circle"></i> {{ e }}</div>
+          {% endfor %}
+          <p style="font-size:.75rem; color:var(--v-mid); margin-top:6px; line-height:1.5;">
+            <strong>Acumulable:</strong> se suma en {{  '' }}{{ '' }}kg, m², litros, etc.<br>
+            <strong>Pieza:</strong> cada unidad tiene su propia área (p.ej. cuero por rollo).
+          </p>
+        </div>
 
-<!-- NOMBRE -->
+      </div>
 
-<div class="col-12">
+      <div class="d-flex gap-3 mt-4 pt-4" style="border-top:1px solid var(--v-border);">
+        <button type="submit" class="btn-piel flex-grow-1 justify-content-center">
+          <i class="bi bi-check-circle"></i>
+          {{ 'Registrar materia prima' if modo == 'crear' else 'Guardar cambios' }}
+        </button>
+        <a href="{{ url_for('materias.index') }}"
+           class="btn-outline-piel flex-grow-1 justify-content-center">
+          <i class="bi bi-arrow-left"></i> Cancelar
+        </a>
+      </div>
 
-<label class="small uppercase tracking-widest text-stone-400 mb-2">
-Nombre de la materia prima
-</label>
-
-{{ form.nombre(
-class="form-control border-0 border-bottom rounded-0 shadow-none px-0",
-placeholder="Ejemplo: Piel vacuna negra"
-) }}
-
-</div>
-
-
-<!-- DESCRIPCIÓN -->
-
-<div class="col-12">
-
-<label class="small uppercase tracking-widest text-stone-400 mb-2">
-Descripción
-</label>
-
-{{ form.descripcion(
-class="form-control border-0 border-bottom rounded-0 shadow-none px-0",
-placeholder="Tipo de cuero, acabado, color, etc."
-) }}
-
-</div>
-
-
-<!-- UNIDAD -->
-
-<div class="col-12">
-
-<label class="small uppercase tracking-widest text-stone-400 mb-2">
-Unidad de medida
-</label>
-
-{{ form.id_unidad(
-class="form-select border-0 border-bottom rounded-0 shadow-none px-0"
-) }}
-
-</div>
-
-<!-- TIPO CONTROL -->
-
-<div class="col-12">
-
-<label class="small uppercase tracking-widest text-stone-400 mb-2">
-Control de existencia
-</label>
-
-{{ form.tipo_control(class="form-select border-0 border-bottom rounded-0 shadow-none px-0") }}
-
-</div>
-
-</div>
-
-
-<!-- BOTONES -->
-
-<div class="mt-5 d-grid gap-3">
-
-<button type="submit" class="btn-vellum py-3">
-{{ 'Registrar Materia Prima' if modo == 'crear' else 'Guardar Cambios' }}
-</button>
-
-<a href="{{ url_for('materias.index') }}"
-class="text-center text-xs uppercase tracking-widest text-stone-400 text-decoration-none">
-
-Cancelar
-
-</a>
-
-</div>
-
-</div>
-
-</div>
-
-</div>
+    </div>
+  </div>
 
 </form>
+</div>
+</div>
 
-
+{% block extra_head %}
 <style>
-
-.form-control:focus {
-border-bottom-color: var(--v-black) !important;
-}
-
+  .field-error {
+    font-size: 0.78rem; color: var(--v-danger);
+    margin-top: 5px; display: flex; align-items: center; gap: 4px;
+  }
 </style>
+{% endblock %}
 
 {% endblock %}

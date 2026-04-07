@@ -114,7 +114,7 @@ def ver_carrito():
 #
 # Concurrencia:
 #   1. Limpiar expirados globalmente.
-#   2. FOR UPDATE sobre Producto → serializa
+#   2. FOR UPDATE sobre Produxcto → serializa
 #      accesos simultáneos al mismo producto.
 #   3. stock_disponible = stock_actual
 #      − reservado por OTROS usuarios.

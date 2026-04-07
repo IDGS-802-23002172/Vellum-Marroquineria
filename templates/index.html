@@ -1,42 +1,65 @@
 {% extends "base.html" %}
-
 {% block page_title %}Bienvenido a Vellum{% endblock %}
 {% block content %}
 
-{% import "_macros.html" as macros %}
+<div style="max-width:860px; margin:0 auto;">
 
+  {# ── Carrusel ── #}
+  <div id="vellumCarousel" class="carousel slide" data-bs-ride="carousel"
+       style="border:1px solid var(--v-border); border-radius:2px; overflow:hidden; margin-bottom:48px;">
 
-
-
-<div id="vellumCarousel" class="carousel slide border-bottom border-dark" data-bs-ride="carousel">
     <div class="carousel-indicators">
-        <button type="button" data-bs-target="#vellumCarousel" data-bs-slide-to="0" class="active bg-dark" aria-current="true"></button>
-        <button type="button" data-bs-target="#vellumCarousel" data-bs-slide-to="1" class="bg-dark"></button>
-        <button type="button" data-bs-target="#vellumCarousel" data-bs-slide-to="2" class="bg-dark"></button>
+      <button type="button" data-bs-target="#vellumCarousel" data-bs-slide-to="0"
+              class="active" aria-current="true" aria-label="Imagen 1"></button>
+      <button type="button" data-bs-target="#vellumCarousel" data-bs-slide-to="1"
+              aria-label="Imagen 2"></button>
     </div>
 
-    <div class="carousel-inner" >
-        <div class="carousel-item active" data-bs-interval="5000">
-            <img src="static/img/VELLUM_primero.png" 
-                 class="d-block w-100 grayscale object-cover" alt="Luxury Leather 1" object-position: center">
-        </div>
-        <div class="carousel-item" data-bs-interval="5000">
-            <img src="static/img/VELLUM_segundo.png" 
-                 class="d-block w-100 grayscale object-cover" alt="Luxury Leather 2" object-position: center">
-        </div>
+    <div class="carousel-inner">
+      <div class="carousel-item active" data-bs-interval="5000">
+        <img src="static/img/VELLUM_primero.png"
+             class="d-block w-100"
+             style="max-height:520px; object-fit:cover; object-position:center;"
+             alt="Colección Vellum — artículos de cuero">
+      </div>
+      <div class="carousel-item" data-bs-interval="5000">
+        <img src="static/img/VELLUM_segundo.png"
+             class="d-block w-100"
+             style="max-height:520px; object-fit:cover; object-position:center;"
+             alt="Colección Vellum — marroquinería artesanal">
+      </div>
     </div>
 
-    <button class="carousel-control-prev" type="button" data-bs-target="#vellumCarousel" data-bs-slide="prev">
-        <span class="carousel-control-prev-icon bg-dark p-3" aria-hidden="true"></span>
-        <span class="visually-hidden">Anterior</span>
+    <button class="carousel-control-prev" type="button"
+            data-bs-target="#vellumCarousel" data-bs-slide="prev"
+            style="width:48px;">
+      <span class="carousel-control-prev-icon" aria-hidden="true"
+            style="filter:invert(1); width:18px; height:18px;"></span>
+      <span class="visually-hidden">Anterior</span>
     </button>
-    <button class="carousel-control-next" type="button" data-bs-target="#vellumCarousel" data-bs-slide="next">
-        <span class="carousel-control-next-icon bg-dark p-3" aria-hidden="true"></span>
-        <span class="visually-hidden">Siguiente</span>
+    <button class="carousel-control-next" type="button"
+            data-bs-target="#vellumCarousel" data-bs-slide="next"
+            style="width:48px;">
+      <span class="carousel-control-next-icon" aria-hidden="true"
+            style="filter:invert(1); width:18px; height:18px;"></span>
+      <span class="visually-hidden">Siguiente</span>
     </button>
+  </div>
+
+  {# ── Tagline ── #}
+  <div style="text-align:center;">
+    <p style="font-size:0.72rem; text-transform:uppercase; letter-spacing:0.16em; color:var(--v-mid);">
+      Marroquinería artesanal &mdash; León, Guanajuato
+    </p>
+  </div>
+
 </div>
 
-
-
-
+<style>
+  .carousel-indicators [data-bs-target] {
+    background-color: #0a0a0a;
+    width: 20px; height: 2px; border: none; opacity: .3;
+  }
+  .carousel-indicators [data-bs-target].active { opacity: 1; }
+</style>
 {% endblock %}

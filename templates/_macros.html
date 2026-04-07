@@ -1,11 +1,61 @@
-{% macro nuevoMacro(field)%}
-    <td>{{field.label}}</td>
-    <dd>{{field(**kwargs) | safe}}</dd>
-    
-    {% if field.errors %}
-        {% for error in field.errors %}
-            <li style="color: red;">{{error}}</li>
-        {% endfor %}
+{#
+  _macros.html — Vellum
+  Macros reutilizables para formularios.
+#}
 
-    {% endif %}
+{# ── campo_form ───────────────────────────────────────────────────────────── #}
+{% macro campo_form(field, label_override=none) %}
+<div style="margin-bottom: 0;">
+  <label for="{{ field.id }}"
+         style="display:block; font-size:0.7rem; font-weight:600; text-transform:uppercase;
+                letter-spacing:0.09em; color:#4a4a4a; margin-bottom:6px;">
+    {{ label_override if label_override else field.label.text }}
+    {%- if field.flags.required %} <span style="color:#dc2626;" aria-hidden="true">*</span>{% endif %}
+  </label>
+
+  {# Se usa **kwargs aquí (en la llamada), NO arriba en la definición #}
+  {{ field(
+      id=field.id,
+      class=("form-control" if field.widget.input_type != 'select' else "form-select")
+            ~ (" is-invalid" if field.errors else ""),
+      **kwargs
+    ) | safe }}
+
+  {% if field.errors %}
+    {% for error in field.errors %}
+      <div role="alert"
+           style="font-size:0.78rem; color:#991b1b; margin-top:5px;
+                  display:flex; align-items:center; gap:4px;">
+        <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
+        {{ error }}
+      </div>
+    {% endfor %}
+  {% endif %}
+</div>
+{% endmacro %}
+
+
+{# ── nuevoMacro ───────────────────────────────────────────────────────────── #}
+{% macro nuevoMacro(field) %}
+<div style="margin-bottom:0;">
+  <label for="{{ field.id }}"
+         style="display:block; font-size:0.7rem; font-weight:600; text-transform:uppercase;
+                letter-spacing:0.09em; color:#4a4a4a; margin-bottom:6px;">
+    {{ field.label.text }}
+  </label>
+
+  {# Nota: Se eliminó **kwargs de la línea del macro arriba #}
+  {{ field(id=field.id, **kwargs) | safe }}
+
+  {% if field.errors %}
+    {% for error in field.errors %}
+      <div role="alert"
+           style="font-size:0.78rem; color:#991b1b; margin-top:5px;
+                  display:flex; align-items:center; gap:4px;">
+        <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
+        {{ error }}
+      </div>
+    {% endfor %}
+  {% endif %}
+</div>
 {% endmacro %}
