@@ -59,7 +59,7 @@ app.register_blueprint(tienda_bp, url_prefix="/tienda")
 
 with app.app_context():
     intentos = 0
-    while intentos < 10: # Damos 50 segundos totales para que MySQL despierte
+    while intentos < 2: # Damos 50 segundos totales para que MySQL despierte
         try:
             db.create_all()
             print("Tablas creadas con éxito.")

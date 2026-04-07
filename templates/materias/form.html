@@ -73,9 +73,10 @@
             Control de existencia <span style="color:#dc2626;" aria-hidden="true">*</span>
           </label>
           {{ form.tipo_control(
-              id=form.tipo_control.id,
-              class="form-select" + (" is-invalid" if form.tipo_control.errors else "")
-            ) }}
+                  id=form.tipo_control.id,
+                  class="form-select" + (" is-invalid" if form.tipo_control.errors else ""),
+                  onchange="this.form.submit()"
+              ) }}
           {% for e in form.tipo_control.errors %}
             <div class="field-error"><i class="bi bi-exclamation-circle"></i> {{ e }}</div>
           {% endfor %}

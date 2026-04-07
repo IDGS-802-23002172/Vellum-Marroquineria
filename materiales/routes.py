@@ -3,12 +3,13 @@ Módulo: Proveedores
 Blueprint Flask — CRUD completo
 Empresa: Marroquinería de Autor, León Gto.
 """
+from datetime import datetime
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 from sqlalchemy import or_
 from models import Proveedor, db, UnidadMedida
 from models import MateriaPrima, StockMateriaPrima, MovimientoMateriaPrima, PiezaMateriaPrima
-from forms import UnidadMedidaForm, MateriaPrimaForm, MovimientoMateriaPrimaForm
+from forms import AjusteInventarioForm, UnidadMedidaForm, MateriaPrimaForm, MovimientoMateriaPrimaForm
 import logging
 
 unidades_bp = Blueprint("unidades", __name__, url_prefix="/unidades")
@@ -18,7 +19,7 @@ unidades_bp = Blueprint("unidades", __name__, url_prefix="/unidades")
 def _log(accion: str, id_registro: int = None, detalle: str = None):
     try:
         user_id = session.get("user_id")
-
+        
         logging.info(
             f"[AUDITORIA] Usuario:{user_id} | Acción:{accion} "
             f"| ID:{id_registro} | Detalle:{detalle} | IP:{request.remote_addr}"
@@ -184,15 +185,21 @@ def index():
         paginacion=paginacion,
         q=q
     )
-
+    
 @materias_bp.route("/nueva", methods=["GET", "POST"])
 def crear():
 
     form = MateriaPrimaForm()
 
+    # 🔥 tipo seleccionado (GET o POST)
+    tipo = request.values.get("tipo_control", "piel")
+
+    # 🔥 FILTRO REAL (aquí estaba tu bug)
+    unidades = UnidadMedida.query.filter_by(tipo=tipo).order_by(UnidadMedida.nombre).all()
+
     form.id_unidad.choices = [
         (u.id_unidad, f"{u.nombre} ({u.abreviatura})")
-        for u in UnidadMedida.query.order_by(UnidadMedida.nombre)
+        for u in unidades
     ]
 
     if form.validate_on_submit():
@@ -201,12 +208,12 @@ def crear():
             nombre=form.nombre.data,
             descripcion=form.descripcion.data,
             id_unidad=form.id_unidad.data,
-            tipo_control=form.tipo_control.data
+            tipo_control=form.tipo_control.data  # ✅ SE GUARDA IGUAL (piel, quimico, hilo)
         )
 
         db.session.add(materia)
         db.session.commit()
-        
+
         stock = StockMateriaPrima(
             id_materia=materia.id_materia,
             cantidad_actual=0,
@@ -217,12 +224,12 @@ def crear():
         db.session.commit()
 
         flash("Materia prima registrada correctamente", "success")
-
         return redirect(url_for("materias.index"))
 
     return render_template(
         "materias/form.html",
         form=form,
+        tipo=tipo,   # 🔥 IMPORTANTE
         modo="crear"
     )
 
@@ -252,9 +259,13 @@ def editar(id):
 
     form = MateriaPrimaForm(obj=materia)
 
+    tipo = request.values.get("tipo_control", materia.tipo_control)
+
+    unidades = UnidadMedida.query.filter_by(tipo=tipo).order_by(UnidadMedida.nombre).all()
+
     form.id_unidad.choices = [
         (u.id_unidad, f"{u.nombre} ({u.abreviatura})")
-        for u in UnidadMedida.query.order_by(UnidadMedida.nombre)
+        for u in unidades
     ]
 
     if form.validate_on_submit():
@@ -262,102 +273,118 @@ def editar(id):
         materia.nombre = form.nombre.data
         materia.descripcion = form.descripcion.data
         materia.id_unidad = form.id_unidad.data
-        materia.tipo_control = form.tipo_control.data
+        materia.tipo_control = form.tipo_control.data  # ✅ SIN CAMBIOS
 
         db.session.commit()
 
-        flash("Materia prima actualizada", "success")
-
-        return redirect(url_for("materias.detalle", id=materia.id_materia))
+        flash("Materia actualizada", "success")
+        return redirect(url_for("materias.index"))
 
     return render_template(
         "materias/form.html",
         form=form,
         materia=materia,
+        tipo=tipo,
         modo="editar"
     )
     
 @materias_bp.post("/<int:id>/eliminar")
 def eliminar(id):
-
     materia = MateriaPrima.query.get_or_404(id)
 
+    # 1. VALIDACIÓN DE INTEGRIDAD REAL: Movimientos (Kardex)
+    # Si hay movimientos, significa que hubo compras o producción. NO SE BORRA.
     if materia.movimientos:
+        _log("INTENTO_ELIMINAR_CON_MOVIMIENTOS", id, materia.nombre)
         flash(
-            "No se puede eliminar la materia prima porque tiene movimientos registrados",
+            f"No se puede eliminar «{materia.nombre}» porque tiene movimientos registrados en el historial.",
             "danger"
         )
         return redirect(url_for("materias.detalle", id=id))
 
-    db.session.delete(materia)
-    db.session.commit()
+    try:
+        # 2. LIMPIEZA DE DEPENDENCIAS TÉCNICAS (Stock y Piezas)
+        # El StockMateriaPrima es un registro dependiente que debe morir con el padre
+        if materia.stock:
+            db.session.delete(materia.stock)
+        
+        # Si es tipo piel, borrar las referencias de piezas (si no tienen movimientos)
+        if materia.tipo_control == 'piel':
+            for pieza in materia.piezas:
+                db.session.delete(pieza)
 
-    flash("Materia prima eliminada", "success")
+        # 3. ELIMINACIÓN DEL PADRE
+        db.session.delete(materia)
+        db.session.commit()
+
+        _log("ELIMINAR_MATERIA", id, materia.nombre)
+        flash(f"Materia prima «{materia.nombre}» eliminada correctamente.", "success")
+
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error al eliminar materia {id}: {str(e)}")
+        flash("Error de base de datos al intentar eliminar el registro.", "danger")
 
     return redirect(url_for("materias.index"))
 
 @materias_bp.route("/movimiento/<int:id_materia>", methods=["GET", "POST"])
 def movimiento(id_materia):
-    """
-    Solo maneja AJUSTE de inventario (corrección manual de existencias).
-    Las compras con proveedor y factura se gestionan en compras_bp.
-    La merma se registra automáticamente desde el módulo de Producción.
-    """
     materia = MateriaPrima.query.get_or_404(id_materia)
-    form    = MovimientoMateriaPrimaForm()
+    # CAMBIO: Usa el formulario simplificado
+    form = AjusteInventarioForm()
 
     if form.validate_on_submit():
         cantidad = form.cantidad.data
-
-        if not cantidad or cantidad <= 0:
-            flash("La cantidad debe ser mayor a 0.", "danger")
-            return render_template("materias/movimientos.html", form=form, materia=materia)
-
         stock = StockMateriaPrima.query.filter_by(id_materia=id_materia).first()
-
+        
         if not stock:
-            flash("No existe registro de stock para esta materia.", "danger")
-            return redirect(url_for("materias.detalle", id=id_materia))
-
-        # ── Materiales controlados por pieza ──────────────────────────────
-        if materia.tipo_control == "pieza":
-            mov = MovimientoMateriaPrima(
-                id_materia=id_materia,
-                tipo="AJUSTE",
-                cantidad=cantidad,
-                referencia=form.referencia.data or None,
-            )
-            db.session.add(mov)
+            stock = StockMateriaPrima(id_materia=id_materia, cantidad_actual=0)
+            db.session.add(stock)
             db.session.flush()
 
-            pieza = PiezaMateriaPrima(
-                id_materia=id_materia,
-                area=cantidad,
-                id_movimiento_entrada=mov.id_movimiento,
-            )
-            db.session.add(pieza)
+        try:
+            if materia.tipo_control == "piel":
+                mov = MovimientoMateriaPrima(
+                    id_materia=id_materia,
+                    tipo="AJUSTE",
+                    cantidad=cantidad, 
+                    referencia=form.referencia.data,
+                    fecha=datetime.utcnow()
+                )
+                db.session.add(mov)
+                db.session.flush()
 
-            # Recalcular stock como conteo de piezas disponibles
-            stock.cantidad_actual = (
-                PiezaMateriaPrima.query
-                .filter_by(id_materia=id_materia, disponible=True)
-                .count()
-            )
+                pieza = PiezaMateriaPrima(
+                    id_materia=id_materia,
+                    area=cantidad,  
+                    id_movimiento_entrada=mov.id_movimiento,
+                    disponible=True
+                )
+                db.session.add(pieza)
+                stock.cantidad_actual += 1
 
-        # ── Materiales acumulables ─────────────────────────────────────────
-        else:
-            mov = MovimientoMateriaPrima(
-                id_materia=id_materia,
-                tipo="AJUSTE",
-                cantidad=cantidad,
-                referencia=form.referencia.data or None,
-            )
-            db.session.add(mov)
-            # AJUSTE = sobreescribir la cantidad actual (no sumar)
-            stock.cantidad_actual = cantidad
+            else:
+                diferencia = cantidad - stock.cantidad_actual
+                mov = MovimientoMateriaPrima(
+                    id_materia=id_materia,
+                    tipo="AJUSTE",
+                    cantidad=diferencia,
+                    referencia=form.referencia.data,
+                    fecha=datetime.utcnow()
+                )
+                db.session.add(mov)
+                stock.cantidad_actual = cantidad
 
-        db.session.commit()
-        flash("Ajuste de inventario registrado correctamente.", "success")
-        return redirect(url_for("materias.detalle", id=id_materia))
+            db.session.commit()
+            flash("Inventario actualizado.", "success")
+            return redirect(url_for("materias.detalle", id=id_materia))
+
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Error: {str(e)}", "danger")
+
+    # DEBUG: Si el POST falla, ver qué errores tiene el form
+    if request.method == "POST":
+        print(f"ERRORES: {form.errors}")
 
     return render_template("materias/movimientos.html", form=form, materia=materia)

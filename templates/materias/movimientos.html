@@ -1,28 +1,16 @@
 {% extends "base.html" %}
 {% block title %}Ajuste de Inventario — {{ materia.nombre }}{% endblock %}
-{% block breadcrumb %}
-  <a href="#">Inventario</a> /
-  <a href="{{ url_for('materias.index') }}">Materias Primas</a> /
-  <a href="{{ url_for('materias.detalle', id=materia.id_materia) }}">{{ materia.nombre }}</a> /
-  Ajuste
-{% endblock %}
-{% block page_title %}Ajuste de Inventario{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
 <div class="col-lg-6 col-md-8">
 
-  {# ── Aviso contextual ── #}
   <div class="flash flash-warning mb-4" role="note">
     <i class="bi bi-info-circle flex-shrink-0"></i>
     <div>
       <strong>¿Cuándo usar este formulario?</strong>
-      Solo para <strong>corregir diferencias</strong> entre el sistema y el físico
-      (conteo, daño no registrado, merma, etc.).<br>
-      Para registrar una compra a proveedor ve al
-      <a href="{{ url_for('compras.index') }}" style="color:var(--v-warn); font-weight:600; text-underline-offset:2px;">
-        Módulo de Compras <i class="bi bi-arrow-right" style="font-size:.8em;"></i>
-      </a>
+      Solo para <strong>corregir diferencias</strong> físicas. 
+      Las compras se registran en el <a href="{{ url_for('compras.index') }}" style="color:var(--v-warn); font-weight:600;">Módulo de Compras</a>.
     </div>
   </div>
 
@@ -35,106 +23,89 @@
     <div class="p-4">
 
       {# Resumen de stock actual #}
-      <div style="display:flex; align-items:center; justify-content:space-between;
-                  background:var(--v-paper); border:1px solid var(--v-border);
+      <div style="display:flex; align-items:center; justify-content:space-between; 
+                  background:var(--v-paper); border:1px solid var(--v-border); 
                   border-radius:2px; padding:12px 16px; margin-bottom:24px;">
         <div>
           <div style="font-size:.65rem; text-transform:uppercase; letter-spacing:.1em; color:var(--v-mid); margin-bottom:3px;">
-            Stock actual
+            Stock en sistema
           </div>
           <div style="font-weight:700; font-size:1.05rem;">
-            {% if materia.tipo_control == 'pieza' %}
-              {% set piezas = materia.piezas | selectattr('disponible') | list | length %}
-              {{ piezas }} pieza{{ 's' if piezas != 1 }}
+            {% if materia.tipo_control == 'piel' %}
+              {# Contamos piezas físicas disponibles #}
+              {% set piezas_count = materia.piezas | selectattr('disponible') | list | length %}
+              {{ piezas_count }} Hoja{{ 's' if piezas_count != 1 }} de piel
             {% elif materia.stock %}
               {{ materia.stock.cantidad_actual }} {{ materia.unidad.abreviatura }}
             {% else %}
-              Sin registro
+              0 {{ materia.unidad.abreviatura }}
             {% endif %}
           </div>
         </div>
-        {% if materia.tipo_control == 'pieza' %}
-          <span class="tag-material" style="background:#ede9fe; color:#5b21b6;">Por pieza</span>
-        {% else %}
-          <span class="tag-material" style="background:#e0f2fe; color:#075985;">Acumulable</span>
-        {% endif %}
+        <span class="tag-material" style="background:{% if materia.tipo_control == 'piel' %}#ede9fe; color:#5b21b6;{% else %}#e0f2fe; color:#075985;{% endif %}">
+          {{ 'Por Hoja/Pieza' if materia.tipo_control == 'piel' else 'Acumulable' }}
+        </span>
       </div>
 
       <form method="POST" novalidate>
         {{ form.hidden_tag() }}
-        {{ form.csrf_token }}
 
-        {# Materia prima (solo display) #}
         <div style="margin-bottom:20px;">
           <label class="form-label">Materia Prima</label>
-          <input type="text" class="form-control" value="{{ materia.nombre }}" disabled
-                 style="background:var(--v-paper); color:var(--v-stone);">
-          {% if materia.tipo_control == 'pieza' %}
-          <p style="font-size:.78rem; color:var(--v-info, #1e40af); margin-top:6px; line-height:1.55;
-                    background:#dbeafe; padding:8px 12px; border-radius:2px; border-left:3px solid #2563eb;">
-            <i class="bi bi-info-circle me-1"></i>
-            Material controlado <strong>por pieza</strong>. El ajuste agrega una nueva pieza
-            con el área que indiques. Los consumos se registran desde Producción.
-          </p>
+          <input type="text" class="form-control" value="{{ materia.nombre }}" disabled style="background:var(--v-paper);">
+          
+          {% if materia.tipo_control == 'piel' %}
+          <div style="font-size:.78rem; color:#1e40af; margin-top:8px; background:#dbeafe; padding:10px; border-left:3px solid #2563eb;">
+            <i class="bi bi-info-circle-fill me-1"></i>
+            <strong>Modo Hoja Individual:</strong> Este ajuste creará <u>una nueva pieza</u> en el inventario. El valor que ingreses abajo será el <strong>área total</strong> de esa hoja.
+          </div>
           {% endif %}
         </div>
 
-        {# Cantidad / área #}
+        {# Cantidad / Área #}
         <div style="margin-bottom:20px;">
           <label class="form-label" for="{{ form.cantidad.id }}">
-            {% if materia.tipo_control == 'pieza' %}
-              Área de la nueva pieza
+            {% if materia.tipo_control == 'piel' %}
+              Área de la nueva hoja (dm²)
             {% else %}
-              Nueva cantidad en inventario
+              Nueva cantidad total en estante ({{ materia.unidad.abreviatura }})
             {% endif %}
-            <span style="color:#dc2626;" aria-hidden="true">*</span>
+            <span style="color:#dc2626;">*</span>
           </label>
-          <div class="d-flex gap-0" style="border:1px solid var(--v-border); border-radius:2px; overflow:hidden;">
+          
+          <div class="d-flex" style="border:1px solid var(--v-border); border-radius:2px; overflow:hidden;">
             {{ form.cantidad(
-                id=form.cantidad.id,
-                class="form-control",
-                style="border:none; border-radius:0; flex:1;",
+                class="form-control", 
+                style="border:none; flex:1;", 
                 placeholder="0.00",
-                inputmode="decimal"
-              ) }}
-            <span style="padding:9px 14px; background:var(--v-paper);
-                         border-left:1px solid var(--v-border);
-                         font-size:.825rem; color:var(--v-mid); white-space:nowrap;">
+                step="0.01"
+            ) }}
+            <span style="padding:9px 14px; background:var(--v-paper); border-left:1px solid var(--v-border); font-size:.85rem;">
               {{ materia.unidad.abreviatura }}
             </span>
           </div>
+          
           {% if materia.tipo_control == 'acumulable' %}
-          <p style="font-size:.75rem; color:var(--v-mid); margin-top:5px;">
-            El sistema <strong>reemplazará</strong> el stock actual con este valor.
+          <p style="font-size:.72rem; color:var(--v-mid); margin-top:5px;">
+            <i class="bi bi-exclamation-triangle"></i> El stock actual se <strong>sobrescribirá</strong> con este valor.
           </p>
           {% endif %}
         </div>
 
         {# Motivo #}
         <div style="margin-bottom:28px;">
-          <label class="form-label" for="{{ form.referencia.id }}">
-            Motivo del ajuste <span style="color:#dc2626;" aria-hidden="true">*</span>
-          </label>
-          {{ form.referencia(
-              id=form.referencia.id,
-              class="form-control",
-              placeholder="Ej: Conteo físico dic-2025, Daño no registrado, Merma…"
-            ) }}
-          <p style="font-size:.75rem; color:var(--v-mid); margin-top:5px;">
-            Documenta siempre el motivo para trazabilidad del inventario.
-          </p>
+          <label class="form-label">Motivo del ajuste <span style="color:#dc2626;">*</span></label>
+          {{ form.referencia(class="form-control", placeholder="Ej: Error de conteo, material dañado...") }}
         </div>
 
         <div class="d-flex gap-3">
           <button type="submit" class="btn-piel flex-grow-1 justify-content-center">
-            <i class="bi bi-check-circle"></i> Registrar ajuste
+            Registrar Ajuste
           </button>
-          <a href="{{ url_for('materias.detalle', id=materia.id_materia) }}"
-             class="btn-outline-piel flex-grow-1 justify-content-center">
-            <i class="bi bi-arrow-left"></i> Cancelar
+          <a href="{{ url_for('materias.detalle', id=materia.id_materia) }}" class="btn-outline-piel flex-grow-1 justify-content-center text-decoration-none">
+            Cancelar
           </a>
         </div>
-
       </form>
     </div>
   </div>
