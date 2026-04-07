@@ -4,7 +4,6 @@ from werkzeug.utils import secure_filename
 from models import db, Producto
 import forms
 
-# Definición del Blueprint con nombre único
 productos_bp = Blueprint("productos", __name__)
 
 # ─────────────────────────────────────────────
@@ -27,31 +26,41 @@ def crear_producto():
         if 'imagen' in request.files:
             f = request.files['imagen']
             if f.filename != '':
-                # Validación crítica: extensión de archivo [cite: 38]
                 filename = secure_filename(f.filename)
                 ext = os.path.splitext(filename)[1].lower()
                 
                 if ext in ['.jpg', '.jpeg', '.png']:
-                    os.makedirs(current_app.config['UPLOAD_FOLDER'], exist_ok=True)
-                    f.save(os.path.join(current_app.config['UPLOAD_FOLDER'], filename))
+                    try:
+                        os.makedirs(current_app.config['UPLOAD_FOLDER'], exist_ok=True)
+                        f.save(os.path.join(current_app.config['UPLOAD_FOLDER'], filename))
+                    except Exception as e:
+                        flash(f"Error al guardar la imagen: {str(e)}", "danger")
+                        return render_template("productos/crear.html", form=form)
                 else:
                     flash("Error: Solo se permiten archivos .jpg o .png", "danger")
                     return render_template("productos/crear.html", form=form)
         
-        nuevo_prod = Producto(
-            sku=form.sku.data,
-            nombre=form.nombre.data,
-            linea=form.linea.data, # Executive, Lifestyle, Essentials [cite: 33]
-            categoria=form.categoria.data,
-            precio_venta=form.precio.data,
-            stock_actual=form.stock.data,
-            imagen=filename
-        )
-        
-        db.session.add(nuevo_prod)
-        db.session.commit()
-        flash("Producto de marroquinería registrado con éxito", "success")
-        return redirect(url_for('productos.listar_productos'))
+        try:
+            nuevo_prod = Producto(
+                sku=form.sku.data,
+                nombre=form.nombre.data,
+                linea=form.linea.data, 
+                categoria=form.categoria.data,
+                precio_venta=form.precio.data,
+                stock_actual=0, 
+                area_plantilla_base=form.area_plantilla.data, 
+                imagen=filename
+            )
+            
+            db.session.add(nuevo_prod)
+            db.session.commit()
+            flash("Producto de marroquinería registrado con éxito. Stock inicializado en 0.", "success")
+            return redirect(url_for('productos.listar_productos'))
+
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Error crítico de base de datos: {str(e)}", "danger")
+            return render_template("productos/crear.html", form=form)
     
     return render_template("productos/crear.html", form=form)
 
@@ -64,22 +73,28 @@ def modificar_producto(id):
     form = forms.ProductoForm(obj=prod)
     
     if request.method == 'POST' and form.validate():
-        prod.nombre = form.nombre.data
-        prod.linea = form.linea.data
-        prod.categoria = form.categoria.data
-        prod.precio_venta = form.precio.data
-        
-        if 'imagen' in request.files:
-            f = request.files['imagen']
-            if f.filename != '':
-                filename = secure_filename(f.filename)
-                f.save(os.path.join(current_app.config['UPLOAD_FOLDER'], filename))
-                prod.imagen = filename
-        
-        db.session.commit()
-        flash("Datos de producción actualizados", "info")
-        return redirect(url_for('productos.listar_productos'))
-        
+        try:
+            prod.nombre = form.nombre.data
+            prod.linea = form.linea.data
+            prod.categoria = form.categoria.data
+            prod.precio_venta = form.precio.data
+            prod.area_plantilla_base = form.area_plantilla.data
+            
+            if 'imagen' in request.files:
+                f = request.files['imagen']
+                if f.filename != '':
+                    filename = secure_filename(f.filename)
+                    f.save(os.path.join(current_app.config['UPLOAD_FOLDER'], filename))
+                    prod.imagen = filename
+            
+            db.session.commit()
+            flash("Datos de producción actualizados", "info")
+            return redirect(url_for('productos.listar_productos'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Error al modificar: {str(e)}", "danger")
+            return render_template("productos/modificar.html", form=form, prod=prod)
+            
     return render_template("productos/modificar.html", form=form, prod=prod)
 
 # ─────────────────────────────────────────────
@@ -88,7 +103,45 @@ def modificar_producto(id):
 @productos_bp.route("/productos/eliminar/<int:id>", methods=['POST'])
 def eliminar_producto(id):
     prod = Producto.query.get_or_404(id)
-    db.session.delete(prod)
-    db.session.commit()
-    flash("Producto removido del catálogo", "warning")
+    try:
+        db.session.delete(prod)
+        db.session.commit()
+        flash("Producto removido del catálogo", "warning")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error al eliminar: {str(e)}", "danger")
+        
+    return redirect(url_for('productos.listar_productos'))
+
+# ─────────────────────────────────────────────
+# GESTIÓN DE MERMAS (Nueva Funcionalidad)
+# ─────────────────────────────────────────────
+@productos_bp.route('/productos/merma/<int:id>', methods=['POST'])
+def registrar_merma_producto(id):
+    producto = Producto.query.get_or_404(id)
+    justificacion = request.form.get('justificacion')
+    cantidad_str = request.form.get('cantidad_merma')
+
+    if not cantidad_str or not cantidad_str.isdigit():
+        flash("Error: Cantidad de merma inválida", "danger")
+        return redirect(url_for('productos.listar_productos'))
+
+    cantidad = int(cantidad_str)
+
+    if not justificacion or len(justificacion) < 10:
+        flash("Error: Debes proporcionar una justificación detallada (mínimo 10 caracteres)", "warning")
+        return redirect(url_for('productos.listar_productos'))
+
+    if cantidad > producto.stock_actual:
+        flash("Error: La cantidad de merma no puede ser mayor al stock actual", "danger")
+        return redirect(url_for('productos.listar_productos'))
+
+    try:
+        producto.stock_actual -= cantidad
+        db.session.commit()
+        flash(f"Merma registrada exitosamente para {producto.nombre}. Motivo: {justificacion}", "info")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error al registrar merma: {str(e)}", "danger")
+    
     return redirect(url_for('productos.listar_productos'))

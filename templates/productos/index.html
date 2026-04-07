@@ -12,7 +12,7 @@
             </h2>
             <p class="text-uppercase tracking-widest text-muted mb-0" style="font-size: 0.65rem;">Piezas terminadas en existencia</p>
         </div>
-        <a href="{{ url_for('crear_producto') }}" class="btn-vellum">
+        <a href="{{ url_for('productos.crear_producto') }}" class="btn-vellum text-decoration-none">
             <i class="bi bi-plus-lg me-2"></i> Registrar Nueva Pieza
         </a>
     </div>
@@ -33,13 +33,13 @@
                     {% endif %}
                     
                     <div class="position-absolute top-0 start-0 p-3">
-                        <span class="bg-black text-white px-3 py-1 tracking-widest uppercase fw-bold" style="font-size: 0.6rem;">
+                        <span class="bg-black text-white px-3 py-1 tracking-widest text-uppercase fw-bold" style="font-size: 0.6rem;">
                             {{ p.linea }}
                         </span>
                     </div>
 
                     <div class="position-absolute bottom-0 end-0 p-3 bg-white">
-                        <span class="text-dark fw-bold" style="font-size: 1.1rem;">${{ p.precio_venta }}</span>
+                        <span class="text-dark fw-bold" style="font-size: 1.1rem;">${{ "{:,.2f}".format(p.precio_venta) }}</span>
                     </div>
                 </div>
 
@@ -52,19 +52,50 @@
                     
                     <div class="mt-auto pt-3 border-top d-flex justify-content-between align-items-center">
                         <div>
-                            <span class="badge-activo {% if p.stock_actual > 0 %}si{% else %}no{% endif %}">
+                            <span class="badge {% if p.stock_actual > 0 %}bg-dark{% else %}bg-secondary{% endif %} text-uppercase px-2 py-1" style="font-size: 0.6rem; border-radius: 0;">
                                 {{ p.stock_actual }} EN STOCK
                             </span>
                         </div>
                         <div class="d-flex gap-3">
-                            <a href="{{ url_for('modificar_producto', id=p.id) }}" class="text-stone-400 hover:text-dark">
+                            <a href="{{ url_for('productos.modificar_producto', id=p.id) }}" class="text-dark hover:text-muted" title="Editar">
                                 <i class="bi bi-pencil-square"></i>
                             </a>
-                            <a href="{{ url_for('eliminar_producto', id=p.id) }}" class="text-stone-300 hover:text-danger">
+                            <a href="#" class="text-danger" data-bs-toggle="modal" data-bs-target="#modalMerma{{ p.id }}" title="Reportar Merma">
                                 <i class="bi bi-trash3"></i>
                             </a>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="modalMerma{{ p.id }}" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content" style="border-radius: 0; border: 1px solid #000;">
+                    <div class="modal-header bg-black text-white" style="border-radius: 0;">
+                        <h5 class="modal-title text-uppercase small tracking-widest">Reportar Merma: {{ p.nombre }}</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <form action="{{ url_for('productos.registrar_merma_producto', id=p.id) }}" method="POST">
+                        <div class="modal-body p-4">
+                            <div class="mb-4">
+                                <label class="form-label small text-uppercase fw-bold">Cantidad a retirar</label>
+                                <input type="number" name="cantidad_merma" class="form-control" 
+                                       min="1" max="{{ p.stock_actual }}" required style="border-radius: 0;">
+                                <div class="form-text text-muted" style="font-size: 0.7rem;">Stock disponible: {{ p.stock_actual }}</div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small text-uppercase fw-bold">Justificación técnica</label>
+                                <textarea name="justificacion" class="form-control" rows="3" 
+                                          placeholder="Describa el motivo de la baja (min. 10 caracteres)..." 
+                                          required style="border-radius: 0;"></textarea>
+                            </div>
+                        </div>
+                        <div class="modal-footer border-0">
+                            <button type="button" class="btn btn-link text-muted text-decoration-none small text-uppercase" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-dark px-4" style="border-radius: 0;">Confirmar Baja</button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
@@ -75,12 +106,13 @@
 <style>
     .card-vellum {
         transition: transform 0.3s ease, border-color 0.3s ease;
-        border: 1px solid var(--v-border) !important;
+        border: 1px solid #e0e0e0 !important;
     }
     .card-vellum:hover {
         transform: translateY(-5px);
-        border-color: var(--v-black) !important;
+        border-color: #000 !important;
     }
     .text-premium { font-family: 'Playfair Display', serif; }
+    .tracking-widest { letter-spacing: 0.15em; }
 </style>
 {% endblock %}
