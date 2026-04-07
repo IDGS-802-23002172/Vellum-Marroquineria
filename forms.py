@@ -35,7 +35,7 @@ class ProductoForm(FlaskForm):
 class UnidadMedidaForm(FlaskForm):
     nombre = StringField("Nombre", validators=[DataRequired(), Length(max=50)])
     abreviatura = StringField("Abreviatura", validators=[DataRequired(), Length(max=10)])
-    tipo = SelectField("Tipo de Unidad",choices=[("peso", "Peso"),("area", "Área"),("longitud", "Longitud"),("pieza", "Pieza")],validators=[DataRequired()])
+    tipo = SelectField("Tipo de Unidad",choices=[("piel", "Piel y cuero"),("quimico", "Quimicos y tintes"),("hilo", "Hilo y cordon")],validators=[DataRequired()])
     
 class MateriaPrimaForm(FlaskForm):
     nombre = StringField("Nombre", validators=[DataRequired(), Length(max=150)])
@@ -43,11 +43,15 @@ class MateriaPrimaForm(FlaskForm):
     id_unidad = SelectField("Unidad de Medida", coerce=int, validators=[DataRequired()])
     tipo_control = SelectField(
         "Control de existencia",
-        choices=[("acumulable", "Acumulable"), ("pieza", "Por pieza")],
+        choices=[("piel", "Piel y cuero"),("quimico", "Quimicos y tintes"),("hilo", "Hilo y cordon")],
         validators=[DataRequired()]
     )
     
-
+class AjusteInventarioForm(FlaskForm):
+    # Solo lo estrictamente necesario para el HTML que me pasaste
+    cantidad = DecimalField("Cantidad/Área", validators=[DataRequired()])
+    referencia = StringField("Motivo del ajuste", validators=[DataRequired(), Length(max=150)])
+    
 class MovimientoMateriaPrimaForm(FlaskForm):
     id_proveedor = SelectField(
         "Proveedor",

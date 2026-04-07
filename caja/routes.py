@@ -312,12 +312,10 @@ def eliminar_linea(id_detalle):
 #   4. Cambia estado a CONFIRMADA
 #   Todo en una sola transacción atómica.
 # ─────────────────────────────────────────────────────────────────────────────
-
 @compras_bp.post("/<int:id>/confirmar")
 def confirmar(id):
     orden = OrdenCompra.query.get_or_404(id)
 
-    # ── Validaciones previas ──────────────────────────────────────────────────
     if orden.estado != "BORRADOR":
         flash("La orden ya fue confirmada o cancelada.", "warning")
         return redirect(url_for("compras.detalle", id=id))
@@ -327,87 +325,76 @@ def confirmar(id):
         return redirect(url_for("compras.detalle", id=id))
 
     try:
-        # ── 1. Movimientos de inventario ──────────────────────────────────────
-        for linea in orden.detalles:
-            materia = linea.materia
-            stock   = StockMateriaPrima.query.filter_by(
-                id_materia=linea.id_materia
-            ).first()
-
-            if not stock:
-                # Crear stock si no existe (caso raro pero defensivo)
-                stock = StockMateriaPrima(
-                    id_materia=linea.id_materia,
-                    cantidad_actual=0,
-                    punto_reorden=0,
-                )
-                db.session.add(stock)
-                db.session.flush()
-
-            # Crear el movimiento
-            mov = MovimientoMateriaPrima(
-                id_materia     = linea.id_materia,
-                id_proveedor   = orden.id_proveedor,
-                tipo           = "COMPRA",
-                cantidad       = linea.cantidad,          # positivo = entrada
-                costo_unitario = linea.costo_unitario,
-                referencia     = orden.folio,
-                fecha          = datetime.utcnow(),
-            )
-            db.session.add(mov)
-            db.session.flush()   # necesitamos el id_movimiento
-
-            # Vincular la línea al movimiento generado
-            linea.id_movimiento = mov.id_movimiento
-
-            # Actualizar stock según tipo_control
-            if materia.tipo_control == "pieza":
-                pieza = PiezaMateriaPrima(
-                    id_materia           = linea.id_materia,
-                    area                 = linea.cantidad,
-                    id_movimiento_entrada= mov.id_movimiento,
-                )
-                db.session.add(pieza)
-                db.session.flush()
-                stock.cantidad_actual = PiezaMateriaPrima.query.filter_by(
-                    id_materia=linea.id_materia, disponible=True
-                ).count()
-            else:
-                stock.cantidad_actual += linea.cantidad
-
-        # ── 2. Movimiento de caja (SALIDA por pago al proveedor) ──────────────
+        # 1. Movimiento de Caja (SALIDA por pago al proveedor)
         caja = MovimientoCaja(
-            tipo        = "SALIDA",
-            concepto    = f"Pago compra {orden.folio} – {orden.proveedor.razon_social}",
-            monto       = orden.total,
-            referencia  = orden.referencia_doc,
-            id_orden    = orden.id_orden,
-            fecha       = datetime.utcnow(),
-            creado_por  = session.get("user_id"),
-            notas       = orden.notas,
+            tipo="SALIDA",
+            concepto=f"Pago OC {orden.folio} – {orden.proveedor.razon_social}",
+            monto=orden.total,
+            referencia=orden.referencia_doc,
+            id_orden=orden.id_orden,
+            fecha=datetime.utcnow(),
+            creado_por=session.get("user_id"),
+            notas=orden.notas,
         )
         db.session.add(caja)
 
-        # ── 3. Actualizar estado ──────────────────────────────────────────────
-        orden.estado        = "CONFIRMADA"
+        # 2. Procesar líneas de detalle
+        for linea in orden.detalles:
+            materia = linea.materia
+            
+            # Asegurar existencia de registro en StockMateriaPrima
+            stock = StockMateriaPrima.query.filter_by(id_materia=linea.id_materia).first()
+            if not stock:
+                stock = StockMateriaPrima(id_materia=linea.id_materia, cantidad_actual=0)
+                db.session.add(stock)
+                db.session.flush()
+
+            # Registrar Movimiento de Inventario (Kardex)
+            mov = MovimientoMateriaPrima(
+                id_materia=linea.id_materia,
+                id_proveedor=orden.id_proveedor,
+                tipo="COMPRA",
+                cantidad=linea.cantidad,
+                costo_unitario=linea.costo_unitario,
+                referencia=orden.folio,
+                fecha=datetime.utcnow(),
+            )
+            db.session.add(mov)
+            db.session.flush() # Para obtener mov.id_movimiento
+            
+            linea.id_movimiento = mov.id_movimiento
+            if materia.tipo_control == 'piel':
+                # LA CORRECCIÓN: 
+                # La cantidad (ej. 23.5) es el ÁREA de esa pieza específica.
+                # Se crea UNA sola pieza con esa área.
+                nueva_pieza = PiezaMateriaPrima(
+                    id_materia=linea.id_materia,
+                    area=linea.cantidad, # Aquí guardamos los 23dm2
+                    id_movimiento_entrada=mov.id_movimiento,
+                    disponible=True
+                )
+                db.session.add(nueva_pieza)
+                
+                # El stock aumenta en 1 unidad física (la hoja de piel)
+                stock.cantidad_actual += 1
+            else:
+                # Químicos/Hilos: Suma normal (litros, metros, etc.)
+                stock.cantidad_actual += linea.cantidad
+
+        # 3. Finalizar Orden
+        orden.estado = "CONFIRMADA"
         orden.confirmado_en = datetime.utcnow()
 
         db.session.commit()
-
         _log("CONFIRMAR_ORDEN_COMPRA", orden.id_orden, orden.folio)
-        flash(
-            f"✅ Orden {orden.folio} confirmada. "
-            f"Inventario y flujo de caja actualizados.",
-            "success"
-        )
+        flash(f"✅ Orden {orden.folio} confirmada. Inventario y Caja actualizados.", "success")
 
     except Exception as exc:
         db.session.rollback()
         logging.exception("Error al confirmar orden de compra")
-        flash(f"Error al confirmar: {exc}", "danger")
+        flash(f"Error crítico al confirmar: {exc}", "danger")
 
     return redirect(url_for("compras.detalle", id=id))
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # CANCELAR ORDEN (solo BORRADOR)

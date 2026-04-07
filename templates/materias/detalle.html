@@ -9,8 +9,8 @@
 
 {% block content %}
 
-{# Variables reutilizables #}
-{% if materia.tipo_control == 'pieza' %}
+{# ── Lógica de Stock unificada ── #}
+{% if materia.tipo_control == 'piel' %}
   {% set stock_val = materia.piezas | selectattr('disponible') | list | length %}
   {% set stock_label = 'pieza' + ('s' if stock_val != 1 else '') %}
 {% else %}
@@ -53,10 +53,13 @@
         </div>
 
         <div class="detail-row">
-          <div class="detail-label">Control</div>
+          <div class="detail-label">Tipo de Control</div>
           <div class="detail-value">
-            <span class="tag-material" style="{% if materia.tipo_control == 'pieza' %}background:#ede9fe; color:#5b21b6;{% else %}background:#e0f2fe; color:#075985;{% endif %}">
-              {{ 'Por pieza' if materia.tipo_control == 'pieza' else 'Acumulable' }}
+            <span class="tag-material" style="
+                {% if materia.tipo_control == 'piel' %}background:#ede9fe; color:#5b21b6;
+                {% elif materia.tipo_control == 'quimico' %}background:#e0f2fe; color:#075985;
+                {% else %}background:#fef3c7; color:#92400e;{% endif %}">
+              {{ materia.tipo_control | capitalize }}
             </span>
           </div>
         </div>
@@ -72,7 +75,7 @@
               <span style="display:inline-flex; align-items:center; gap:4px; margin-left:10px;
                            font-size:.72rem; font-weight:600; color:var(--v-danger);
                            background:var(--v-danger-bg); padding:2px 8px; border-radius:99px;">
-                <i class="bi bi-exclamation-triangle-fill" style="font-size:.65rem;"></i> Bajo mínimo
+                <i class="bi bi-exclamation-triangle-fill" style="font-size:.65rem;"></i> Bajo reorden
               </span>
             {% endif %}
           </div>
@@ -85,33 +88,31 @@
             <div class="d-flex align-items-center gap-3" id="pr-display">
               <span id="pr-valor">
                 {% if materia.stock %}
-                  {{ materia.stock.punto_reorden | int }} {{ stock_label }}
+                  {{ materia.stock.punto_reorden }} {{ stock_label }}
                 {% else %}—{% endif %}
               </span>
               {% if materia.stock %}
-              <button type="button" class="btn-edit-inline" onclick="abrirEditPR()" aria-label="Editar punto de reorden">
-                <i class="bi bi-pencil"></i> Editar
+              <button type="button" class="btn-edit-inline" onclick="abrirEditPR()">
+                <i class="bi bi-pencil"></i> Ajustar
               </button>
               {% endif %}
             </div>
 
-            {# Panel de edición (oculto por defecto) #}
             {% if materia.stock %}
             <div id="pr-edit" style="display:none; margin-top:10px;">
               <div class="d-flex gap-2 align-items-center flex-wrap">
                 <div style="position:relative;">
                   <input type="number" id="pr-input" min="0" step="0.01"
                          value="{{ materia.stock.punto_reorden }}"
-                         class="form-control" style="width:140px;"
-                         aria-label="Nuevo punto de reorden">
+                         class="form-control" style="width:140px;">
                   <span style="position:absolute; right:10px; top:50%; transform:translateY(-50%);
-                               font-size:.75rem; color:var(--v-mid); pointer-events:none;">
-                    {{ materia.unidad.abreviatura }}
+                                font-size:.75rem; color:var(--v-mid); pointer-events:none;">
+                    {{ stock_label }}
                   </span>
                 </div>
                 <button type="button" class="btn-piel" style="padding:7px 14px;"
                         onclick="guardarPR({{ materia.id_materia }})">
-                  <i class="bi bi-check-lg"></i> Guardar
+                  Confirmar
                 </button>
                 <button type="button" class="btn-outline-piel" style="padding:7px 14px;"
                         onclick="cerrarEditPR()">
@@ -124,30 +125,35 @@
           </div>
         </div>
 
-        {# Listado de piezas (solo tipo pieza) #}
-        {% if materia.tipo_control == 'pieza' %}
+        {# Inventario de cueros (Solo PIEL) #}
+        {% if materia.tipo_control == 'piel' %}
         <div class="detail-row detail-row-full">
-          <div class="detail-label">Piezas registradas</div>
+          <div class="detail-label">Inventario de hojas / piezas</div>
           <div class="detail-value">
             {% if materia.piezas %}
-            <div style="display:flex; flex-direction:column; gap:4px;">
+            <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap:8px;">
               {% for pieza in materia.piezas %}
-              <div style="display:flex; align-items:center; gap:10px; padding:6px 10px;
+              <div style="display:flex; align-items:center; gap:10px; padding:8px 12px;
                           background:{% if pieza.disponible %}var(--v-paper){% else %}#fafafa{% endif %};
-                          border:1px solid var(--v-border); border-radius:2px;
+                          border:1px solid var(--v-border); border-radius:4px;
                           {% if not pieza.disponible %}opacity:.55;{% endif %}">
-                <span style="font-size:.75rem; color:var(--v-mid); min-width:60px;">ID {{ pieza.id_pieza }}</span>
-                <span style="font-weight:500; font-size:.875rem;">{{ pieza.area }} {{ materia.unidad.abreviatura }}</span>
-                {% if not pieza.disponible %}
-                  <span class="tag-material" style="background:var(--v-danger-bg); color:var(--v-danger); margin-left:auto;">Consumida</span>
+                <i class="bi bi-layers{% if not pieza.disponible %}-half{% endif %}" style="color:var(--v-tan);"></i>
+                <div style="display:flex; flex-direction:column;">
+                  <span style="font-weight:600; font-size:.85rem;">{{ pieza.area }} {{ materia.unidad.abreviatura }}</span>
+                  <span style="font-size:.65rem; color:var(--v-mid);">ID: {{ pieza.id_pieza }}</span>
+                </div>
+                {% if pieza.disponible %}
+                  <span class="ms-auto badge" style="background:#dcfce7; color:#166534; font-size:.6rem;">STOCK</span>
                 {% else %}
-                  <span class="tag-material" style="background:var(--v-success-bg); color:var(--v-success); margin-left:auto;">Disponible</span>
+                  <span class="ms-auto badge" style="background:#fee2e2; color:#991b1b; font-size:.6rem;">CORTE</span>
                 {% endif %}
               </div>
               {% endfor %}
             </div>
             {% else %}
-              <span style="color:var(--v-mid);">—</span>
+              <div class="p-3 text-center border rounded" style="border-style:dashed !important;">
+                <span style="color:var(--v-mid); font-size:.875rem;">No hay piezas físicas registradas en almacén.</span>
+              </div>
             {% endif %}
           </div>
         </div>
@@ -160,13 +166,6 @@
           </div>
         </div>
 
-        <div class="detail-row">
-          <div class="detail-label">Última actualización</div>
-          <div class="detail-value" style="color:var(--v-mid); font-size:.825rem;">
-            {{ materia.actualizado_en.strftime('%d %b %Y, %H:%M') }}
-          </div>
-        </div>
-
       </div>
     </div>
 
@@ -174,7 +173,7 @@
     <div class="card-piel">
       <div class="card-header">
         <i class="bi bi-arrow-left-right me-2" style="color:var(--v-tan);"></i>
-        Movimientos recientes
+        Kardex - Últimos 10 movimientos
       </div>
 
       {% if movimientos %}
@@ -185,35 +184,33 @@
               <th scope="col">Fecha</th>
               <th scope="col">Tipo</th>
               <th scope="col" style="text-align:right;">Cantidad</th>
-              <th scope="col">Proveedor</th>
+              <th scope="col">Proveedor / Origen</th>
               <th scope="col">Referencia</th>
             </tr>
           </thead>
           <tbody>
           {% for mov in movimientos %}
           <tr>
-            <td style="font-size:.825rem; color:var(--v-mid); white-space:nowrap;">
-              {{ mov.fecha.strftime('%d/%m/%Y') }}
-            </td>
+            <td style="font-size:.825rem; color:var(--v-mid);">{{ mov.fecha.strftime('%d/%m/%Y') }}</td>
             <td>
-              <span class="tag-material" style="{% if mov.cantidad > 0 %}background:var(--v-success-bg); color:var(--v-success);{% else %}background:var(--v-danger-bg); color:var(--v-danger);{% endif %}">
+              <span class="tag-material" style="
+                {% if mov.tipo in ['COMPRA', 'AJUSTE'] and mov.cantidad > 0 %}background:#dcfce7; color:#166534;
+                {% elif mov.tipo == 'CONSUMO' %}background:#fef3c7; color:#92400e;
+                {% else %}background:#fee2e2; color:#991b1b;{% endif %}">
                 {{ mov.tipo }}
               </span>
             </td>
-            <td style="text-align:right; font-weight:600; font-variant-numeric:tabular-nums; white-space:nowrap;">
-              <span style="color:{% if mov.cantidad > 0 %}var(--v-success){% else %}var(--v-danger){% endif %};">
+            <td style="text-align:right; font-weight:600; font-variant-numeric:tabular-nums;">
+              <span style="color:{% if mov.cantidad > 0 %}#16a34a{% else %}#dc2626{% endif %};">
                 {{ '+' if mov.cantidad > 0 else '' }}{{ mov.cantidad }}
               </span>
-              <span style="font-size:.78rem; color:var(--v-mid); margin-left:2px;">{{ materia.unidad.abreviatura }}</span>
+              <span style="font-size:.78rem; color:var(--v-mid);"> {{ materia.unidad.abreviatura }}</span>
             </td>
             <td style="font-size:.875rem;">
               {% if mov.proveedor %}
-                <a href="{{ url_for('proveedores.detalle', id_proveedor=mov.proveedor.id_proveedor) }}"
-                   style="color:var(--v-tan); text-decoration:none;">
-                  {{ mov.proveedor.razon_social }}
-                </a>
+                {{ mov.proveedor.razon_social }}
               {% else %}
-                <span style="color:var(--v-mid);">—</span>
+                <span style="color:var(--v-mid);">Interno</span>
               {% endif %}
             </td>
             <td style="font-size:.825rem; color:var(--v-mid);">{{ mov.referencia or '—' }}</td>
@@ -225,7 +222,7 @@
       {% else %}
       <div class="empty-state" style="padding:32px;">
         <i class="bi bi-inbox"></i>
-        <p style="margin:0;">Sin movimientos registrados aún.</p>
+        <p style="margin:0;">Sin movimientos en el historial.</p>
       </div>
       {% endif %}
     </div>
@@ -236,31 +233,31 @@
   <div class="col-lg-4">
     <div class="card-piel" style="position:sticky; top:76px;">
       <div class="card-header">
-        <i class="bi bi-sliders me-2" style="color:var(--v-tan);"></i>Acciones
+        <i class="bi bi-sliders me-2" style="color:var(--v-tan);"></i>Operaciones
       </div>
       <div class="p-4 d-flex flex-column gap-2">
 
         <a href="{{ url_for('materias.movimiento', id_materia=materia.id_materia) }}"
            class="btn-piel w-100 justify-content-center">
-          <i class="bi bi-plus-circle"></i> Registrar movimiento
+          <i class="bi bi-plus-circle"></i> Ajustar Inventario
         </a>
 
         <a href="{{ url_for('materias.editar', id=materia.id_materia) }}"
            class="btn-outline-piel w-100 justify-content-center">
-          <i class="bi bi-pencil"></i> Editar materia
+          <i class="bi bi-pencil"></i> Editar Ficha Técnica
         </a>
 
         <a href="{{ url_for('materias.index') }}"
            class="btn-outline-piel w-100 justify-content-center">
-          <i class="bi bi-arrow-left"></i> Volver al listado
+          <i class="bi bi-arrow-left"></i> Volver al Almacén
         </a>
 
         <div style="border-top:1px solid var(--v-border); padding-top:12px; margin-top:4px;">
           <form method="POST" action="{{ url_for('materias.eliminar', id=materia.id_materia) }}"
-                onsubmit="return confirm('¿Eliminar «{{ materia.nombre }}»? Esta acción no se puede deshacer.')">
+                onsubmit="return confirm('¿Eliminar esta materia prima permanentemente?')">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button type="submit" class="btn-danger-piel w-100 justify-content-center">
-              <i class="bi bi-trash"></i> Eliminar materia
+            <button type="submit" class="btn-danger-piel">
+              <i class="bi bi-trash"></i> Eliminar Materia
             </button>
           </form>
         </div>
@@ -273,11 +270,10 @@
 
 {% block extra_head %}
 <style>
-  /* ── Detail grid (reutilizable) ── */
   .detail-grid { padding: 4px 0; }
   .detail-row {
     display: grid;
-    grid-template-columns: 180px 1fr;
+    grid-template-columns: 200px 1fr;
     gap: 8px 20px;
     padding: 13px 20px;
     border-bottom: 1px solid var(--v-border);
@@ -291,32 +287,23 @@
     color: var(--v-mid); padding-top: 2px;
   }
   .detail-value { font-size: 0.875rem; color: var(--v-black); line-height: 1.5; }
-  @media (max-width: 576px) {
-    .detail-row { grid-template-columns: 1fr; gap: 4px; }
-  }
+  
+  .badge { padding: 4px 8px; border-radius: 4px; font-weight: 700; }
 
-  /* ── Botón danger ── */
   .btn-danger-piel {
     display: inline-flex; align-items: center; gap: 6px;
     background: var(--v-danger-bg); color: var(--v-danger);
     border: 1px solid #fecaca; border-radius: var(--v-radius);
-    padding: 8px 18px; font-family: 'DM Sans', sans-serif;
-    font-size: 0.72rem; font-weight: 600; text-transform: uppercase;
-    letter-spacing: 0.1em; cursor: pointer;
-    transition: background .2s, border-color .2s; width: 100%; justify-content: center;
+    padding: 10px; font-size: 0.72rem; font-weight: 600;
+    text-transform: uppercase; cursor: pointer; width: 100%; justify-content: center;
   }
-  .btn-danger-piel:hover { background: #fee2e2; border-color: #f87171; }
+  .btn-danger-piel:hover { background: #fee2e2; }
 
-  /* ── Botón edición inline ── */
   .btn-edit-inline {
-    display: inline-flex; align-items: center; gap: 5px;
     background: var(--v-paper); color: var(--v-stone);
     border: 1px solid var(--v-border); border-radius: var(--v-radius);
-    padding: 4px 10px; font-family: 'DM Sans', sans-serif;
-    font-size: 0.7rem; font-weight: 500; cursor: pointer;
-    transition: border-color .2s, color .2s;
+    padding: 4px 12px; font-size: 0.7rem; font-weight: 600; cursor: pointer;
   }
-  .btn-edit-inline:hover { border-color: var(--v-tan); color: var(--v-tan); }
 </style>
 {% endblock %}
 
@@ -331,20 +318,12 @@
   function cerrarEditPR() {
     document.getElementById('pr-edit').style.display = 'none';
     document.getElementById('pr-display').style.display = 'flex';
-    document.getElementById('pr-feedback').style.display = 'none';
   }
 
   async function guardarPR(idMateria) {
     const input = document.getElementById('pr-input');
     const feedback = document.getElementById('pr-feedback');
     const valor = parseFloat(input.value);
-
-    if (isNaN(valor) || valor < 0) {
-      feedback.textContent = 'Ingresa un valor válido mayor o igual a 0.';
-      feedback.style.color = 'var(--v-danger)';
-      feedback.style.display = 'block';
-      return;
-    }
 
     try {
       const resp = await fetch(`/materias/${idMateria}/punto-reorden`, {
@@ -354,21 +333,14 @@
       });
 
       if (resp.ok) {
-        // Actualizar el valor visible
-        const span = document.getElementById('pr-valor');
-        span.textContent = valor + ' {{ materia.unidad.abreviatura }}';
-        feedback.textContent = 'Guardado correctamente.';
+        document.getElementById('pr-valor').textContent = valor + ' {{ stock_label }}';
+        feedback.textContent = 'Actualizado';
         feedback.style.color = 'var(--v-success)';
         feedback.style.display = 'block';
-        setTimeout(cerrarEditPR, 1200);
-      } else {
-        feedback.textContent = 'Error al guardar. Intenta de nuevo.';
-        feedback.style.color = 'var(--v-danger)';
-        feedback.style.display = 'block';
+        setTimeout(() => { location.reload(); }, 800);
       }
-    } catch {
-      feedback.textContent = 'Sin conexión. Verifica tu red.';
-      feedback.style.color = 'var(--v-danger)';
+    } catch (e) {
+      feedback.textContent = 'Error de conexión';
       feedback.style.display = 'block';
     }
   }
