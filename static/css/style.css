@@ -341,3 +341,11 @@
     top: 0;
     left: 0;
 }
+
+.monto-entrada {
+    color: #16a34a !important;
+}
+
+.monto-salida {
+    color: #dc2626 !important;
+}

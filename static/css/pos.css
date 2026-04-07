@@ -45,3 +45,11 @@
     padding: 12px 20px;
     border: none;
 }
+
+.monto-entrada {
+    color: #16a34a !important;
+}
+
+.monto-salida {
+    color: #dc2626 !important;
+}

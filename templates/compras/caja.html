@@ -5,25 +5,28 @@
 
 {% block content %}
 
-{# ── Resumen ── #}
 <div class="row g-3 mb-4">
   <div class="col-sm-4">
     <div class="stat-card" style="border-left-color:#16a34a;">
       <div class="stat-label">Entradas</div>
-      <div class="stat-value" style="color:#16a34a;">${{ "%.2f"|format(entradas) }}</div>
+      <div class="stat-value" style="color:#16a34a;">
+        ${{ "%.2f"|format(entradas|float) }}
+      </div>
     </div>
   </div>
   <div class="col-sm-4">
     <div class="stat-card" style="border-left-color:#dc2626;">
       <div class="stat-label">Salidas</div>
-      <div class="stat-value" style="color:#dc2626;">${{ "%.2f"|format(salidas) }}</div>
+      <div class="stat-value" style="color:#dc2626;">
+        ${{ "%.2f"|format(salidas|float) }}
+      </div>
     </div>
   </div>
   <div class="col-sm-4">
     <div class="stat-card" style="border-left-color:#2563eb;">
       <div class="stat-label">Saldo</div>
-      <div class="stat-value" style="color:{% if saldo >= 0 %}#16a34a{% else %}#dc2626{% endif %};">
-        ${{ "%.2f"|format(saldo) }}
+      <div class="stat-value {% if saldo|float >= 0 %}monto-entrada{% else %}monto-salida{% endif %}">
+        ${{ "%.2f"|format(saldo|float) }}
       </div>
     </div>
   </div>
@@ -34,9 +37,8 @@
   <div class="p-3">
     <form method="GET" class="d-flex gap-2 flex-wrap" role="search">
       <input type="text" name="q" class="form-control" style="max-width:280px;"
-             placeholder="Buscar concepto o referencia…" value="{{ q }}"
-             aria-label="Buscar movimientos">
-      <select name="tipo" class="form-select" style="max-width:180px;" aria-label="Filtrar por tipo">
+             placeholder="Buscar concepto o referencia…" value="{{ q or '' }}">
+      <select name="tipo" class="form-select" style="max-width:180px;">
         <option value="">Todos los movimientos</option>
         <option value="ENTRADA" {% if tipo == 'ENTRADA' %}selected{% endif %}>Solo entradas</option>
         <option value="SALIDA"  {% if tipo == 'SALIDA'  %}selected{% endif %}>Solo salidas</option>
@@ -57,11 +59,11 @@
     <table class="table-piel">
       <thead>
         <tr>
-          <th scope="col">Fecha</th>
-          <th scope="col">Tipo</th>
-          <th scope="col">Concepto</th>
-          <th scope="col">Referencia</th>
-          <th scope="col" style="text-align:right;">Monto</th>
+          <th>Fecha</th>
+          <th>Tipo</th>
+          <th>Concepto</th>
+          <th>Referencia</th>
+          <th style="text-align:right;">Monto</th>
         </tr>
       </thead>
       <tbody>
@@ -80,9 +82,10 @@
           </td>
           <td style="font-size:.875rem;">{{ m.concepto }}</td>
           <td style="font-size:.825rem; color:var(--v-mid);">{{ m.referencia or '—' }}</td>
-          <td style="text-align:right; font-weight:600; font-size:.875rem; white-space:nowrap;
-                     color:{% if m.tipo == 'ENTRADA' %}#16a34a{% else %}#dc2626{% endif %};">
-            {% if m.tipo == 'ENTRADA' %}+{% else %}−{% endif %}&thinsp;${{ "%.2f"|format(m.monto) }}
+          <td class="{% if m.tipo == 'ENTRADA' %}monto-entrada{% else %}monto-salida{% endif %}" 
+              style="text-align:right; font-weight:600; font-size:.875rem; white-space:nowrap;">
+            {% if m.tipo == 'ENTRADA' %}+{% else %}−{% endif %}
+            &thinsp;${{ "%.2f"|format(m.monto|float) }}
           </td>
         </tr>
         {% else %}
@@ -98,26 +101,6 @@
       </tbody>
     </table>
   </div>
-
-  {% if paginacion.pages > 1 %}
-  <div class="pagination-bar">
-    <span>Página {{ paginacion.page }} de {{ paginacion.pages }}</span>
-    <div class="d-flex gap-2">
-      {% if paginacion.has_prev %}
-        <a href="{{ url_for('compras.caja', pagina=paginacion.prev_num, q=q, tipo=tipo) }}"
-           class="btn-outline-piel" aria-label="Página anterior">
-          <i class="bi bi-chevron-left"></i>
-        </a>
-      {% endif %}
-      {% if paginacion.has_next %}
-        <a href="{{ url_for('compras.caja', pagina=paginacion.next_num, q=q, tipo=tipo) }}"
-           class="btn-outline-piel" aria-label="Página siguiente">
-          <i class="bi bi-chevron-right"></i>
-        </a>
-      {% endif %}
-    </div>
-  </div>
-  {% endif %}
 </div>
 
 {% endblock %}
