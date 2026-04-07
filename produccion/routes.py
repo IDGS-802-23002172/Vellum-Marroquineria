@@ -76,9 +76,25 @@ def crear_orden():
 @produccion_bp.route("/produccion/cancelar/<int:id>", methods=['POST'])
 def cancelar_orden(id):
     orden = OrdenProduccion.query.get_or_404(id)
-    db.session.delete(orden)
-    db.session.commit()
-    flash("Orden de producción cancelada", "warning")
+    
+    try:
+        insumos = Receta.query.filter_by(id_producto=orden.id_producto).all()
+        
+        for item in insumos:
+            material = MateriaPrima.query.get(item.id_materia)
+            
+            if material and material.stock:
+                cantidad_a_devolver = item.area_reticula_corte_dm2 * orden.cantidad
+                material.stock.cantidad_actual += cantidad_a_devolver
+
+        db.session.delete(orden)
+        db.session.commit()
+        flash("Orden de producción cancelada. Los insumos han sido devueltos al inventario con éxito.", "success")
+        
+    except Exception as e: 
+        db.session.rollback()
+        flash(f"Error crítico al cancelar la orden: {str(e)}", "danger")
+    
     return redirect(url_for('produccion.listar_ordenes'))
 
 # ─────────────────────────────────────────────

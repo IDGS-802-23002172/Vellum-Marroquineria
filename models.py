@@ -237,25 +237,27 @@ class Producto(db.Model):
     categoria = db.Column(db.String(50))
     precio_venta = db.Column(db.Numeric(10, 2), nullable=False)
     costo_produccion = db.Column(db.Numeric(10, 2), nullable=False, default=0)
+    area_plantilla_base = db.Column(db.Numeric(10, 2), nullable=False)
     stock_actual = db.Column(db.Integer, default=0)
     imagen = db.Column(db.String(255))
     fecha_registro = db.Column(db.DateTime, default=datetime.utcnow)
+    
     detalles = db.relationship(
         "DetalleVenta",
         back_populates="producto",
         lazy=True
     )
-    # ✅ Relación inversa con CarritoTemporal
+    
     en_carritos = db.relationship(
         "CarritoTemporal",
         back_populates="producto",
-        lazy="dynamic"   # dynamic para poder hacer .filter() sobre ella
+        lazy="dynamic"
     )
 
     @property
     def stock_reservado(self):
-        """Suma de unidades en carritos activos (no expirados) de TODOS los usuarios."""
-        hace_30_min = datetime.utcnow() - __import__('datetime').timedelta(minutes=30)
+        from datetime import timedelta
+        hace_30_min = datetime.utcnow() - timedelta(minutes=30)
         return db.session.query(
             db.func.coalesce(db.func.sum(CarritoTemporal.cantidad), 0)
         ).filter(
@@ -265,7 +267,6 @@ class Producto(db.Model):
 
     @property
     def stock_disponible(self):
-        """Stock real menos lo reservado en carritos activos."""
         return max(0, self.stock_actual - self.stock_reservado)
 
 
