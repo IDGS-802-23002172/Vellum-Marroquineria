@@ -1,6 +1,6 @@
 from flask import render_template, redirect, url_for, request, session, flash
 from . import ventas_bp
-from models import CarritoTemporal, Venta, DetalleVenta, db, Producto
+from models import CarritoTemporal, Venta, DetalleVenta, db, Producto, CierreCaja
 from decimal import Decimal
 import uuid
 from sqlalchemy import text
@@ -176,24 +176,56 @@ def ticket():
         total=total
     )
 
-@ventas_bp.route("/cierre-diario")
+@ventas_bp.route("/cierre-diario", methods=["POST"])
 def cierre_diario():
 
+    usuario_id = session.get("user_id")
+
+    if not usuario_id:
+        flash("Sesión inválida", "danger")
+        return redirect(url_for("login"))
+
+    # 🔍 1. Obtener datos desde la vista
     resultado = db.session.execute(text("""
-        SELECT 
-            DATE(v.fecha) AS fecha,
-            SUM(d.cantidad) AS articulos_vendidos,
-            SUM(d.precio_unitario * d.cantidad) AS total_ventas,
-            SUM((d.precio_unitario - d.costo_unitario) * d.cantidad) AS utilidad_total
-        FROM ventas v
-        JOIN detalle_ventas d ON v.id = d.venta_id
-        WHERE DATE(v.fecha) = CURDATE()
-        GROUP BY DATE(v.fecha);
+        SELECT * FROM vista_cierre_diario
     """))
 
-    cierre = resultado.mappings().first()
+    cierre_vista = resultado.mappings().first()
 
+    if not cierre_vista:
+        flash("No hay ventas para cerrar hoy", "warning")
+        return redirect(url_for("ventas.punto_venta"))
+
+    fecha_cierre = cierre_vista["fecha"]
+
+    # ⚠️ 3. Validar si ya existe cierre del día
+    existe = CierreCaja.query.filter_by(fecha=fecha_cierre).first()
+
+    if existe:
+        flash("El cierre de hoy ya fue realizado", "info")
+        return redirect(url_for("ventas.punto_venta"))
+
+    # 💾 4. Guardar snapshot
+    nuevo_cierre = CierreCaja(
+        fecha=fecha_cierre,
+        usuario_id=usuario_id,
+        articulos_vendidos=cierre_vista["articulos_vendidos"],
+        total_ventas=cierre_vista["total_ventas"],
+        utilidad_total=cierre_vista["utilidad_total"]
+    )
+
+    db.session.add(nuevo_cierre)
+    db.session.commit()
+
+    flash("Cierre de caja realizado correctamente", "success")
+
+    # ✅ 5. Mostrar lo que REALMENTE se guardó (no la vista)
     return render_template(
         "cierre_diario.html",
-        cierre=cierre
+        cierre=nuevo_cierre
     )
+    
+@ventas_bp.route("/cierre-diario", methods=["GET"])
+def ver_cierre():
+    cierre = CierreCaja.query.order_by(CierreCaja.fecha.desc()).first()
+    return render_template("cierre_diario.html", cierre=cierre)

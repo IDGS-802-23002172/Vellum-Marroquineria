@@ -397,28 +397,33 @@ def registrar_auditoria(mapper, connection, target):
         }
     )
 
-
 def crear_vista_cierre_diario():
-    sql = """
-    CREATE OR REPLACE VIEW vista_cierre_diario AS
-    SELECT
-        DATE(v.fecha) AS fecha,
-        SUM(d.cantidad) AS articulos_vendidos,
-        
-        -- CÁLCULO DIRECTO EN SQL PARA EVITAR LA REDUNDANCIA
-        SUM(d.cantidad * d.precio_unitario) AS total_ventas,
-        
-        SUM(d.subtotal) AS total_ventas,
-        SUM(
-            (d.precio_unitario - d.costo_unitario) * d.cantidad
-        ) AS utilidad_total
-    FROM ventas v
-    JOIN detalle_ventas d ON v.id = d.venta_id
-    WHERE DATE(v.fecha) = CURDATE()
-    GROUP BY DATE(v.fecha);
-    """
-    db.session.execute(text(sql))
+    db.session.execute(text("""
+        CREATE OR REPLACE VIEW vista_cierre_diario AS
+        SELECT 
+            DATE(v.fecha) AS fecha,
+            SUM(dv.cantidad) AS articulos_vendidos,
+            SUM(dv.cantidad * dv.precio_unitario) AS total_ventas,
+            SUM(dv.cantidad * (dv.precio_unitario - dv.costo_unitario)) AS utilidad_total
+        FROM ventas v
+        JOIN detalle_ventas dv ON v.id = dv.venta_id
+        WHERE DATE(v.fecha) = CURDATE()
+        GROUP BY DATE(v.fecha);
+    """))
     db.session.commit()
+
+class CierreCaja(db.Model):
+    __tablename__ = "cierre_caja"
+
+    id = db.Column(db.Integer, primary_key=True)
+    fecha = db.Column(db.Date, nullable=False, unique=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey("usuarios.id"))
+
+    articulos_vendidos = db.Column(db.Integer)
+    total_ventas = db.Column(db.Numeric(14,2))
+    utilidad_total = db.Column(db.Numeric(14,2))
+
+    fecha_cierre = db.Column(db.DateTime, default=datetime.utcnow)
 
 class Rol(db.Model):
     __tablename__ = "roles"
