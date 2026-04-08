@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, session, redirect, url_for, request, jsonify, make_response, flash
 from flask_wtf.csrf import validate_csrf
 from wtforms.validators import ValidationError
-from models import db, Producto, CarritoTemporal, Venta, DetalleVenta
+from models import db, Producto, CarritoTemporal, Venta, DetalleVenta, OrdenProduccion
 from sqlalchemy import func
 from datetime import datetime, timedelta
 import uuid
@@ -186,73 +186,37 @@ def agregar_carrito(producto_id):
 
         session_id = get_or_create_session_id()
 
-        # 1. Limpiar expirados de todos los usuarios
+        # Limpiar expirados (esto sí se queda)
         limpiar_carritos_expirados()
 
-        # 2. Bloquear fila del producto (FOR UPDATE)
-        producto = (
-            Producto.query
-            .with_for_update()
-            .filter_by(id=producto_id)
-            .first()
-        )
+        # Obtener producto (SIN FOR UPDATE, ya no es necesario aquí)
+        producto = Producto.query.filter_by(id=producto_id).first()
+
         if not producto:
             flash('Producto no encontrado.', 'danger')
             return _redirect_con_cookie('tiendaCliente.detalle_producto', session_id, id=producto_id)
 
-        # 3. Cuánto tiene este usuario ya en su carrito
-        ya_en_mi_carrito = int(db.session.query(
-            func.coalesce(func.sum(CarritoTemporal.cantidad), 0)
-        ).filter_by(
-            session_id=session_id,
-            producto_id=producto_id
-        ).scalar())
-
-        # 4. Cuánto reservaron OTROS usuarios (no este)
-        reservado_otros = int(db.session.query(
-            func.coalesce(func.sum(CarritoTemporal.cantidad), 0)
-        ).filter(
-            CarritoTemporal.producto_id == producto_id,
-            CarritoTemporal.session_id  != session_id
-        ).scalar())
-
-        # Stock que este usuario puede usar como máximo
-        stock_para_este_usuario = max(0, producto.stock_actual - reservado_otros)
-
-        # Lo que tendría en total si agrega 'cantidad' más
-        total_con_nuevo = ya_en_mi_carrito + cantidad
-
-        if total_con_nuevo > stock_para_este_usuario:
-            puede_agregar = max(0, stock_para_este_usuario - ya_en_mi_carrito)
-            if puede_agregar <= 0:
-                flash('No hay más unidades disponibles para agregar.', 'danger')
-            else:
-                flash(f'Solo puedes agregar {puede_agregar} unidad(es) más de este producto.', 'danger')
-            return _redirect_con_cookie('tiendaCliente.detalle_producto', session_id, id=producto_id)
-
-        # 5. Crear o actualizar ítem en carrito
+        # Buscar si ya existe en carrito
         item = CarritoTemporal.query.filter_by(
             session_id=session_id,
             producto_id=producto_id
         ).first()
 
         if item:
-            item.cantidad  += cantidad
-            item.creado_en  = datetime.utcnow()  # renueva la reserva 30 min más
+            item.cantidad += cantidad
+            item.creado_en = datetime.utcnow()
         else:
             db.session.add(CarritoTemporal(
                 session_id=session_id,
                 producto_id=producto_id,
                 nombre=producto.nombre,
                 precio=producto.precio_venta,
-                cantidad=cantidad
+                cantidad=cantidad,
+                creado_en=datetime.utcnow()
             ))
 
-        # Commit libera el FOR UPDATE lock
         db.session.commit()
 
-        # ─── FIX: contar productos únicos en el carrito, no sum(cantidad) ───
-        # "X artículo(s)" = cuántos productos distintos tiene, no cuántas unidades
         total_productos_en_carrito = CarritoTemporal.query.filter_by(
             session_id=session_id
         ).count()
@@ -262,6 +226,7 @@ def agregar_carrito(producto_id):
             f'({total_productos_en_carrito} producto(s) en tu carrito)',
             'success'
         )
+
         return _redirect_con_cookie('tiendaCliente.detalle_producto', session_id, id=producto_id)
 
     except Exception as e:
@@ -353,7 +318,10 @@ def actualizar_carrito(item_id):
 @tienda_bp.route('/checkout', methods=['POST'])
 def checkout():
     try:
-        datos      = request.get_json()
+        if not request.is_json:
+            return jsonify({'success': False, 'message': 'JSON requerido'}), 400
+
+        datos = request.get_json()
         session_id = datos.get('session_id')
         usuario_id = session.get('user_id')
 
@@ -361,67 +329,97 @@ def checkout():
             return jsonify({'success': False, 'message': 'Login requerido'}), 401
 
         items = CarritoTemporal.query.filter_by(session_id=session_id).all()
+
         if not items:
             return jsonify({'success': False, 'message': 'Carrito vacío'}), 400
 
         limpiar_carritos_expirados()
 
-        productos = (
-            Producto.query
-            .filter(Producto.id.in_([i.producto_id for i in items]))
-            .with_for_update()
-            .all()
-        )
+        productos = Producto.query.filter(
+            Producto.id.in_([i.producto_id for i in items])
+        ).with_for_update().all()
+
         productos_dict = {p.id: p for p in productos}
 
+        detalles_venta = []
+        orden_produccion = []
+
         for item in items:
-            prod = productos_dict[item.producto_id]
+            prod = productos_dict.get(item.producto_id)
+
+            if not prod:
+                continue
+
             reservado_otros = int(db.session.query(
                 func.coalesce(func.sum(CarritoTemporal.cantidad), 0)
             ).filter(
                 CarritoTemporal.producto_id == item.producto_id,
-                CarritoTemporal.session_id  != session_id
+                CarritoTemporal.session_id != session_id
             ).scalar())
 
             stock_disponible = max(0, prod.stock_actual - reservado_otros)
-            if item.cantidad > stock_disponible:
-                db.session.rollback()
-                return jsonify({
-                    'success': False,
-                    'message': f'Stock insuficiente para "{item.nombre}". Disponible: {stock_disponible}'
-                }), 400
 
-        subtotal = sum(float(i.precio) * i.cantidad for i in items)
-        iva      = subtotal * 0.16
-        total    = subtotal + iva
+            if item.cantidad <= stock_disponible:
+                detalles_venta.append((prod, item))
+            else:
+                orden_produccion.append((prod, item))
+
+
+        folio = generar_folio()
 
         venta = Venta(
+            folio=folio,
             usuario_id=usuario_id,
-            subtotal=subtotal,
-            iva=iva,
-            total=total,
-            fecha=datetime.utcnow()
+            fecha=datetime.utcnow(),
+            estado="Pagado",
+            tipo="ONLINE"
         )
+
         db.session.add(venta)
         db.session.flush()
 
-        for item in items:
-            prod = productos_dict[item.producto_id]
+        for prod, item in detalles_venta:
             db.session.add(DetalleVenta(
                 venta_id=venta.id,
-                producto_id=item.producto_id,
+                producto_id=prod.id,
                 cantidad=item.cantidad,
-                precio_unitario=item.precio,
-                subtotal=float(item.precio) * item.cantidad
+                precio_unitario=item.precio
             ))
+
             prod.stock_actual -= item.cantidad
 
+        for prod, item in orden_produccion:
+
+            db.session.add(OrdenProduccion(
+                usuario_id=usuario_id,
+                producto_id=prod.id,
+                cantidad=item.cantidad
+            ))
+
+
+            db.session.add(DetalleVenta(
+                venta_id=venta.id,
+                producto_id=prod.id,
+                cantidad=item.cantidad,
+                precio_unitario=item.precio
+            ))
+
         CarritoTemporal.query.filter_by(session_id=session_id).delete()
+
         db.session.commit()
 
-        return jsonify({'success': True, 'total': float(total)})
+        return jsonify({
+            'success': True,
+            'produccion_generada': len(orden_produccion) > 0
+        })
 
     except Exception as e:
         db.session.rollback()
         print("ERROR CHECKOUT:", e)
-        return jsonify({'success': False, 'message': 'Error interno'}), 500
+        return jsonify({'success': False, 'message': str(e)}), 500
+    
+def generar_folio():
+    fecha = datetime.now().strftime("%Y%m%d")
+    ultima_venta = Venta.query.order_by(Venta.id.desc()).first()
+    numero = (ultima_venta.id + 1) if ultima_venta else 1
+    return f"T-{fecha}-{numero:04d}"

@@ -432,3 +432,13 @@ class Rol(db.Model):
     nombre = db.Column(db.String(50), unique=True, nullable=False)
     descripcion = db.Column(db.String(200))
     usuarios = db.relationship("Usuario", backref="rol")
+    
+class OrdenProduccion(db.Model):
+    __tablename__ = 'orden_produccion'
+
+    id = db.Column(db.Integer, primary_key=True)
+    usuario_id = db.Column(db.Integer, nullable=False)
+    producto_id = db.Column(db.Integer, nullable=False)
+    cantidad = db.Column(db.Integer, nullable=False)
+    estado = db.Column(db.String(20), default='pendiente')
+    fecha = db.Column(db.DateTime, default=datetime.utcnow)

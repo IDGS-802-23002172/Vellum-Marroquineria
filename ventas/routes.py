@@ -1,10 +1,10 @@
 from flask import render_template, redirect, url_for, request, session, flash
 from . import ventas_bp
-from models import CarritoTemporal, Venta, DetalleVenta, db, Producto, MovimientoCaja
+from models import CarritoTemporal, Venta, DetalleVenta, db, Producto, MovimientoCaja, CierreCaja
 from decimal import Decimal
 import uuid
 from sqlalchemy import text
-from datetime import datetime
+from datetime import datetime, date
 
 IVA_TASA = Decimal("0.16")
 
@@ -27,7 +27,8 @@ def calcular_totales(detalles):
 
     return subtotal, iva, total
 
-
+def caja_cerrada_hoy():
+    return CierreCaja.query.filter_by(fecha=date.today()).first()
 
 @ventas_bp.route("/pos", methods=["GET"])
 def punto_venta():
@@ -37,12 +38,17 @@ def punto_venta():
         session["session_id"] = session_id
 
     busqueda = request.args.get("busqueda")
-    productos = []
 
     if busqueda:
+
         productos = Producto.query.filter(
             (Producto.nombre.ilike(f"%{busqueda}%")) |
             (Producto.sku.ilike(f"%{busqueda}%"))
+        ).all()
+    else:
+
+        productos = Producto.query.filter(
+            Producto.stock_actual > 0
         ).all()
 
     carrito = CarritoTemporal.query.filter_by(session_id=session_id).all()
@@ -57,7 +63,8 @@ def punto_venta():
         carrito=carrito,
         subtotal=subtotal,
         iva=iva,
-        total=total
+        total=total,
+        caja_cerrada=bool(caja_cerrada_hoy())
     )
 
 @ventas_bp.route("/agregar", methods=["POST"])

@@ -5,42 +5,57 @@
 {% block content %}
 <div class="container py-5">
     <div class="mb-5 border-bottom pb-4">
-        <h2 class="text-premium text-uppercase" style="letter-spacing: -1px;">Rastreo de <span class="text-muted">Pedidos</span></h2>
-        <p class="text-uppercase tracking-widest text-muted small">Consulta el estatus de tus piezas exclusivas</p>
+        <h2 class="text-premium text-uppercase" style="letter-spacing: -1px;">
+            Rastreo de <span class="text-muted">Pedidos</span>
+        </h2>
+        <p class="text-uppercase tracking-widest text-muted small">
+            Consulta el estatus de tus piezas exclusivas
+        </p>
     </div>
 
     {% for pedido in pedidos %}
+
+    <!-- 🔴 calcular total correctamente -->
+    {% set ns = namespace(total=0) %}
+    {% for d in pedido.detalles %}
+        {% set ns.total = ns.total + (d.subtotal or 0) %}
+    {% endfor %}
+
     <div class="card mb-5 border-0 shadow-sm" style="border-radius: 0; border-left: 4px solid #000 !important;">
         <div class="card-body p-4">
             <div class="row align-items-center">
+
                 <div class="col-md-3">
                     <span class="text-muted small text-uppercase tracking-wider">Folio de Compra</span>
-                    <h5 class="font-monospace">#{{ pedido.id }}</h5>
+                    <h5 class="font-monospace">#{{ pedido.folio }}</h5>
                     <p class="text-muted small">{{ pedido.fecha.strftime('%d %b, %Y') }}</p>
                 </div>
                 
                 <div class="col-md-6">
-                    <label class="text-uppercase small fw-bold mb-3 tracking-widest">Estatus: {{ pedido.estado }}</label>
+                    <label class="text-uppercase small fw-bold mb-3 tracking-widest">
+                        Estatus: {{ pedido.estado }}
+                    </label>
                     
                     <div class="progress" style="height: 8px; border-radius: 0; background-color: #f1f0ee;">
-                        {% set progreso = 25 %}
-                        {% if pedido.estado == 'En confección' %}{% set progreso = 50 %}
-                        {% elif pedido.estado == 'Listo para entrega' %}{% set progreso = 75 %}
-                        {% elif pedido.estado == 'Entregado' %}{% set progreso = 100 %}
-                        {% endif %}
-                        <div class="progress-bar bg-dark" role="progressbar"></div>
+                        {% set progreso = pedido.porcentaje_progreso %}
+                        <div class="progress-bar bg-dark" role="progressbar"
+                             style="width: {{ progreso }}%;">
+                        </div>
                     </div>
                     
                     <div class="d-flex justify-content-between mt-2 text-muted" style="font-size: 0.65rem;">
                         <span>PAGADO</span>
                         <span>EN CONFECCIÓN</span>
                         <span>LISTO</span>
+                        <span>ENTREGADO</span>
                     </div>
                 </div>
 
                 <div class="col-md-3 text-end">
                     <span class="text-muted small">Total invertido</span>
-                    <h4 class="fw-bold">${{ "{:,.2f}".format(pedido.total) }}</h4>
+                    <h4 class="fw-bold">
+                        ${{ "{:,.2f}".format(ns.total) }}
+                    </h4>
                 </div>
             </div>
             
@@ -49,24 +64,32 @@
                         type="button" data-bs-toggle="collapse" data-bs-target="#detalle{{ pedido.id }}">
                     + Ver detalle de artículos
                 </button>
+
                 <div class="collapse mt-3" id="detalle{{ pedido.id }}">
                     <ul class="list-group list-group-flush small">
+
                         {% for detalle in pedido.detalles %}
                         <li class="list-group-item d-flex justify-content-between align-items-center px-0 bg-transparent">
                             {{ detalle.producto.nombre }} (x{{ detalle.cantidad }})
-                            <span>${{ "{:,.2f}".format(detalle.subtotal) }}</span>
+                            <span>
+                                ${{ "{:,.2f}".format(detalle.subtotal or 0) }}
+                            </span>
                         </li>
                         {% endfor %}
+
                     </ul>
                 </div>
             </div>
         </div>
     </div>
+
     {% else %}
     <div class="text-center py-5">
         <i class="bi bi-bag-x text-muted" style="font-size: 3rem;"></i>
         <p class="mt-3 text-muted italic">Aún no has realizado pedidos en Vellum.</p>
-        <a href="{{ url_for('tiendaCliente.index') }}" class="btn btn-dark px-4 mt-2" style="border-radius: 0;">Explorar Colección</a>
+        <a href="{{ url_for('tiendaCliente.index') }}" class="btn btn-dark px-4 mt-2" style="border-radius: 0;">
+            Explorar Colección
+        </a>
     </div>
     {% endfor %}
 </div>

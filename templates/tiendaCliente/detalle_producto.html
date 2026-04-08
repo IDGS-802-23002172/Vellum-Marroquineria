@@ -66,56 +66,61 @@
                  activos de todos los usuarios), no stock_actual en crudo.
                  Así el cliente ve exactamente lo que puede comprar ahora mismo.
             -->
+            <!-- STOCK / DISPONIBILIDAD -->
             <div class="mb-4">
+
                 {% if stock_disponible > 0 %}
                 <div class="alert alert-success d-flex align-items-center" role="alert">
                     <i class="bi bi-check-circle-fill me-2"></i>
                     <div>
-                        <strong>En stock:</strong> {{ stock_disponible }} unidad(es) disponible(s)
+                        <strong>Disponible:</strong> {{ stock_disponible }} unidad(es) en stock
                     </div>
                 </div>
+
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i>
+                    Puedes comprar más unidades; las adicionales se enviarán a producción.
+                </div>
+
                 {% else %}
-                <div class="alert alert-danger d-flex align-items-center" role="alert">
-                    <i class="bi bi-exclamation-circle-fill me-2"></i>
-                    <div><strong>Agotado</strong> - Este producto no está disponible en este momento</div>
+                <div class="alert alert-warning d-flex align-items-center" role="alert">
+                    <i class="bi bi-tools me-2"></i>
+                    <div>
+                        <strong>Producto bajo pedido</strong><br>
+                        Este producto no tiene stock disponible actualmente.<br>
+                        Tu compra generará una orden de producción.
+                    </div>
                 </div>
                 {% endif %}
+
             </div>
 
-            <!-- MENSAJES FLASH -->
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% for category, message in messages %}
-                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                    {% if category == 'success' %}
-                        <i class="bi bi-check-circle-fill me-1"></i>
-                    {% else %}
-                        <i class="bi bi-exclamation-circle-fill me-1"></i>
-                    {% endif %}
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-                {% endfor %}
-            {% endwith %}
-
-            <!-- FORMULARIO DE COMPRA -->
-            {% if stock_disponible > 0 %}
+            <!-- FORMULARIO DE COMPRA (SIEMPRE DISPONIBLE) -->
             <form method="POST"
-                  action="{{ url_for('tiendaCliente.agregar_carrito', producto_id=producto.id) }}"
-                  class="mb-4">
+                action="{{ url_for('tiendaCliente.agregar_carrito', producto_id=producto.id) }}"
+                class="mb-4">
 
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
                 <div class="mb-3">
                     <label for="cantidad" class="form-label fw-bold">Cantidad</label>
                     <input type="number"
-                           class="form-control form-control-lg"
-                           id="cantidad"
-                           name="cantidad"
-                           value="1"
-                           min="1"
-                           max="{{ stock_disponible }}"
-                           required>
-                    <small class="text-muted">Máximo disponible: {{ stock_disponible }}</small>
+                        class="form-control form-control-lg"
+                        id="cantidad"
+                        name="cantidad"
+                        value="1"
+                        min="1"
+                        required>
+
+                    {% if stock_disponible > 0 %}
+                    <small class="text-muted">
+                        Stock disponible inmediato: {{ stock_disponible }}
+                    </small>
+                    {% else %}
+                    <small class="text-warning">
+                        Todo el pedido será enviado a producción
+                    </small>
+                    {% endif %}
                 </div>
 
                 <div class="d-grid mt-4">
@@ -124,13 +129,6 @@
                     </button>
                 </div>
             </form>
-            {% else %}
-            <div class="alert alert-warning">
-                <strong>Producto no disponible</strong> - Vuelve más tarde para comprar este artículo.
-            </div>
-            {% endif %}
-
-            <hr>
 
             <!-- INFORMACIÓN ADICIONAL -->
             <div class="mb-4">

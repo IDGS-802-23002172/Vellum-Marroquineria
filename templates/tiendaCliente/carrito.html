@@ -5,7 +5,6 @@
 {% block content %}
 <div class="container my-5">
 
-    <!-- ENCABEZADO -->
     <nav aria-label="breadcrumb" class="mb-4">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{{ url_for('tiendaCliente.index') }}">Inicio</a></li>
@@ -14,123 +13,60 @@
         </ol>
     </nav>
 
-    <div class="row mb-4">
-        <div class="col-md-8">
-            <h1 class="display-5 fw-bold">Mi Carrito</h1>
-        </div>
-        <div class="col-md-4 text-end">
-            <a href="{{ url_for('tiendaCliente.catalogo') }}" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left"></i> Seguir comprando
-            </a>
-        </div>
-    </div>
-
-    <!-- MENSAJES FLASH -->
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% for category, message in messages %}
-        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-            {% if category == 'success' %}
-                <i class="bi bi-check-circle-fill me-1"></i>
-            {% else %}
-                <i class="bi bi-exclamation-circle-fill me-1"></i>
-            {% endif %}
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-        {% endfor %}
-    {% endwith %}
-
     {% if articulos %}
     <div class="row g-4">
 
-        <!-- TABLA DE PRODUCTOS -->
+        <!-- 🔴 namespace para acumular -->
+        {% set ns = namespace(total_disponible=0) %}
+
+        <!-- TABLA -->
         <div class="col-lg-8">
             <div class="card border-light">
                 <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Producto</th>
-                                <th class="text-end">Precio unit.</th>
-                                <th class="text-center" style="min-width:190px">Cantidad</th>
-                                <th class="text-end">Subtotal</th>
-                                <th class="text-center">Eliminar</th>
-                            </tr>
-                        </thead>
                         <tbody>
-                            {% for articulo in articulos %}
-                            <tr>
-                                <!-- Imagen + nombre (via relación ORM) -->
-                                <td>
-                                    <div class="d-flex align-items-center gap-3">
-                                        {% if articulo.producto.imagen %}
-                                        <img src="{{ url_for('static', filename='img/productos/' + articulo.producto.imagen) }}"
-                                             alt="{{ articulo.nombre }}"
-                                             class="img-thumbnail"
-                                             style="width:60px;height:60px;object-fit:cover;">
-                                        {% else %}
-                                        <div class="img-thumbnail d-flex align-items-center justify-content-center"
-                                             style="width:60px;height:60px;background:#f0f0f0;">
-                                            <i class="bi bi-image text-muted"></i>
-                                        </div>
-                                        {% endif %}
-                                        <div>
-                                            <h6 class="mb-0 fw-bold">{{ articulo.nombre }}</h6>
-                                            <small class="text-muted">SKU: {{ articulo.producto.sku }}</small>
-                                            {# Aviso si el stock disponible bajó desde que se agregó #}
-                                            {% if articulo.cantidad > articulo.producto.stock_disponible %}
-                                            <br>
-                                            <span class="badge bg-warning text-dark small">
-                                                Stock reducido — máx. {{ articulo.producto.stock_disponible }}
-                                            </span>
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                </td>
 
-                                <!-- Precio unitario -->
-                                <td class="text-end fw-bold">
+                        {% for articulo in articulos %}
+                            {% set stock = articulo.producto.stock_disponible %}
+
+                            {% set subtotal_item = articulo.precio * articulo.cantidad %}
+
+                            {% set ns.total_disponible = ns.total_disponible + subtotal_item %}
+                            {% if articulo.cantidad <= stock %}
+                                {% set tipo = "stock" %}
+                            {% else %}
+                                {% set tipo = "produccion" %}
+                            {% endif %}
+
+                            <tr>
+                                <td>{{ articulo.nombre }}</td>
+
+                                <td class="text-end">
                                     ${{ "%.2f"|format(articulo.precio) }}
                                 </td>
 
-                                <!-- Cantidad: formulario de actualización -->
                                 <td class="text-center">
-                                    <form method="POST"
-                                          action="{{ url_for('tiendaCliente.actualizar_carrito', item_id=articulo.id) }}"
-                                          class="d-flex align-items-center justify-content-center gap-1">
-                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                        <input type="number"
-                                               name="cantidad"
-                                               value="{{ articulo.cantidad }}"
-                                               min="1"
-                                               max="{{ articulo.producto.stock_disponible + articulo.cantidad }}"                                               class="form-control form-control-sm text-center"
-                                               style="width:70px">
-                                        <button type="submit" class="btn btn-sm btn-outline-primary" title="Actualizar">
-                                            <i class="bi bi-arrow-repeat"></i>
-                                        </button>
-                                    </form>
+                                    {{ articulo.cantidad }}
                                 </td>
 
-                                <!-- Subtotal -->
-                                <td class="text-end fw-bold">
-                                    ${{ "%.2f"|format(articulo.precio * articulo.cantidad) }}
+                                <td class="text-center">
+                                    {% if tipo == "stock" %}
+                                        <span class="badge bg-success">Entrega inmediata</span>
+                                    {% else %}
+                                        <span class="badge bg-warning">A producción</span>
+                                    {% endif %}
                                 </td>
 
-                                <!-- Eliminar -->
-                                <td class="text-center">
-                                    <form method="POST"
-                                          action="{{ url_for('tiendaCliente.eliminar_carrito', item_id=articulo.id) }}">
-                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                        <button type="submit"
-                                                class="btn btn-sm btn-danger"
-                                                title="Eliminar"
-                                                onclick="return confirm('¿Eliminar este producto del carrito?')">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </form>
+                                <td class="text-end">
+                                    {% if tipo == "stock" %}
+                                        ${{ "%.2f"|format(subtotal_item) }}
+                                    {% else %}
+                                        <span class="text-muted">Se cotiza</span>
+                                    {% endif %}
                                 </td>
                             </tr>
-                            {% endfor %}
+                        {% endfor %}
+
                         </tbody>
                     </table>
                 </div>
@@ -139,62 +75,65 @@
 
         <!-- RESUMEN -->
         <div class="col-lg-4">
-            <div class="card border-light sticky-top" style="top:20px">
-                <div class="card-header bg-light">
-                    <h5 class="card-title mb-0">Resumen del pedido</h5>
-                </div>
+            <div class="card border-light">
                 <div class="card-body">
 
-                    <div class="d-flex justify-content-between mb-3">
-                        <span>Artículos ({{ cantidad_articulos }})</span>
-                        <strong>${{ "%.2f"|format(total) }}</strong>
+                    <div class="mb-3">
+                        <strong>Total inmediato:</strong><br>
+                        <span class="text-success fw-bold">
+                            ${{ "%.2f"|format(ns.total_disponible) }}
+                        </span>
                     </div>
 
-                    <div class="d-flex justify-content-between mb-3 pb-3 border-bottom">
-                        <span>Envío</span>
-                        <span class="text-muted">A coordinar</span>
-                    </div>
+                    <button onclick="checkout()" class="btn btn-primary w-100">
+                        Finalizar compra
+                    </button>
 
-                    <div class="d-flex justify-content-between mb-4">
-                        <h6 class="mb-0">TOTAL</h6>
-                        <h5 class="mb-0 text-primary fw-bold">${{ "%.2f"|format(total) }}</h5>
-                    </div>
-
-                    <div class="d-grid gap-2">
-                        <button type="button" class="btn btn-primary btn-lg" disabled>
-                            <i class="bi bi-credit-card"></i> Ir al checkout
-                        </button>
-                        <a href="{{ url_for('tiendaCliente.catalogo') }}" class="btn btn-outline-secondary">
-                            <i class="bi bi-bag-plus"></i> Seguir comprando
-                        </a>
-                    </div>
-                </div>
-
-                <div class="card-footer bg-light text-center">
-                    <small class="text-muted">
-                        Aceptamos tarjeta de crédito, débito y transferencia
-                    </small>
                 </div>
             </div>
         </div>
 
-    </div>
-
-    {% else %}
-    <!-- CARRITO VACÍO -->
-    <div class="row justify-content-center">
-        <div class="col-md-6">
-            <div class="text-center py-5">
-                <i class="bi bi-cart-x mb-4 d-block" style="font-size:4rem;color:#ddd;"></i>
-                <h3 class="mb-2">Tu carrito está vacío</h3>
-                <p class="text-muted mb-4">No tienes productos agregados aún. ¡Comienza a comprar!</p>
-                <a href="{{ url_for('tiendaCliente.catalogo') }}" class="btn btn-primary btn-lg">
-                    <i class="bi bi-bag"></i> Ir al catálogo
-                </a>
-            </div>
-        </div>
     </div>
     {% endif %}
-
 </div>
+
+<script>
+function checkout() {
+
+    const sessionId = getCookie("session_id");
+    const csrfToken = "{{ csrf_token() }}";
+
+    fetch("{{ url_for('tiendaCliente.checkout') }}", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": csrfToken
+        },
+        body: JSON.stringify({
+            session_id: sessionId
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            alert("Compra realizada");
+            window.location.href = "{{ url_for('tiendaCliente.mis_pedidos') }}";
+        } else {
+            alert(data.message);
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        alert("Error en checkout");
+    });
+}
+
+function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+}
+</script>
+
 {% endblock %}
