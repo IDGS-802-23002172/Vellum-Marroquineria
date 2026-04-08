@@ -33,12 +33,13 @@
                                    class="form-control" 
                                    id="search" 
                                    name="search" 
-                                   placeholder="Nombre, SKU..."
+                                   placeholder="Buscar productos..."
                                    value="{{ búsqueda }}">
                         </div>
 
                         <!-- LÍNEA -->
                         <div class="mb-3">
+                          
                             <label for="linea" class="form-label fw-bold">Línea</label>
                             <select class="form-select" id="linea" name="linea">
                                 <option value="">Todas</option>
@@ -66,9 +67,10 @@
                         <!-- DISPONIBILIDAD -->
                         <div class="mb-3 form-check">
                             <input type="checkbox" 
-                                   class="form-check-input" 
-                                   id="disponibles" 
-                                   name="solo_disponibles">
+                                class="form-check-input" 
+                                id="disponibles" 
+                                name="solo_disponibles"
+                                {% if request.args.get('solo_disponibles') %}checked{% endif %}>
                             <label class="form-check-label" for="disponibles">
                                 Solo disponibles
                             </label>
@@ -88,6 +90,9 @@
 
         <!-- PRODUCTOS -->
         <div class="col-lg-9">
+              <p class="text-muted">
+                {{ productos.total }} productos encontrados
+              </p>
             <!-- RESULTADOS -->
             {% if productos.items %}
             <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 mb-4">
