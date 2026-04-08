@@ -368,7 +368,6 @@ class RetalRecuperado(db.Model):
     es_reusable = db.Column(db.Boolean, default=True)
     fecha_registro = db.Column(db.DateTime, default=db.func.current_timestamp())
 
-# --- ORDENES DE PRODUCCION ---
 class OrdenProduccion(db.Model):
     __tablename__ = "ordenes_produccion"
     id_orden = db.Column(db.Integer, primary_key=True)
@@ -378,8 +377,7 @@ class OrdenProduccion(db.Model):
     estado = db.Column(db.String(50), default="En Corte")
     fecha_creacion = db.Column(db.DateTime, default=db.func.current_timestamp())
     producto = db.relationship("Producto")
-    artesano = db.relationship("Usuario")
-
+    artesano = db.relationship("Usuario", foreign_keys=[id_usuario])
 
 class AuditoriaVenta(db.Model):
     __tablename__ = "auditoria_ventas"
@@ -434,12 +432,12 @@ class Rol(db.Model):
     descripcion = db.Column(db.String(200))
     usuarios = db.relationship("Usuario", backref="rol")
     
-class OrdenProduccion(db.Model):
-    __tablename__ = 'orden_produccion'
-
+class CierreCaja(db.Model):
+    __tablename__ = "cierre_caja"
     id = db.Column(db.Integer, primary_key=True)
-    usuario_id = db.Column(db.Integer, nullable=False)
-    producto_id = db.Column(db.Integer, nullable=False)
-    cantidad = db.Column(db.Integer, nullable=False)
-    estado = db.Column(db.String(20), default='pendiente')
-    fecha = db.Column(db.DateTime, default=datetime.utcnow)
+    fecha = db.Column(db.Date, nullable=False, unique=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey("usuarios.id"))
+    articulos_vendidos = db.Column(db.Integer)
+    total_ventas = db.Column(db.Numeric(14,2))
+    utilidad_total = db.Column(db.Numeric(14,2))
+    fecha_cierre = db.Column(db.DateTime, default=datetime.utcnow)

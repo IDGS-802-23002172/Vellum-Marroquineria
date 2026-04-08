@@ -11,18 +11,21 @@ from werkzeug.security import generate_password_hash
 # docker exec -it vellum_app python seed_db.py
 
 def seed():
+    # TODO lo que interactúe con la BD debe tener espacios para estar dentro de este 'with'
     with app.app_context():
+        db.create_all()
         print("--- Sembrando Roles y Usuarios de Vellum ---")
-
-        # 1. Sembrar Roles primero
-        roles_necesarios = ['Admin', 'Artesano', 'Cliente']
-        for nombre_rol in roles_necesarios:
-            if not Rol.query.filter_by(nombre=nombre_rol).first():
-                nuevo_rol = Rol(nombre=nombre_rol, descripcion=f'Acceso para {nombre_rol}')
-                db.session.add(nuevo_rol)
-        db.session.commit()
-        print("Roles verificados/creados.")
-        
+    
+        if not Rol.query.filter_by(nombre="Admin").first():
+            # 1. Sembrar Roles primero
+            roles_necesarios = ['Admin', 'Artesano', 'Cliente']
+            for nombre_rol in roles_necesarios:
+                if not Rol.query.filter_by(nombre=nombre_rol).first():
+                    nuevo_rol = Rol(nombre=nombre_rol, descripcion=f'Acceso para {nombre_rol}')
+                    db.session.add(nuevo_rol)
+            db.session.commit()
+            print("Roles verificados/creados.")
+            
         usuarios_iniciales = [
             {"user": "admin_majo", "pass": "vellum_admin_2026", "rol": "Admin"},
             {"user": "maint_ange", "pass": "angel_mantenimiento_123", "rol": "Admin"}, 
