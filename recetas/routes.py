@@ -9,8 +9,16 @@ recetas_bp = Blueprint("recetas", __name__)
 # ─────────────────────────────────────────────
 @recetas_bp.route("/recetas")
 def listar_recetas():
-    recetas = Receta.query.all()
-    return render_template("recetas/index.html", recetas=recetas)
+    productos_con_receta = Producto.query.filter(Producto.receta_articulos.any()).all()
+    return render_template("recetas/index.html", productos=productos_con_receta)
+
+# vista de detalle para mostrar que insumos tiene cada producto
+
+@recetas_bp.route("/recetas/detalle/<int:id_producto>")
+def detalle_receta(id_producto):
+    producto = Producto.query.get_or_404(id_producto)
+    insumos = Receta.query.filter_by(id_producto=id_producto).all()
+    return render_template("recetas/detalle.html", producto=producto, insumos=insumos)
 
 # ─────────────────────────────────────────────
 # CREAR (C) - Soporta múltiples materiales por producto

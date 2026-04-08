@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}Detalle de Receta{% endblock %}
+{% block page_title %}Ingeniería de Producto — Vellum León{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+    <div class="mb-4">
+        <a href="{{ url_for('recetas.listar_recetas') }}" class="text-muted text-decoration-none small text-uppercase tracking-widest">
+            <i class="bi bi-arrow-left me-1"></i> Volver al Recetario
+        </a>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4" style="border-radius: 0; border-left: 4px solid #000 !important;">
+        <div class="card-body p-4 d-flex align-items-center">
+            <div class="me-4" style="width: 80px; height: 80px; background: #f8f9fa;">
+                <img src="{{ url_for('static', filename='img/productos/' + producto.imagen) }}" class="w-100 h-100 object-fit-cover">
+            </div>
+            <div class="flex-grow-1">
+                <h3 class="text-premium text-uppercase mb-1">{{ producto.nombre }}</h3>
+                <span class="text-muted small tracking-widest">SKU: {{ producto.sku }} | Área Base: {{ producto.area_plantilla_base }} dm²</span>
+            </div>
+            <div>
+                <a href="{{ url_for('recetas.crear_receta', p_id=producto.id) }}" class="btn btn-outline-dark" style="border-radius: 0; text-transform: uppercase; letter-spacing: 1px; font-size: 0.75rem;">
+                    <i class="bi bi-plus-lg me-1"></i> Agregar Insumo
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm" style="border-radius: 0;">
+        <div class="card-header bg-white p-4 border-bottom">
+            <h5 class="text-uppercase tracking-widest m-0" style="font-size: 0.85rem;">Explosión de Materiales</h5>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light text-uppercase tracking-widest" style="font-size: 0.7rem;">
+                    <tr>
+                        <th class="ps-4 py-3">Materia Prima</th>
+                        <th class="py-3 text-center">Tipo Control</th>
+                        <th class="py-3 text-center">Retícula / Consumo</th>
+                        <th class="py-3 text-center">Merma Técnica</th>
+                        <th class="pe-4 py-3 text-end">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody class="border-top-0">
+                    {% for insumo in insumos %}
+                    <tr>
+                        <td class="ps-4">
+                            <span class="fw-bold d-block small">{{ insumo.materia.nombre }}</span>
+                            <span class="text-muted" style="font-size: 0.65rem;">Unidad: {{ insumo.materia.unidad.abreviatura }}</span>
+                        </td>
+                        <td class="text-center">
+                            <span class="badge bg-stone-100 text-dark fw-normal border px-2 py-1 text-uppercase">
+                                {{ insumo.materia.tipo_control }}
+                            </span>
+                        </td>
+                        <td class="text-center font-monospace text-dark fw-bold">
+                            {{ insumo.area_reticula_corte_dm2 }}
+                        </td>
+                        <td class="text-center">
+                            {% if insumo.materia.tipo_control.lower() in ['piel', 'textil', 'pieza'] %}
+                                {% set merma = insumo.area_reticula_corte_dm2 - insumo.area_plantilla_dm2 %}
+                                <span class="text-danger small italic">
+                                    <i class="bi bi-scissors me-1"></i> {{ "%.2f"|format(merma) }} dm²
+                                </span>
+                            {% else %}
+                                <span class="text-muted small">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="pe-4 text-end">
+                            <form action="{{ url_for('recetas.eliminar_receta', id=insumo.id_receta) }}" method="POST" class="d-inline">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="border-0 bg-transparent p-0 text-stone-300 hover:text-danger" 
+                                        onclick="return confirm('¿Remover este insumo de la receta?')">
+                                    <i class="bi bi-trash3 text-danger"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+    .bg-stone-100 { background-color: #f1f0ee; }
+    .text-premium { font-family: 'Playfair Display', serif; }
+    .tracking-widest { letter-spacing: 0.2em; }
+    .table-hover tbody tr:hover { background-color: #fafaf9; }
+</style>
+{% endblock %}
