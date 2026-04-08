@@ -66,7 +66,6 @@ def crear_receta():
     
     return render_template("recetas/crear.html", form=form)
 # ─────────────────────────────────────────────
-<<<<<<< HEAD
 # MODIFICAR (U) - Permitir edición (Tarea 4)
 # ─────────────────────────────────────────────
 @recetas_bp.route("/recetas/modificar/<int:id>", methods=['GET', 'POST'])
@@ -97,8 +96,6 @@ def modificar_receta(id):
     return render_template("recetas/modificar.html", form=form, receta=insumo_receta)
 
 # ─────────────────────────────────────────────
-=======
->>>>>>> origin/fix/correccion-angel
 # ELIMINAR (D)
 # ─────────────────────────────────────────────
 @recetas_bp.route("/recetas/eliminar/<int:id>", methods=['POST'])

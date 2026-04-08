@@ -1,6 +1,8 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
-from models import db, Producto, OrdenProduccion, Receta, MateriaPrima
+from models import db, Producto, OrdenProduccion, Receta, MateriaPrima, PiezaMateriaPrima
 import forms
+from decimal import Decimal
+
 
 produccion_bp = Blueprint("produccion", __name__)
 
@@ -13,7 +15,7 @@ def listar_ordenes():
     return render_template("produccion/index.html", ordenes=ordenes)
 
 # ─────────────────────────────────────────────
-# CREAR ÓRDEN (C) - Con Explosión de Materiales Completa
+# CREAR ÓRDEN pero filtrando si es una pieza o no
 # ─────────────────────────────────────────────
 @produccion_bp.route("/produccion/nueva", methods=['GET', 'POST'])
 def crear_orden():
@@ -23,7 +25,6 @@ def crear_orden():
     form.id_producto.choices = [(p.id, p.nombre) for p in productos_disponibles]
 
     if request.method == 'POST' and form.validate():
-        # 1. Obtener la receta completa
         insumos = Receta.query.filter_by(id_producto=form.id_producto.data).all()
         
         if not insumos:
@@ -31,20 +32,51 @@ def crear_orden():
             return render_template("produccion/crear.html", form=form)
 
         try:
-            # 2. VALIDACIÓN PREVIA 
+            consumos_agrupados = {}
             for item in insumos:
-                consumo_total = item.area_reticula_corte_dm2 * form.cantidad.data
-                material = MateriaPrima.query.get(item.id_materia)
+                consumo = item.area_reticula_corte_dm2 * form.cantidad.data
+                if item.id_materia in consumos_agrupados:
+                    consumos_agrupados[item.id_materia] += consumo
+                else:
+                    consumos_agrupados[item.id_materia] = consumo
+
+            for id_materia, consumo_total in consumos_agrupados.items():
+                material = MateriaPrima.query.get(id_materia)
                 
-                if not material or not material.stock or material.stock.cantidad_actual < consumo_total:
-                    flash(f"Stock insuficiente de {material.nombre if material else 'Material desconocido'}. Falta material para completar la orden.", "danger")
-                    return render_template("produccion/crear.html", form=form)
+                if material.tipo_control == "pieza":
+                    area_total_disponible = db.session.query(db.func.sum(PiezaMateriaPrima.area).filter_by(
+                        id_materia=id_materia, disponible=True)).scalar() or 0
+                    
+                    if float(area_total_disponible)<float(consumo_total):
+                        flash("Area insuficiente para crear {material.nombre}", "danger")
+                        return render_template("produccion/crear.html", form=form)
+                else:
+                    if not material or not material.stock or material.stock.cantidad_actual < consumo_total:
+                        stock_actual = material.stock.cantidad_actual if material and material.stock else 0
+                        flash(f"Stock insuficiente de {material.nombre}. Se requieren {consumo_total} pero hay {stock_actual}.", "danger")
+                        return render_template("produccion/crear.html", form=form)
 
             # 3. DESCUENTO REAL (Si llegamos aquí, es que hay stock de todo)
-            for item in insumos:
-                consumo_total = item.area_reticula_corte_dm2 * form.cantidad.data
-                material = MateriaPrima.query.get(item.id_materia)
-                material.stock.cantidad_actual -= consumo_total
+            for id_materia, consumo_total in consumos_agrupados.items():
+                material = MateriaPrima.query.get(id_materia)
+                
+                if material.tipo_control == "pieza":
+                    resta = Decimal(str(consumo_total))
+                    piezas = PiezaMateriaPrima.query.filter_by(id_materia=id_materia, disponible=True).order_by(PiezaMateriaPrima.area.asc()).all()
+                    for p in piezas:
+                        if resta <= 0:
+                            break
+                        if p.area <= resta:
+                            resta -= p.area
+                            p.disponible = False
+                        else:
+                            p.area -= resta
+                            resta = 0
+                            p.disponible = False
+                    material.stock.cantidad_actual = PiezaMateriaPrima.query.filter_by(id_materia=id_materia, disponible=True).count()
+                else:
+                    material.stock.cantidad_actual -= Decimal(str(consumo_total))
+
 
             # 4. Registro de la Orden
             nueva_orden = OrdenProduccion(
@@ -79,13 +111,25 @@ def cancelar_orden(id):
         for item in insumos:
             material = MateriaPrima.query.get(item.id_materia)
             if material and material.stock:
-                # Devolvemos exactamente lo que se descontó (Reticula * cantidad)
                 cantidad_a_devolver = item.area_reticula_corte_dm2 * orden.cantidad
-                material.stock.cantidad_actual += cantidad_a_devolver
+                
+                if material.tipo_control == 'pieza':
+                    # Si cancelamos corte de cuero, generamos un nuevo pedazo (retal) en el inventario
+                    nuevo_retal = PiezaMateriaPrima(
+                        id_materia=material.id_materia,
+                        area=cantidad_a_devolver,
+                        disponible=True
+                    )
+                    db.session.add(nuevo_retal)
+                    # Forzamos flush para que cuente el nuevo retal
+                    db.session.flush()
+                    material.stock.cantidad_actual = PiezaMateriaPrima.query.filter_by(id_materia=material.id_materia, disponible=True).count()
+                else:
+                    material.stock.cantidad_actual += cantidad_a_devolver
 
         db.session.delete(orden)
         db.session.commit()
-        flash("Orden cancelada e insumos devueltos al almacén de materia prima.", "success")
+        flash("Orden cancelada. Insumos y cortes de cuero devueltos al almacén.", "success")
         
     except Exception as e: 
         db.session.rollback()
