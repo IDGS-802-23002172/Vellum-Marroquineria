@@ -66,7 +66,7 @@ def crear_receta():
             db.session.rollback()
             flash(f"Error: {str(e)}", "danger")
     
-    return render_template("recetas/crear.html", form=form)
+    return render_template("recetas/crear.html", form=form, insumos=insumos_actuales, materiales=materiales)  
 # ─────────────────────────────────────────────
 # MODIFICAR (U) - Permitir edición (Tarea 4)
 # ─────────────────────────────────────────────
@@ -97,8 +97,7 @@ def modificar_receta(id):
             
     return render_template("recetas/modificar.html", form=form, receta=insumo_receta)
 
-    return render_template("recetas/crear.html", form=form, insumos=insumos_actuales,
-                           materiales=materiales)   # <-- pasamos materiales para el JS
+
 # ─────────────────────────────────────────────
 # ELIMINAR (D)
 # ─────────────────────────────────────────────
