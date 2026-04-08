@@ -17,53 +17,55 @@ def listar_recetas():
 # ─────────────────────────────────────────────
 @recetas_bp.route("/recetas/nuevo", methods=['GET', 'POST'])
 def crear_receta():
-    # Capturamos el ID de la URL si el usuario ya registró un material previo
     p_id_seleccionado = request.args.get('p_id', type=int)
-    
     form = forms.RecetaForm(request.form)
     
-    # Llenamos opciones de productos y materiales
     form.id_producto.choices = [(p.id, f"{p.sku} - {p.nombre}") for p in Producto.query.all()]
     materiales = MateriaPrima.query.all()
     form.id_materia.choices = [(m.id_materia, f"{m.nombre} ({m.unidad.abreviatura})") for m in materiales]
 
-    # Si venimos de registrar un insumo, pre-seleccionamos el producto
-    if request.method == 'GET' and p_id_seleccionado:
+    insumos_actuales = []
+    if p_id_seleccionado:
         form.id_producto.data = p_id_seleccionado
-        producto_previo = Producto.query.get(p_id_seleccionado)
-        if producto_previo:
-            form.area_plantilla.data = producto_previo.area_plantilla_base
+        insumos_actuales = Receta.query.filter_by(id_producto=p_id_seleccionado).all()
 
     if request.method == 'POST' and form.validate():
         try:
             producto = Producto.query.get(form.id_producto.data)
             
-            # Validación de duplicados: No repetir material en el mismo producto
-            existe = Receta.query.filter_by(id_producto=producto.id, id_materia=form.id_materia.data).first()
-            if existe:
-                flash(f"Este material ya existe en la receta de {producto.nombre}", "warning")
-                return render_template("recetas/crear.html", form=form)
-
+            # Insumo principal (piel)
             nueva_receta = Receta(
                 id_producto=producto.id,
                 id_materia=form.id_materia.data,
                 area_plantilla_dm2=producto.area_plantilla_base,
                 area_reticula_corte_dm2=form.area_reticula.data
             )
-            
             db.session.add(nueva_receta)
+
+            # ── Insumos adicionales (forros, herrajes, etc.) ──
+            ids_extra    = request.form.getlist('extra_materia[]')
+            cantidades   = request.form.getlist('extra_cantidad[]')
+
+            for id_m, cant in zip(ids_extra, cantidades):
+                if id_m and cant:
+                    insumo_extra = Receta(
+                        id_producto=producto.id,
+                        id_materia=int(id_m),
+                        area_plantilla_dm2=0,          # No aplica
+                        area_reticula_corte_dm2=float(cant)
+                    )
+                    db.session.add(insumo_extra)
+
             db.session.commit()
-            
-            flash(f"Insumo añadido con éxito a {producto.nombre}.", "success")
-            # Redirigimos a la misma página pasando el ID del producto para seguir agregando
+            flash("Materiales añadidos.", "success")
             return redirect(url_for('recetas.crear_receta', p_id=producto.id))
             
         except Exception as e:
             db.session.rollback()
-            flash(f"Error al registrar insumo: {str(e)}", "danger")
+            flash(f"Error: {str(e)}", "danger")
     
-    return render_template("recetas/crear.html", form=form)
-
+    return render_template("recetas/crear.html", form=form, insumos=insumos_actuales,
+                           materiales=materiales)   # <-- pasamos materiales para el JS
 # ─────────────────────────────────────────────
 # ELIMINAR (D)
 # ─────────────────────────────────────────────
