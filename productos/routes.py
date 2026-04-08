@@ -145,3 +145,8 @@ def registrar_merma_producto(id):
         flash(f"Error al registrar merma: {str(e)}", "danger")
     
     return redirect(url_for('productos.listar_productos'))
+
+@productos_bp.route("/api/get_area/<int:id>")
+def get_area_producto(id):
+    p = Producto.query.get_or_404(id)
+    return {"area": float(p.area_plantilla_base)}

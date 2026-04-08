@@ -27,9 +27,9 @@ class ProductoForm(FlaskForm):
     sku = StringField('SKU / Código', [DataRequired()])
     nombre = StringField('Nombre del Producto', [DataRequired()])
     linea = SelectField('Línea', choices=[('Executive', 'Executive'), ('Lifestyle', 'Lifestyle'), ('Essentials', 'Essentials')])
-    categoria = SelectField('Categoría', choices=[('Portafolios', 'Portafolios'), ('Carteras', 'Carteras'), ('Chamarras', 'Chamarras')])
+    categoria = StringField('Categoría', [DataRequired(), Length(max=50)])
     precio = DecimalField('Precio de Venta', [DataRequired()])
-    stock = IntegerField('Stock Inicial', [DataRequired()])
+    area_plantilla = DecimalField('Área de Plantilla Base (dm²)', [DataRequired(), NumberRange(min=0.01)])
     imagen = FileField('Imagen', validators=[FileAllowed(['jpg', 'png', 'jpeg'], '¡Solo imágenes!')])
     
 class UnidadMedidaForm(FlaskForm):
@@ -85,19 +85,14 @@ class MovimientoMateriaPrimaForm(FlaskForm):
     )
 
 class RecetaForm(FlaskForm):
-    id_producto = HiddenField('ID Producto', validators=[DataRequired()])
-    id_materia = SelectField('Seleccionar Material', coerce=int, validators=[DataRequired()])
-    area_plantilla = DecimalField(
-        'Área de Plantilla (dm²)', 
-        places=2, 
-        validators=[DataRequired(), NumberRange(min=0.01, message="Debe ser mayor a 0")]
-    )
+    id_producto = SelectField('Producto a Configurar', coerce=int, validators=[DataRequired()])
+    id_materia = SelectField('Seleccionar Material (Cuero, Hilo, Herraje...)', coerce=int, validators=[DataRequired()])
     area_reticula = DecimalField(
-        'Área de Retícula de Corte (dm²)', 
+        'Área de Retícula de Corte / Consumo (dm² o unidad)', 
         places=2, 
         validators=[DataRequired(), NumberRange(min=0.01, message="Debe ser mayor a 0")]
     )
-    submit = SubmitField('Asignar a Receta')
+    submit = SubmitField('Asignar Insumo a Receta')
     
 class OrdenCompraForm(FlaskForm):
     """Cabecera de la orden de compra."""

@@ -3,7 +3,8 @@
 
 {% block content %}
 <div class="max-w-2xl mx-auto bg-white p-8 rounded-2xl shadow-sm border">
-    <h2 class="text-2xl font-bold mb-6">Registrar Producto Terminado</h2>
+    <h2 class="text-2xl font-bold mb-2">Registrar Producto Terminado</h2>
+    <p class="text-sm text-gray-500 mb-6">El stock inicial se establecerá en 0 y aumentará mediante órdenes de producción.</p>
 
     <form method="POST" enctype="multipart/form-data" novalidate>
         {{ form.csrf_token }}
@@ -18,7 +19,8 @@
 
         <div class="grid grid-cols-2 gap-4">
             {{ macros.nuevoMacro(form.precio) }}
-            {{ macros.nuevoMacro(form.stock) }} </div>
+            {{ macros.nuevoMacro(form.area_plantilla) }} 
+        </div>
 
         <div class="mt-4 p-4 bg-gray-50 border-2 border-dashed rounded-lg">
             {{ macros.nuevoMacro(form.imagen) }}
@@ -26,11 +28,11 @@
         </div>
 
         <div class="flex gap-4 mt-8">
-            <button type="submit" class="flex-1 bg-black text-white py-3 rounded-lg font-bold hover:bg-gray-800">
+            <button type="submit" class="flex-1 bg-black text-white py-3 rounded-lg font-bold hover:bg-gray-800 transition-colors">
                 Guardar en Inventario
             </button>
-            <a href="{{ url_for('listar_productos') }}"
-                class="px-6 py-3 border rounded-lg text-gray-600 hover:bg-gray-50">Cancelar</a>
+            <a href="{{ url_for('productos.listar_productos') }}"
+                class="px-6 py-3 border rounded-lg text-gray-600 hover:bg-gray-50 transition-colors">Cancelar</a>
         </div>
     </form>
 </div>

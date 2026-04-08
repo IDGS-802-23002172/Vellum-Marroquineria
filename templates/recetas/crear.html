@@ -1,41 +1,41 @@
 {% extends "base.html" %}
 
-{% block title %}Definir Insumo{% endblock %}
-{% block page_title %}Ingeniería de Corte — Vellum{% endblock %}
+{% block title %}Ingeniería de Receta{% endblock %}
 
 {% block content %}
 <div class="container py-5">
     <div class="row justify-content-center">
         <div class="col-lg-6">
             <div class="text-center mb-5">
-                <span class="text-uppercase tracking-widest text-muted" style="font-size: 0.7rem;">Módulo de Transformación</span>
-                <h2 class="text-premium mt-2" style="font-size: 2.2rem;">Nueva Receta</h2>
-                <div class="mx-auto bg-dark" style="width: 50px; height: 2px;"></div>
+                <span class="text-uppercase tracking-widest text-muted small">Módulo de Transformación</span>
+                <h2 class="text-premium mt-2">Configurar Receta Técnica</h2>
+                <div class="mx-auto bg-black" style="width: 50px; height: 2px;"></div>
             </div>
 
             <div class="card border-0 shadow-sm p-4 p-md-5" style="border-radius: 0; border: 1px solid #eee !important;">
-                <form method="POST" action="{{ url_for('recetas.crear_receta') }}">
+                <form method="POST">
                     {{ form.hidden_tag() }}
 
                     <div class="mb-4">
-                        <label class="form-label text-uppercase tracking-wider small fw-bold">Producto a Configurar</label>
-                        {{ form.id_producto(class="form-select", style="border-radius: 0;") }}
+                        <label class="form-label text-uppercase small fw-bold tracking-wider">Producto a Fabricar</label>
+                        {{ form.id_producto(class="form-select", id="select-producto", style="border-radius: 0;") }}
                     </div>
 
                     <div class="mb-4">
-                        <label class="form-label text-uppercase tracking-wider small fw-bold">Materia Prima</label>
+                        <label class="form-label text-uppercase small fw-bold tracking-wider">Insumo (Materia Prima)</label>
                         {{ form.id_materia(class="form-select", style="border-radius: 0;") }}
-                        <div class="form-text italic" style="font-size: 0.75rem;">Solo se muestran materiales con stock activo.</div>
                     </div>
 
                     <div class="row g-3">
                         <div class="col-md-6 mb-4">
-                            <label class="form-label text-uppercase tracking-wider small fw-bold">Área Plantilla (dm²)</label>
-                            {{ form.area_plantilla(class="form-control", id="input-plantilla", placeholder="Ej. 0.50", style="border-radius: 0;") }}
+                            <label class="form-label text-uppercase small fw-bold tracking-wider">Área Plantilla (dm²)</label>
+                            <input type="number" step="0.01" class="form-control" id="input-plantilla" 
+                                   value="{{ form.area_plantilla.data if form.area_plantilla else '0.00' }}" 
+                                   readonly style="border-radius: 0; background-color: #f9f9f9;">
                         </div>
 
                         <div class="col-md-6 mb-4">
-                            <label class="form-label text-uppercase tracking-wider small fw-bold">Retícula Corte (dm²)</label>
+                            <label class="form-label text-uppercase small fw-bold tracking-wider">Retícula / Consumo (dm²)</label>
                             {{ form.area_reticula(class="form-control", id="input-reticula", placeholder="Ej. 0.85", style="border-radius: 0;") }}
                         </div>
                     </div>
@@ -45,15 +45,14 @@
                             <span class="text-uppercase small fw-bold">Estimación de Merma:</span>
                             <span id="visor-merma" class="font-monospace fw-bold text-danger">0.00 dm²</span>
                         </div>
-                        <p class="text-muted mb-0 mt-1" style="font-size: 0.7rem;">
-                            Basado en la diferencia entre el rectángulo de corte y la pieza útil.
-                        </p>
                     </div>
 
                     <div class="d-grid gap-2">
-                        {{ form.submit(class="btn-vellum w-100") }}
-                        <a href="{{ url_for('recetas.listar_recetas') }}" class="btn btn-link text-muted text-decoration-none small">
-                            Cancelar y volver al listado
+                        <button type="submit" class="btn-vellum">
+                            <i class="bi bi-plus-circle me-2"></i> Guardar y Añadir Otro Material
+                        </button>
+                        <a href="{{ url_for('recetas.listar_recetas') }}" class="btn btn-dark text-uppercase tracking-widest small py-3" style="border-radius: 0;">
+                            Finalizar y Ver Listado
                         </a>
                     </div>
                 </form>
@@ -66,7 +65,9 @@
     const inputPlantilla = document.getElementById('input-plantilla');
     const inputReticula = document.getElementById('input-reticula');
     const visorMerma = document.getElementById('visor-merma');
+    const selectProducto = document.getElementById('select-producto');
 
+    // Función para calcular la merma en tiempo real
     function calcularMerma() {
         const p = parseFloat(inputPlantilla.value) || 0;
         const r = parseFloat(inputReticula.value) || 0;
@@ -76,31 +77,56 @@
             visorMerma.innerText = merma.toFixed(2) + ' dm²';
             visorMerma.classList.remove('text-warning');
             visorMerma.classList.add('text-danger');
-        } else if (p > r) {
-            visorMerma.innerText = 'Error: Retícula insuficiente';
+        } else {
+            // Caso donde la retícula es menor a la plantilla (Error de ingeniería)
+            visorMerma.innerText = '0.00 dm²';
+            visorMerma.classList.remove('text-danger');
             visorMerma.classList.add('text-warning');
         }
     }
 
-    inputPlantilla.addEventListener('input', calcularMerma);
+    // Automatización: Obtener área base desde la API de Productos
+    selectProducto.addEventListener('change', function() {
+        const productoId = this.value;
+        if (productoId) {
+            // Se asume el prefijo /productos definido en el registro del Blueprint
+            fetch(`/api/get_area/${productoId}`)
+                .then(response => {
+                    if (!response.ok) throw new Error("Error al conectar con la API");
+                    return response.json();
+                })
+                .then(data => {
+                    inputPlantilla.value = data.area;
+                    calcularMerma();
+                })
+                .catch(err => {
+                    console.error("Detalle del error:", err);
+                    inputPlantilla.value = "0.00";
+                });
+        }
+    });
+
+    // LISTENER para el cálculo manual cuando el usuario escribe la retícula
     inputReticula.addEventListener('input', calcularMerma);
+
+    // AUTO-EJECUCIÓN AL CARGAR: 
+    // Si el select ya tiene un producto (ej. modo carga continua), 
+    // forzamos la petición del área de inmediato.
+    window.addEventListener('DOMContentLoaded', (event) => {
+        if (selectProducto.value) {
+            selectProducto.dispatchEvent(new Event('change'));
+        }
+    });
 </script>
 
 <style>
     .text-premium { font-family: 'Playfair Display', serif; }
     .btn-vellum {
-        background: #000;
-        color: #fff;
-        border-radius: 0;
-        padding: 12px;
-        text-transform: uppercase;
-        letter-spacing: 2px;
-        font-size: 0.8rem;
-        transition: all 0.3s;
+        background: #000; color: #fff; border: none; border-radius: 0;
+        padding: 15px; text-transform: uppercase; letter-spacing: 2px;
+        font-size: 0.8rem; transition: 0.3s;
     }
-    .btn-vellum:hover {
-        background: #333;
-        transform: translateY(-2px);
-    }
+    .btn-vellum:hover { background: #333; transform: translateY(-2px); }
+    .tracking-widest { letter-spacing: 0.2em; }
 </style>
 {% endblock %}
