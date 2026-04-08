@@ -152,7 +152,9 @@
                     {% endif %}
                     <tr>
                         <td class="text-muted">Registrado:</td>
-                        <td class="fw-bold">{{ producto.fecha_registro.strftime('%d/%m/%Y') }}</td>
+                            <td class="fw-bold">
+                                {{ producto.fecha_registro.strftime('%d/%m/%Y') if producto.fecha_registro else 'Sin fecha' }}
+                            </td>
                     </tr>
                 </table>
             </div>

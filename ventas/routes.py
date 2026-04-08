@@ -1,6 +1,6 @@
 from flask import render_template, redirect, url_for, request, session, flash
 from . import ventas_bp
-from models import CarritoTemporal, Venta, DetalleVenta, db, Producto, MovimientoCaja, CierreCaja
+from models import CarritoTemporal, Venta, DetalleVenta, db, Producto, MovimientoCaja
 from decimal import Decimal
 import uuid
 from sqlalchemy import text

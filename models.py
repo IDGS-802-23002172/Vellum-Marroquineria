@@ -283,6 +283,7 @@ class Venta(db.Model):
     fecha = db.Column(db.DateTime, default=datetime.utcnow)
     usuario_id = db.Column(db.Integer, db.ForeignKey("usuarios.id"), nullable=False)
     estado = db.Column(db.String(50), default="Pagado") 
+    tipo = db.Column(db.String(20))  # 'POS' o 'ONLINE'
     
     detalles = db.relationship("DetalleVenta", backref="venta", cascade="all, delete-orphan", lazy=True)
     @property
