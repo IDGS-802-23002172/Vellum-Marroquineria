@@ -1,6 +1,6 @@
 from flask import render_template, redirect, url_for, request, session, flash
 from . import ventas_bp
-from models import CarritoTemporal, Venta, DetalleVenta, db, Producto
+from models import CarritoTemporal, Venta, DetalleVenta, db, Producto, MovimientoCaja
 from decimal import Decimal
 import uuid
 from sqlalchemy import text
@@ -93,6 +93,19 @@ def agregar_producto():
     return redirect(url_for("ventas.punto_venta"))
 
 
+def _siguiente_folio_venta() -> str:
+    from datetime import datetime
+    anio = datetime.utcnow().year
+    ultima = Venta.query.filter(Venta.folio.like(f"VEN-{anio}-%")).order_by(Venta.id.desc()).first()
+    if ultima:
+        try:
+            n = int(ultima.folio.split("-")[-1]) + 1
+        except ValueError:
+            n = 1
+    else:
+        n = 1
+    return f"VEN-{anio}-{n:04d}"
+
 @ventas_bp.route("/finalizar", methods=["POST"])
 def finalizar_venta():
     session_id = session.get("session_id")
@@ -104,42 +117,58 @@ def finalizar_venta():
 
     usuario_id = session.get("user_id")
 
-    # Ajuste: El endpoint correcto asumiendo que tu ruta de login se llama 'login' en app.py
     if not usuario_id:
         flash("Sesión inválida", "danger")
         return redirect(url_for("login")) 
-
-    folio = generar_folio()
     
-    nueva_venta = Venta(
-        folio=folio,
-        usuario_id=usuario_id
-    )
-
-    db.session.add(nueva_venta)
-    db.session.flush()
-
-    for item in carrito:
-        producto = Producto.query.get(item.producto_id)
-
-        detalle = DetalleVenta(
-            venta_id=nueva_venta.id,
-            producto_id=item.producto_id,
-            cantidad=item.cantidad,
-            precio_unitario=item.precio,
-            costo_unitario=producto.costo_produccion
+    try:
+        nueva_venta = Venta(
+            folio=_siguiente_folio_venta(),
+            usuario_id=usuario_id,
+            estado = "Pagado"
         )
-
-        db.session.add(detalle)
-
-        if producto:
+        db.sesion.add(nueva_venta)
+        db.session.flush()
+        total_venta_sin_iva = Decimal("0.00")
+        for item in carrito : 
+            producto = Producto.query.get(item.producto_id)
+            if producto.stock_actual>item.cantidad:
+                flash("Stock insuficiente para producto", {producto.nombre})
+            
+            detalle = DetalleVenta(
+                venta_id=nueva_venta.id,
+                producto_id=item.producto_id,
+                cantidad = item.cantidad,
+                precio_unitario = item.precio,
+                costo_unitario = producto.costo_produccion
+            )
+            db.session.add(detalle)
             producto.stock_actual -= item.cantidad
+            total_venta_sin_iva += (item.precio*item.cantidad)
+        
+        iva = total_venta_sin_iva * IVA_TASA
+        total_con_iva = total_venta_sin_iva + iva
+        
+        movimiento_caja = MovimientoCaja(
+            tipo = "ENTRADA",
+            concepto = f"Venta -  Folio : {nueva_venta.folio}",
+            id_venta = nueva_venta.id,
+            creado_por=usuario_id,
+        )
+        db.session.add(movimiento_caja)
+        CarritoTemporal.query.filter_by(session_id=session_id).delete()
+        db.session.commit()
+        session["ultima_venta_id"]=nueva_venta.id
+        return redirect(url_for("ventas.ticket"))
+    except ValueError as ve:
+        db.session.rollback()
+        flash(str(ve), "warning")
+        return redirect(url_for("ventas.punto_venta"))
 
-    CarritoTemporal.query.filter_by(session_id=session_id).delete()
-    db.session.commit()
-
-    session["ultima_venta_id"] = nueva_venta.id
-    return redirect(url_for("ventas.ticket"))
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error crítico al procesar la venta: {str(e)}", "danger")
+        return redirect(url_for("ventas.punto_venta"))
 
 @ventas_bp.route("/cancelar", methods=["POST"])
 def cancelar_venta():

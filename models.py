@@ -217,6 +217,11 @@ class MovimientoCaja(db.Model):
         db.ForeignKey("ordenes_compra.id_orden", ondelete="SET NULL"),
         nullable=True
     )
+    id_venta = db.Column(
+        db.Integer,
+        db.ForeignKey("ventas.id", ondelete="SET NULL"),
+        nullable=True
+    )
     fecha      = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     creado_por = db.Column(db.Integer, db.ForeignKey("usuarios.id"), nullable=True)
     notas      = db.Column(db.Text, nullable=True)
