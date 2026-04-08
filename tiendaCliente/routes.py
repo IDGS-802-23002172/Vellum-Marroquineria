@@ -67,8 +67,49 @@ def mis_pedidos():
 # ─────────────────────────────────────────────
 @tienda_bp.route('/catalogo')
 def catalogo():
-    productos = Producto.query.paginate(page=1, per_page=12)
-    return render_template('tiendaCliente/catalogo.html', productos=productos)
+    page = request.args.get('page', 1, type=int)
+    search = request.args.get('search', '').strip()
+    linea = request.args.get('linea', '')
+    categoria = request.args.get('categoria', '')
+    solo_disponibles = request.args.get('solo_disponibles')
+
+    query = Producto.query
+
+    # 🔎 BÚSQUEDA (solo por nombre, NO SKU)
+    if search:
+        query = query.filter(Producto.nombre.ilike(f"%{search}%"))
+
+    # 📦 FILTRO POR LÍNEA
+    if linea:
+        query = query.filter(Producto.linea == linea)
+
+    # 🏷 FILTRO POR CATEGORÍA
+    if categoria:
+        query = query.filter(Producto.categoria == categoria)
+
+    # ✅ SOLO DISPONIBLES
+    if solo_disponibles:
+        query = query.filter(Producto.stock_actual > 0)
+
+    productos = query.order_by(Producto.nombre).paginate(
+        page=page,
+        per_page=12,
+        error_out=False
+    )
+
+    # 🔥 PARA LLENAR LOS SELECTS DINÁMICAMENTE
+    lineas = db.session.query(Producto.linea).distinct().all()
+    categorias = db.session.query(Producto.categoria).distinct().all()
+
+    return render_template(
+        'tiendaCliente/catalogo.html',
+        productos=productos,
+        búsqueda=search,
+        líneas=[l[0] for l in lineas if l[0]],
+        categorías=[c[0] for c in categorias if c[0]],
+        línea_actual=linea,
+        categoría_actual=categoria
+    )
 
 # ─────────────────────────────────────────────
 # DETALLE
