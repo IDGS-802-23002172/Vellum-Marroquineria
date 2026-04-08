@@ -52,7 +52,7 @@
       <tbody>
       {% for m in materias %}
         {# Lógica de stock según tipo de control: Piel es por piezas, Químicos/Hilos es acumulable #}
-        {% if m.tipo_control == 'piel' %}
+        {% if m.tipo_control == 'piel' or m.tipo_control == 'textil' %}
           {% set stock_val = m.piezas | selectattr('disponible') | list | length %}
         {% else %}
           {% set stock_val = m.stock.cantidad_actual if m.stock else 0 %}
@@ -79,7 +79,7 @@
 
           <td>
             <span class="tag-material" style="
-                {% if m.tipo_control == 'piel' %}background:#ede9fe; color:#5b21b6;
+                {% if m.tipo_control == 'piel' or m.tipo_control == 'textil' %}background:#ede9fe; color:#5b21b6;
                 {% elif m.tipo_control == 'quimico' %}background:#e0f2fe; color:#075985;
                 {% else %}background:#fef3c7; color:#92400e;{% endif %}">
               {{ m.tipo_control | capitalize }}
@@ -92,8 +92,7 @@
                 {{ stock_val }}
               </strong>
               <span style="font-size:.78rem; color:var(--v-mid);">
-                {{ 'pz' if m.tipo_control == 'piel' else m.unidad.abreviatura }}
-              </span>
+                {{ 'pz' if m.tipo_control in ['piel', 'textil'] else m.unidad.abreviatura }}              </span>
             {% else %}
               <span style="color:var(--v-mid);">—</span>
             {% endif %}
@@ -106,8 +105,7 @@
                 {{ m.stock.punto_reorden }}
               </span>
               <span style="font-size:.75rem; color:var(--v-mid);">
-                {{ 'pz' if m.tipo_control == 'piel' else m.unidad.abreviatura }}
-              </span>
+                {{ 'pz' if m.tipo_control in ['piel', 'textil'] else m.unidad.abreviatura }}              </span>
             {% else %}—{% endif %}
           </td>
 

@@ -260,7 +260,7 @@ def agregar_linea(id):
         db.session.add(linea)
 
         # Recalcular totales de la orden (sin IVA aún; se aplica al confirmar)
-        subtotal = sum(d.subtotal for d in orden.detalles) + subtotal_linea
+        subtotal = sum(d.subtotal for d in orden.detalles)
         orden.subtotal = subtotal
         orden.iva      = subtotal * Decimal("0.16")
         orden.total    = orden.subtotal + orden.iva
@@ -363,7 +363,7 @@ def confirmar(id):
             db.session.flush() # Para obtener mov.id_movimiento
             
             linea.id_movimiento = mov.id_movimiento
-            if materia.tipo_control == 'piel':
+            if materia.tipo_control == 'piel' or materia.tipo_control == 'textil':
                 # LA CORRECCIÓN: 
                 # La cantidad (ej. 23.5) es el ÁREA de esa pieza específica.
                 # Se crea UNA sola pieza con esa área.

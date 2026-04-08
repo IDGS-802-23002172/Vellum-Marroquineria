@@ -67,7 +67,9 @@
           {% for e in form.tipo.errors %}
             <div class="field-error"><i class="bi bi-exclamation-circle"></i> {{ e }}</div>
           {% endfor %}
+          
         </div>
+        
 
       </div>
 
@@ -86,10 +88,52 @@
   </div>
 
 </form>
+<div class="col-12">
+  <div style="
+    margin-top:10px;
+    padding:12px 14px;
+    background:var(--v-paper);
+    border:1px solid var(--v-border);
+    border-radius:2px;
+    font-size:.78rem;
+    color:var(--v-mid);
+    line-height:1.6;
+  ">
+    <i class="bi bi-info-circle me-1" style="color:var(--v-tan);"></i>
+    <strong>Guía de uso:</strong><br>
+
+    <div style="margin-top:6px; display:grid; grid-template-columns:auto 1fr; gap:4px 10px;">
+      <span style="font-family:monospace; font-weight:700; color:var(--v-tan);">dm²</span>
+      <span>Piel y cuero (por área de pieza)</span>
+
+      <span style="font-family:monospace; font-weight:700; color:var(--v-tan);">m</span>
+      <span>Hilos, cordones y textiles</span>
+
+      <span style="font-family:monospace; font-weight:700; color:var(--v-tan);">m²</span>
+      <span>Textiles por superficie (opcional)</span>
+
+      <span style="font-family:monospace; font-weight:700; color:var(--v-tan);">L</span>
+      <span>Químicos líquidos</span>
+
+      <span style="font-family:monospace; font-weight:700; color:var(--v-tan);">kg</span>
+      <span>Químicos sólidos</span>
+
+      <span style="font-family:monospace; font-weight:700; color:var(--v-tan);">pz</span>
+      <span>Herrajes y piezas (acumulables)</span>
+    </div>
+
+    <div style="margin-top:8px; font-size:.72rem;">
+      <i class="bi bi-lightbulb"></i>
+      La unidad debe coincidir con el tipo de material para evitar errores en inventario.
+    </div>
+  </div>
 </div>
 </div>
 
+</div>
+
 {% block extra_head %}
+
 <style>
   .field-error {
     font-size: .78rem; color: var(--v-danger);
