@@ -43,12 +43,13 @@ def crear_orden():
             for id_materia, consumo_total in consumos_agrupados.items():
                 material = MateriaPrima.query.get(id_materia)
                 
-                if material.tipo_control == "pieza":
-                    area_total_disponible = db.session.query(db.func.sum(PiezaMateriaPrima.area).filter_by(
-                        id_materia=id_materia, disponible=True)).scalar() or 0
+                if material.tipo_control.lower() in ['piel', 'textil', 'pieza']:
+                    area_total_disponible = db.session.query(db.func.sum(PiezaMateriaPrima.area)).filter_by(
+                        id_materia=id_materia, disponible=True
+                    ).scalar() or 0
                     
                     if float(area_total_disponible)<float(consumo_total):
-                        flash("Area insuficiente para crear {material.nombre}", "danger")
+                        flash(f"Area insuficiente para crear {material.nombre}", "danger")
                         return render_template("produccion/crear.html", form=form)
                 else:
                     if not material or not material.stock or material.stock.cantidad_actual < consumo_total:
@@ -60,7 +61,7 @@ def crear_orden():
             for id_materia, consumo_total in consumos_agrupados.items():
                 material = MateriaPrima.query.get(id_materia)
                 
-                if material.tipo_control == "pieza":
+                if material.tipo_control.lower() in ['piel', 'textil', 'pieza']:
                     resta = Decimal(str(consumo_total))
                     piezas = PiezaMateriaPrima.query.filter_by(id_materia=id_materia, disponible=True).order_by(PiezaMateriaPrima.area.asc()).all()
                     for p in piezas:
@@ -68,15 +69,18 @@ def crear_orden():
                             break
                         if p.area <= resta:
                             resta -= p.area
+                            p.area = 0
                             p.disponible = False
                         else:
                             p.area -= resta
                             resta = 0
-                            p.disponible = False
-                    material.stock.cantidad_actual = PiezaMateriaPrima.query.filter_by(id_materia=id_materia, disponible=True).count()
+                    
+                    area_restante = db.session.query(db.func.sum(PiezaMateriaPrima.area)).filter_by(
+                        id_materia=id_materia, disponible=True
+                    ).scalar() or 0                
+                    material.stock.cantidad_actual = area_restante
                 else:
                     material.stock.cantidad_actual -= Decimal(str(consumo_total))
-
 
             # 4. Registro de la Orden
             nueva_orden = OrdenProduccion(
@@ -113,17 +117,18 @@ def cancelar_orden(id):
             if material and material.stock:
                 cantidad_a_devolver = item.area_reticula_corte_dm2 * orden.cantidad
                 
-                if material.tipo_control == 'pieza':
-                    # Si cancelamos corte de cuero, generamos un nuevo pedazo (retal) en el inventario
+                if material.tipo_control.lower() in ['piel', 'textil', 'pieza']:
                     nuevo_retal = PiezaMateriaPrima(
                         id_materia=material.id_materia,
                         area=cantidad_a_devolver,
                         disponible=True
                     )
                     db.session.add(nuevo_retal)
-                    # Forzamos flush para que cuente el nuevo retal
                     db.session.flush()
-                    material.stock.cantidad_actual = PiezaMateriaPrima.query.filter_by(id_materia=material.id_materia, disponible=True).count()
+                    area_restante = db.session.query(db.func.sum(PiezaMateriaPrima.area)).filter_by(
+                        id_materia=material.id_materia, disponible=True
+                    ).scalar() or 0
+                    material.stock.cantidad_actual = area_restante
                 else:
                     material.stock.cantidad_actual += cantidad_a_devolver
 
