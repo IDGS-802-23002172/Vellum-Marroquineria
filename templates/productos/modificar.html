@@ -1,42 +1,103 @@
 {% extends "base.html" %}
 {% import "_macros.html" as macros %}
 
-{% block content %}
-<div class="max-w-2xl mx-auto bg-white p-8 rounded-2xl shadow-sm border">
-    <div class="mb-6">
-        <h2 class="text-2xl font-bold">Editar Producto</h2>
-        <p class="text-sm text-gray-500 italic">Modificando: {{ form.nombre.data }}</p>
-    </div>
-    
-    <form method="POST" enctype="multipart/form-data" novalidate>
-        {{ form.csrf_token }}
-        {{ form.id }}
-        
-        {{ macros.nuevoMacro(form.nombre) }}
-        
-        <div class="grid grid-cols-2 gap-4">
-            {{ macros.nuevoMacro(form.linea) }}
-            {{ macros.nuevoMacro(form.categoria) }}
-        </div>
-        
-        {{ macros.nuevoMacro(form.precio) }}
-        
-        <div class="mt-4 p-4 bg-gray-50 border rounded-lg flex items-center gap-4">
-            <div class="w-20 h-20 bg-gray-200 rounded overflow-hidden">
-                <img src="{{ url_for('static', filename='img/productos/' + form.imagen.data) if form.imagen.data else '' }}" class="w-full h-full object-cover">
-            </div>
-            <div class="flex-1">
-                {{ macros.nuevoMacro(form.imagen) }}
-                <p class="text-xs text-gray-400">Sube una nueva imagen solo si deseas reemplazar la actual.</p>
-            </div>
-        </div>
+{% block title %}Editar Producto{% endblock %}
+{% block page_title %}Catálogo de Colección — Vellum León{% endblock %}
 
-        <div class="flex gap-4 mt-8">
-            <button type="submit" class="flex-1 bg-black text-white py-3 rounded-lg font-bold hover:bg-gray-800 transition">
-                Actualizar Producto
-            </button>
-            <a href="{{ url_for('listar_productos') }}" class="px-6 py-3 border rounded-lg text-gray-600 hover:bg-gray-50">Regresar</a>
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+
+            <div class="text-center mb-5">
+                <span class="text-uppercase tracking-widest text-muted small">Catálogo de Colección</span>
+                <h2 class="text-premium mt-2">Editar Producto</h2>
+                <div class="mx-auto bg-black" style="width: 50px; height: 2px;"></div>
+                <p class="text-muted small mt-3 fst-italic">Modificando ficha técnica de: <strong>{{ form.nombre.data }}</strong></p>
+            </div>
+
+            <div class="card border-0 shadow-sm p-4 p-md-5" style="border-radius: 0; border: 1px solid #eee !important;">
+                <form method="POST" enctype="multipart/form-data" novalidate>
+                    {{ form.csrf_token }}
+                    
+                    {% if form.id %} {{ form.id }} {% endif %}
+
+                    <div class="mb-4">
+                        {{ macros.nuevoMacro(form.nombre) }}
+                    </div>
+
+                    <div class="row g-4 mb-4">
+                        <div class="col-md-6">
+                            {{ macros.nuevoMacro(form.linea) }}
+                        </div>
+                        <div class="col-md-6">
+                            {{ macros.nuevoMacro(form.categoria) }}
+                        </div>
+                    </div>
+
+                    <div class="row g-4 mb-4">
+                        <div class="col-md-6">
+                            {{ macros.nuevoMacro(form.precio) }}
+                        </div>
+                        <div class="col-md-6">
+                            {% if form.area_plantilla %}
+                                {{ macros.nuevoMacro(form.area_plantilla) }} 
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="p-4 mb-5 bg-light border-start border-dark border-4 d-flex align-items-center gap-4" style="border: 1px dashed #ccc !important;">
+                        
+                        <div class="bg-white border p-1" style="width: 100px; height: 100px; border-radius: 0; flex-shrink: 0;">
+                            {% if form.imagen.data and form.imagen.data != 'None' %}
+                                <img src="{{ url_for('static', filename='img/productos/' + form.imagen.data) }}" class="w-100 h-100 object-fit-cover">
+                            {% else %}
+                                <div class="w-100 h-100 d-flex align-items-center justify-content-center text-muted" style="background-color: #f1f0ee;">
+                                    <i class="bi bi-image" style="font-size: 2rem;"></i>
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="flex-grow-1">
+                            <label class="form-label text-uppercase small fw-bold tracking-wider mb-2">
+                                Actualizar Fotografía
+                            </label>
+                            {{ macros.nuevoMacro(form.imagen) }}
+                            <p class="text-muted small mt-2 mb-0" style="font-size: 0.75rem;">Sube una nueva imagen solo si deseas reemplazar la actual.</p>
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-3 d-md-flex justify-content-md-end mt-4">
+                        <a href="{{ url_for('productos.listar_productos') }}" 
+                           class="btn btn-outline-dark text-uppercase tracking-widest small py-3 px-4" 
+                           style="border-radius: 0;">
+                            Regresar
+                        </a>
+                        <button type="submit" class="btn-vellum px-5">
+                            <i class="bi bi-arrow-clockwise me-2"></i> Actualizar Producto
+                        </button>
+                    </div>
+                </form>
+            </div>
+            
         </div>
-    </form>
+    </div>
 </div>
+
+<style>
+    .text-premium { font-family: 'Playfair Display', serif; }
+    .tracking-wider  { letter-spacing: 0.1em; }
+    .tracking-widest { letter-spacing: 0.2em; }
+    
+    .btn-vellum {
+        background: #000; color: #fff; border: none; border-radius: 0;
+        padding: 15px; text-transform: uppercase; letter-spacing: 2px;
+        font-size: 0.8rem; transition: background .3s, transform .2s;
+    }
+    .btn-vellum:hover { 
+        background: #333; 
+        transform: translateY(-2px); 
+        color: #fff; 
+    }
+</style>
 {% endblock %}

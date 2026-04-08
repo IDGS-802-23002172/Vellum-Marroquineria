@@ -1,39 +1,90 @@
 {% extends "base.html" %}
 {% import "_macros.html" as macros %}
 
+{% block title %}Registrar Producto{% endblock %}
+{% block page_title %}Catálogo de Colección — Vellum León{% endblock %}
+
 {% block content %}
-<div class="max-w-2xl mx-auto bg-white p-8 rounded-2xl shadow-sm border">
-    <h2 class="text-2xl font-bold mb-2">Registrar Producto Terminado</h2>
-    <p class="text-sm text-gray-500 mb-6">El stock inicial se establecerá en 0 y aumentará mediante órdenes de producción.</p>
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
 
-    <form method="POST" enctype="multipart/form-data" novalidate>
-        {{ form.csrf_token }}
+            <div class="text-center mb-5">
+                <span class="text-uppercase tracking-widest text-muted small">Catálogo de Colección</span>
+                <h2 class="text-premium mt-2">Registrar Producto Terminado</h2>
+                <div class="mx-auto bg-black" style="width: 50px; height: 2px;"></div>
+                <p class="text-muted small mt-3">El stock inicial se establecerá en 0 y aumentará mediante las órdenes de producción del taller.</p>
+            </div>
 
-        {{ macros.nuevoMacro(form.nombre) }}
-        {{ macros.nuevoMacro(form.sku) }}
+            <div class="card border-0 shadow-sm p-4 p-md-5" style="border-radius: 0; border: 1px solid #eee !important;">
+                <form method="POST" enctype="multipart/form-data" novalidate>
+                    {{ form.csrf_token }}
 
-        <div class="grid grid-cols-2 gap-4">
-            {{ macros.nuevoMacro(form.linea) }}
-            {{ macros.nuevoMacro(form.categoria) }}
+                    <div class="mb-4">
+                        {{ macros.nuevoMacro(form.nombre) }}
+                    </div>
+                    
+                    <div class="mb-4">
+                        {{ macros.nuevoMacro(form.sku) }}
+                    </div>
+
+                    <div class="row g-4 mb-4">
+                        <div class="col-md-6">
+                            {{ macros.nuevoMacro(form.linea) }}
+                        </div>
+                        <div class="col-md-6">
+                            {{ macros.nuevoMacro(form.categoria) }}
+                        </div>
+                    </div>
+
+                    <div class="row g-4 mb-4">
+                        <div class="col-md-6">
+                            {{ macros.nuevoMacro(form.precio) }}
+                        </div>
+                        <div class="col-md-6">
+                            {{ macros.nuevoMacro(form.area_plantilla) }} 
+                        </div>
+                    </div>
+
+                    <div class="p-4 mb-5 bg-light border-start border-dark border-4" style="border: 1px dashed #ccc !important;">
+                        <label class="form-label text-uppercase small fw-bold tracking-wider mb-3">
+                            <i class="bi bi-camera me-2"></i>Fotografía del Producto
+                        </label>
+                        {{ macros.nuevoMacro(form.imagen) }}
+                        <p class="text-muted small mt-2 mb-0" style="font-size: 0.75rem;">Formatos permitidos: JPG, PNG (Recomendado: Fondo blanco)</p>
+                    </div>
+
+                    <div class="d-grid gap-3 d-md-flex justify-content-md-end mt-4">
+                        <a href="{{ url_for('productos.listar_productos') }}" 
+                           class="btn btn-outline-dark text-uppercase tracking-widest small py-3 px-4" 
+                           style="border-radius: 0;">
+                            Cancelar
+                        </a>
+                        <button type="submit" class="btn-vellum px-5">
+                            <i class="bi bi-floppy me-2"></i> Guardar en Catálogo
+                        </button>
+                    </div>
+                </form>
+            </div>
+            
         </div>
-
-        <div class="grid grid-cols-2 gap-4">
-            {{ macros.nuevoMacro(form.precio) }}
-            {{ macros.nuevoMacro(form.area_plantilla) }} 
-        </div>
-
-        <div class="mt-4 p-4 bg-gray-50 border-2 border-dashed rounded-lg">
-            {{ macros.nuevoMacro(form.imagen) }}
-            <p class="text-xs text-gray-500 mt-1">Formatos permitidos: JPG, PNG</p>
-        </div>
-
-        <div class="flex gap-4 mt-8">
-            <button type="submit" class="flex-1 bg-black text-white py-3 rounded-lg font-bold hover:bg-gray-800 transition-colors">
-                Guardar en Inventario
-            </button>
-            <a href="{{ url_for('productos.listar_productos') }}"
-                class="px-6 py-3 border rounded-lg text-gray-600 hover:bg-gray-50 transition-colors">Cancelar</a>
-        </div>
-    </form>
+    </div>
 </div>
+
+<style>
+    .text-premium { font-family: 'Playfair Display', serif; }
+    .tracking-wider  { letter-spacing: 0.1em; }
+    .tracking-widest { letter-spacing: 0.2em; }
+    
+    .btn-vellum {
+        background: #000; color: #fff; border: none; border-radius: 0;
+        padding: 15px; text-transform: uppercase; letter-spacing: 2px;
+        font-size: 0.8rem; transition: background .3s, transform .2s;
+    }
+    .btn-vellum:hover { 
+        background: #333; 
+        transform: translateY(-2px); 
+        color: #fff; 
+    }
+</style>
 {% endblock %}
