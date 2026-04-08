@@ -309,7 +309,7 @@ def eliminar(id):
             db.session.delete(materia.stock)
         
         # Si es tipo piel, borrar las referencias de piezas (si no tienen movimientos)
-        if materia.tipo_control == 'piel':
+        if materia.tipo_control == 'piel' or materia.tipo_control == 'textil':
             for pieza in materia.piezas:
                 db.session.delete(pieza)
 
@@ -343,7 +343,7 @@ def movimiento(id_materia):
             db.session.flush()
 
         try:
-            if materia.tipo_control == "piel":
+            if materia.tipo_control == "piel" or materia.tipo_control == "textil":
                 mov = MovimientoMateriaPrima(
                     id_materia=id_materia,
                     tipo="AJUSTE",

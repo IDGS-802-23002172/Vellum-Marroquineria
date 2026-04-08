@@ -35,7 +35,8 @@ class ProductoForm(FlaskForm):
 class UnidadMedidaForm(FlaskForm):
     nombre = StringField("Nombre", validators=[DataRequired(), Length(max=50)])
     abreviatura = StringField("Abreviatura", validators=[DataRequired(), Length(max=10)])
-    tipo = SelectField("Tipo de Unidad",choices=[("piel", "Piel y cuero"),("quimico", "Quimicos y tintes"),("hilo", "Hilo y cordon")],validators=[DataRequired()])
+    tipo = SelectField("Tipo de Unidad",choices=[("piel", "Piel y cuero"), ("quimico", "Quimicos y tintes"),("hilo", "Hilo y cordon"), ("herraje", "Herrajes"), ("textil", "Textiles / Forros"), ("accesorio", "Accesorios / Componentes"),
+],validators=[DataRequired()])
     
 class MateriaPrimaForm(FlaskForm):
     nombre = StringField("Nombre", validators=[DataRequired(), Length(max=150)])
@@ -43,7 +44,7 @@ class MateriaPrimaForm(FlaskForm):
     id_unidad = SelectField("Unidad de Medida", coerce=int, validators=[DataRequired()])
     tipo_control = SelectField(
         "Control de existencia",
-        choices=[("piel", "Piel y cuero"),("quimico", "Quimicos y tintes"),("hilo", "Hilo y cordon")],
+        choices=[("piel", "Piel y cuero"), ("quimico", "Quimicos y tintes"),("hilo", "Hilo y cordon"), ("herraje", "Herrajes"), ("textil", "Textiles / Forros"), ("accesorio", "Accesorios / Componentes"),],
         validators=[DataRequired()]
     )
     

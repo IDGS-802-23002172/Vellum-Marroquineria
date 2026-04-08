@@ -10,7 +10,7 @@
 {% block content %}
 
 {# ── Lógica de Stock unificada ── #}
-{% if materia.tipo_control == 'piel' %}
+{% if materia.tipo_control == 'piel' or materia.tipo_control == 'textil'%}
   {% set stock_val = materia.piezas | selectattr('disponible') | list | length %}
   {% set stock_label = 'pieza' + ('s' if stock_val != 1 else '') %}
 {% else %}
@@ -126,7 +126,7 @@
         </div>
 
         {# Inventario de cueros (Solo PIEL) #}
-        {% if materia.tipo_control == 'piel' %}
+        {% if materia.tipo_control == 'piel' or materia.tipo_control == 'textil' %}
         <div class="detail-row detail-row-full">
           <div class="detail-label">Inventario de hojas / piezas</div>
           <div class="detail-value">

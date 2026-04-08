@@ -363,7 +363,7 @@ def confirmar(id):
             db.session.flush() # Para obtener mov.id_movimiento
             
             linea.id_movimiento = mov.id_movimiento
-            if materia.tipo_control == 'piel':
+            if materia.tipo_control == 'piel' or materia.tipo_control == 'textil':
                 # LA CORRECCIÓN: 
                 # La cantidad (ej. 23.5) es el ÁREA de esa pieza específica.
                 # Se crea UNA sola pieza con esa área.

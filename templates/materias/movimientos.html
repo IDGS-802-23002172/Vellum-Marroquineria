@@ -80,6 +80,9 @@
                 placeholder="0.00",
                 step="0.01"
             ) }}
+            {% for e in form.cantidad.errors %}
+              <div class="invalid-feedback d-block">{{ e }}</div>
+            {% endfor %}
             <span style="padding:9px 14px; background:var(--v-paper); border-left:1px solid var(--v-border); font-size:.85rem;">
               {{ materia.unidad.abreviatura }}
             </span>
@@ -96,6 +99,9 @@
         <div style="margin-bottom:28px;">
           <label class="form-label">Motivo del ajuste <span style="color:#dc2626;">*</span></label>
           {{ form.referencia(class="form-control", placeholder="Ej: Error de conteo, material dañado...") }}
+          {% for e in form.referencia.errors %}
+            <div class="invalid-feedback d-block">{{ e }}</div>
+          {% endfor %}
         </div>
 
         <div class="d-flex gap-3">
