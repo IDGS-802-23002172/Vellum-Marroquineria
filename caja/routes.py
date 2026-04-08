@@ -260,7 +260,7 @@ def agregar_linea(id):
         db.session.add(linea)
 
         # Recalcular totales de la orden (sin IVA aún; se aplica al confirmar)
-        subtotal = sum(d.subtotal for d in orden.detalles) + subtotal_linea
+        subtotal = sum(d.subtotal for d in orden.detalles)
         orden.subtotal = subtotal
         orden.iva      = subtotal * Decimal("0.16")
         orden.total    = orden.subtotal + orden.iva
