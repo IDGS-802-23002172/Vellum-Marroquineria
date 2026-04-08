@@ -6,113 +6,207 @@
 <div class="container py-5">
     <div class="row justify-content-center">
         <div class="col-lg-6">
+
+            <!-- Encabezado -->
             <div class="text-center mb-5">
                 <span class="text-uppercase tracking-widest text-muted small">Módulo de Transformación</span>
                 <h2 class="text-premium mt-2">Configurar Receta Técnica</h2>
                 <div class="mx-auto bg-black" style="width: 50px; height: 2px;"></div>
             </div>
 
+            <!-- Insumos ya registrados para este producto -->
+            {% if insumos %}
+            <div class="mb-4">
+                <p class="text-uppercase small fw-bold tracking-wider mb-2">Materiales Registrados</p>
+                <ul class="list-group" style="border-radius: 0;">
+                    {% for ins in insumos %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-3 py-2" style="border-radius: 0;">
+                        <div>
+                            <span class="fw-bold small">{{ ins.materia.nombre }}</span>
+                            <span class="text-muted small ms-2">({{ ins.materia.unidad.abreviatura }})</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-3">
+                            <span class="font-monospace small text-muted">{{ ins.area_reticula_corte_dm2 }}</span>
+                            <form method="POST" action="{{ url_for('recetas.eliminar_receta', id=ins.id_receta) }}" class="m-0">
+                                <button type="submit" class="btn btn-sm btn-link text-danger p-0" title="Eliminar">
+                                    <i class="bi bi-x-lg"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            <!-- Formulario principal -->
             <div class="card border-0 shadow-sm p-4 p-md-5" style="border-radius: 0; border: 1px solid #eee !important;">
                 <form method="POST">
                     {{ form.hidden_tag() }}
 
+                    <!-- Producto -->
                     <div class="mb-4">
                         <label class="form-label text-uppercase small fw-bold tracking-wider">Producto a Fabricar</label>
                         {{ form.id_producto(class="form-select", id="select-producto", style="border-radius: 0;") }}
                     </div>
 
+                    <!-- Separador sección piel -->
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <span class="text-uppercase small text-muted tracking-widest" style="white-space:nowrap;">Insumo de Piel</span>
+                        <div class="flex-grow-1 bg-black" style="height:1px; opacity:.15;"></div>
+                    </div>
+
+                    <!-- Materia prima (piel) -->
                     <div class="mb-4">
                         <label class="form-label text-uppercase small fw-bold tracking-wider">Insumo (Materia Prima)</label>
                         {{ form.id_materia(class="form-select", style="border-radius: 0;") }}
                     </div>
 
+                    <!-- Áreas -->
                     <div class="row g-3">
                         <div class="col-md-6 mb-4">
                             <label class="form-label text-uppercase small fw-bold tracking-wider">Área Plantilla (dm²)</label>
-                            <input type="number" step="0.01" class="form-control" id="input-plantilla" 
-                                   value="{{ form.area_plantilla.data if form.area_plantilla else '0.00' }}" 
+                            <input type="number" step="0.01" class="form-control" id="input-plantilla"
+                                   value="{{ form.area_plantilla.data if form.area_plantilla else '0.00' }}"
                                    readonly style="border-radius: 0; background-color: #f9f9f9;">
                         </div>
-
                         <div class="col-md-6 mb-4">
                             <label class="form-label text-uppercase small fw-bold tracking-wider">Retícula / Consumo (dm²)</label>
                             {{ form.area_reticula(class="form-control", id="input-reticula", placeholder="Ej. 0.85", style="border-radius: 0;") }}
                         </div>
                     </div>
 
-                    <div class="p-3 mb-4 bg-light border-start border-dark border-4">
+                    <!-- Visor merma -->
+                    <div class="p-3 mb-5 bg-light border-start border-dark border-4">
                         <div class="d-flex justify-content-between align-items-center">
                             <span class="text-uppercase small fw-bold">Estimación de Merma:</span>
                             <span id="visor-merma" class="font-monospace fw-bold text-danger">0.00 dm²</span>
                         </div>
                     </div>
 
+                    <!-- ────────────────────────────────────────── -->
+                    <!-- Otros Insumos (forros, herrajes, hilos…)  -->
+                    <!-- ────────────────────────────────────────── -->
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <span class="text-uppercase small text-muted tracking-widest" style="white-space:nowrap;">Otros Insumos</span>
+                        <div class="flex-grow-1 bg-black" style="height:1px; opacity:.15;"></div>
+                    </div>
+
+                    <div id="contenedor-insumos" class="mb-3">
+                        <!-- Filas dinámicas se insertan aquí -->
+                    </div>
+
+                    <button type="button" id="btn-agregar-insumo"
+                            class="btn btn-outline-secondary w-100 mb-4 d-flex align-items-center justify-content-center gap-2"
+                            style="border-radius:0; border-style:dashed; font-size:.8rem; letter-spacing:.1em; text-transform:uppercase; padding:12px;">
+                        <i class="bi bi-plus-circle"></i> Añadir Otro Insumo
+                    </button>
+
+                    <!-- Botones -->
                     <div class="d-grid gap-2">
                         <button type="submit" class="btn-vellum">
-                            <i class="bi bi-plus-circle me-2"></i> Guardar y Añadir Otro Material
+                            <i class="bi bi-floppy me-2"></i> Guardar Materiales
                         </button>
-                        <a href="{{ url_for('recetas.listar_recetas') }}" class="btn btn-dark text-uppercase tracking-widest small py-3" style="border-radius: 0;">
+                        <a href="{{ url_for('recetas.listar_recetas') }}"
+                           class="btn btn-dark text-uppercase tracking-widest small py-3"
+                           style="border-radius: 0;">
                             Finalizar y Ver Listado
                         </a>
                     </div>
+
                 </form>
-            </div>
+            </div><!-- /card -->
         </div>
     </div>
 </div>
 
-<script>
-    const inputPlantilla = document.getElementById('input-plantilla');
-    const inputReticula = document.getElementById('input-reticula');
-    const visorMerma = document.getElementById('visor-merma');
-    const selectProducto = document.getElementById('select-producto');
+<!-- ═══════════════════════════════════════════
+     Template invisible para clonar filas extra
+     ═══════════════════════════════════════════ -->
+<template id="tpl-fila-insumo">
+    <div class="fila-insumo row g-2 align-items-center mb-2">
+        <div class="col-6">
+            <select name="extra_materia[]" class="form-select form-select-sm" style="border-radius:0;" required>
+                <option value="">— Insumo —</option>
+                {% for m in materiales %}
+                <option value="{{ m.id_materia }}">{{ m.nombre }} ({{ m.unidad.abreviatura }})</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-4">
+            <input type="number" name="extra_cantidad[]" step="0.001" min="0.001"
+                   class="form-control form-control-sm"
+                   placeholder="Cantidad" style="border-radius:0;" required>
+        </div>
+        <div class="col-2 text-end">
+            <button type="button" class="btn btn-sm btn-outline-danger btn-quitar"
+                    style="border-radius:0; width:100%;" title="Quitar fila">
+                <i class="bi bi-trash"></i>
+            </button>
+        </div>
+    </div>
+</template>
 
-    // Función para calcular la merma en tiempo real
+<!-- ═══════
+     Scripts
+     ═══════ -->
+<script>
+    /* ── Referencias DOM ── */
+    const inputPlantilla  = document.getElementById('input-plantilla');
+    const inputReticula   = document.getElementById('input-reticula');
+    const visorMerma      = document.getElementById('visor-merma');
+    const selectProducto  = document.getElementById('select-producto');
+    const btnAgregar      = document.getElementById('btn-agregar-insumo');
+    const contenedor      = document.getElementById('contenedor-insumos');
+    const template        = document.getElementById('tpl-fila-insumo');
+
+    /* ── Cálculo de merma (piel) ── */
     function calcularMerma() {
         const p = parseFloat(inputPlantilla.value) || 0;
-        const r = parseFloat(inputReticula.value) || 0;
+        const r = parseFloat(inputReticula.value)  || 0;
         const merma = r - p;
-        
+
         if (merma >= 0) {
             visorMerma.innerText = merma.toFixed(2) + ' dm²';
-            visorMerma.classList.remove('text-warning');
-            visorMerma.classList.add('text-danger');
+            visorMerma.classList.replace('text-warning', 'text-danger');
         } else {
-            // Caso donde la retícula es menor a la plantilla (Error de ingeniería)
             visorMerma.innerText = '0.00 dm²';
-            visorMerma.classList.remove('text-danger');
-            visorMerma.classList.add('text-warning');
+            visorMerma.classList.replace('text-danger', 'text-warning');
         }
     }
 
-    // Automatización: Obtener área base desde la API de Productos
-    selectProducto.addEventListener('change', function() {
+    /* ── API: traer área plantilla al cambiar producto ── */
+    selectProducto.addEventListener('change', function () {
         const productoId = this.value;
-        if (productoId) {
-            // Se asume el prefijo /productos definido en el registro del Blueprint
-            fetch(`/api/get_area/${productoId}`)
-                .then(response => {
-                    if (!response.ok) throw new Error("Error al conectar con la API");
-                    return response.json();
-                })
-                .then(data => {
-                    inputPlantilla.value = data.area;
-                    calcularMerma();
-                })
-                .catch(err => {
-                    console.error("Detalle del error:", err);
-                    inputPlantilla.value = "0.00";
-                });
-        }
+        if (!productoId) return;
+
+        fetch(`/api/get_area/${productoId}`)
+            .then(r => { if (!r.ok) throw new Error(); return r.json(); })
+            .then(data => {
+                inputPlantilla.value = data.area;
+                calcularMerma();
+            })
+            .catch(() => { inputPlantilla.value = '0.00'; });
     });
 
-    // LISTENER para el cálculo manual cuando el usuario escribe la retícula
     inputReticula.addEventListener('input', calcularMerma);
 
-    // AUTO-EJECUCIÓN AL CARGAR: 
-    // Si el select ya tiene un producto (ej. modo carga continua), 
-    // forzamos la petición del área de inmediato.
-    window.addEventListener('DOMContentLoaded', (event) => {
+    /* ── Añadir fila de insumo extra ── */
+    btnAgregar.addEventListener('click', () => {
+        const fila = template.content.cloneNode(true);
+        contenedor.appendChild(fila);
+        // Enfoca el select recién creado
+        contenedor.lastElementChild.querySelector('select').focus();
+    });
+
+    /* ── Quitar fila (delegación) ── */
+    contenedor.addEventListener('click', e => {
+        const btn = e.target.closest('.btn-quitar');
+        if (btn) btn.closest('.fila-insumo').remove();
+    });
+
+    /* ── Al cargar: disparar cambio si ya hay producto seleccionado ── */
+    window.addEventListener('DOMContentLoaded', () => {
         if (selectProducto.value) {
             selectProducto.dispatchEvent(new Event('change'));
         }
@@ -120,13 +214,25 @@
 </script>
 
 <style>
-    .text-premium { font-family: 'Playfair Display', serif; }
+    .text-premium   { font-family: 'Playfair Display', serif; }
+    .tracking-wider  { letter-spacing: 0.1em; }
+    .tracking-widest { letter-spacing: 0.2em; }
+
     .btn-vellum {
         background: #000; color: #fff; border: none; border-radius: 0;
         padding: 15px; text-transform: uppercase; letter-spacing: 2px;
-        font-size: 0.8rem; transition: 0.3s;
+        font-size: 0.8rem; transition: background .3s, transform .2s;
+        width: 100%;
     }
     .btn-vellum:hover { background: #333; transform: translateY(-2px); }
-    .tracking-widest { letter-spacing: 0.2em; }
+
+    /* Animación de entrada para filas nuevas */
+    .fila-insumo {
+        animation: slideIn .2s ease;
+    }
+    @keyframes slideIn {
+        from { opacity: 0; transform: translateY(-6px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
 </style>
 {% endblock %}
