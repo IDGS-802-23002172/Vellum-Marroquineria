@@ -5,32 +5,51 @@
 {% block content %}
 <div class="container py-5">
     <div class="mb-5 border-bottom pb-4">
-        <h2 class="text-premium text-uppercase" style="letter-spacing: -1px;">Rastreo de <span class="text-muted">Pedidos</span></h2>
-        <p class="text-uppercase tracking-widest text-muted small">Consulta el estatus de tus piezas exclusivas</p>
+        <h2 class="text-premium text-uppercase" style="letter-spacing: -1px;">
+            Rastreo de <span class="text-muted">Pedidos</span>
+        </h2>
+        <p class="text-uppercase tracking-widest text-muted small">
+            Consulta el estatus de tus piezas exclusivas
+        </p>
     </div>
 
-    {% for pedido in pedidos %}
+    {% for p in pedidos %}
+    {% set pedido = p.pedido %}
+    {% set detalles = p.detalles %}
+    {% set ordenes = p.ordenes %}
+
     <div class="card mb-5 border-0 shadow-sm" style="border-radius: 0; border-left: 4px solid #000 !important;">
         <div class="card-body p-4">
             <div class="row align-items-center">
+
+                <!-- INFO PEDIDO -->
                 <div class="col-md-3">
-                    <span class="text-muted small text-uppercase tracking-wider">Folio de Compra</span>
+                    <span class="text-muted small text-uppercase">Folio de Compra</span>
                     <h5 class="font-monospace">#{{ pedido.id }}</h5>
-                    <p class="text-muted small">{{ pedido.fecha.strftime('%d %b, %Y') }}</p>
+                    <p class="text-muted small">
+                        {{ pedido.fecha.strftime('%d %b, %Y') if pedido.fecha else '' }}
+                    </p>
                 </div>
-                
+
+                <!-- ESTATUS -->
                 <div class="col-md-6">
-                    <label class="text-uppercase small fw-bold mb-3 tracking-widest">Estatus: {{ pedido.estado }}</label>
-                    
-                    <div class="progress" style="height: 8px; border-radius: 0; background-color: #f1f0ee;">
-                        {% set progreso = 25 %}
-                        {% if pedido.estado == 'En confección' %}{% set progreso = 50 %}
-                        {% elif pedido.estado == 'Listo para entrega' %}{% set progreso = 75 %}
-                        {% elif pedido.estado == 'Entregado' %}{% set progreso = 100 %}
-                        {% endif %}
-                        <div class="progress-bar bg-dark" role="progressbar"></div>
+                    <label class="text-uppercase small fw-bold mb-3">
+                        Estatus: {{ pedido.estado }}
+                    </label>
+
+                    {% set progreso = 25 %}
+                    {% if pedido.estado == 'En confección' %}{% set progreso = 50 %}
+                    {% elif pedido.estado == 'Listo para entrega' %}{% set progreso = 75 %}
+                    {% elif pedido.estado == 'Entregado' %}{% set progreso = 100 %}
+                    {% endif %}
+
+                    <div class="progress" style="height: 8px; background-color: #f1f0ee;">
+                        <div class="progress-bar bg-dark"
+                             role="progressbar"
+                             style="width: {{ progreso }}%;">
+                        </div>
                     </div>
-                    
+
                     <div class="d-flex justify-content-between mt-2 text-muted" style="font-size: 0.65rem;">
                         <span>PAGADO</span>
                         <span>EN CONFECCIÓN</span>
@@ -38,42 +57,72 @@
                     </div>
                 </div>
 
+                <!-- TOTAL -->
                 <div class="col-md-3 text-end">
                     <span class="text-muted small">Total invertido</span>
-                    <h4 class="fw-bold">${{ "{:,.2f}".format(pedido.total) }}</h4>
+                    <h4 class="fw-bold">
+                        ${{ "{:,.2f}".format(p.total if p.total else 0) }}
+                    </h4>
                 </div>
+
             </div>
-            
+
+            <!-- DETALLE -->
             <div class="mt-4 pt-3 border-top">
-                <button class="btn btn-link text-dark text-decoration-none p-0 small text-uppercase tracking-tighter" 
-                        type="button" data-bs-toggle="collapse" data-bs-target="#detalle{{ pedido.id }}">
+                <button class="btn btn-link text-dark text-decoration-none p-0 small text-uppercase"
+                        type="button"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#detalle{{ pedido.id }}">
                     + Ver detalle de artículos
                 </button>
+
                 <div class="collapse mt-3" id="detalle{{ pedido.id }}">
                     <ul class="list-group list-group-flush small">
-                        {% for detalle in pedido.detalles %}
-                        <li class="list-group-item d-flex justify-content-between align-items-center px-0 bg-transparent">
-                            {{ detalle.producto.nombre }} (x{{ detalle.cantidad }})
-                            <span>${{ "{:,.2f}".format(detalle.subtotal) }}</span>
+
+                        <!-- PRODUCTOS VENDIDOS -->
+                        {% for detalle in detalles %}
+                        <li class="list-group-item d-flex justify-content-between px-0 bg-transparent">
+                            {{ detalle.producto.nombre if detalle.producto else 'Producto eliminado' }}
+                            (x{{ detalle.cantidad }})
+                            <span>${{ "{:,.2f}".format(detalle.subtotal or 0) }}</span>
                         </li>
                         {% endfor %}
+
+                        <!-- PRODUCCIÓN -->
+                        {% if ordenes %}
+                        <li class="list-group-item px-0 bg-transparent text-warning">
+                            <strong>En producción:</strong>
+                        </li>
+
+                        {% for orden in ordenes %}
+                        <li class="list-group-item d-flex justify-content-between px-0 bg-transparent text-muted">
+                            Producto ID: {{ orden.id_producto }} (x{{ orden.cantidad }})
+                            <span>{{ orden.estado }}</span>
+                        </li>
+                        {% endfor %}
+                        {% endif %}
+
                     </ul>
                 </div>
             </div>
+
         </div>
     </div>
+
     {% else %}
     <div class="text-center py-5">
         <i class="bi bi-bag-x text-muted" style="font-size: 3rem;"></i>
-        <p class="mt-3 text-muted italic">Aún no has realizado pedidos en Vellum.</p>
-        <a href="{{ url_for('tiendaCliente.index') }}" class="btn btn-dark px-4 mt-2" style="border-radius: 0;">Explorar Colección</a>
+        <p class="mt-3 text-muted">Aún no has realizado pedidos en Vellum.</p>
+        <a href="{{ url_for('tiendaCliente.index') }}" class="btn btn-dark px-4 mt-2">
+            Explorar Colección
+        </a>
     </div>
     {% endfor %}
 </div>
 
 <style>
-    .text-premium { font-family: 'Playfair Display', serif; }
-    .tracking-widest { letter-spacing: 0.2em; }
-    .bg-dark { background-color: #1a1a1a !important; }
+.text-premium { font-family: 'Playfair Display', serif; }
+.tracking-widest { letter-spacing: 0.2em; }
+.bg-dark { background-color: #1a1a1a !important; }
 </style>
 {% endblock %}

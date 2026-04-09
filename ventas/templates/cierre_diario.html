@@ -4,11 +4,40 @@
 
 {% block content %}
 
-<h2>Cierre del día</h2>
+<div class="container mt-5" style="max-width:600px;">
 
-<p>Fecha: {{ cierre.fecha }}</p>
-<p>Artículos vendidos: {{ cierre.articulos_vendidos }}</p>
-<p>Total ventas: {{ cierre.total_ventas }}</p>
-<p>Utilidad total: {{ cierre.utilidad_total }}</p>
+    <h2 class="mb-4">Cierre de Caja</h2>
+
+    {% if cierre_realizado %}
+        <div class="alert alert-success">
+            El cierre del día ya fue realizado.
+        </div>
+
+    {% elif not hay_ventas %}
+        <div class="alert alert-danger">
+            No hay ventas registradas hoy. No se puede realizar el cierre.
+        </div>
+
+    {% else %}
+        <div class="alert alert-warning">
+            Aún no se ha realizado el cierre de hoy.
+        </div>
+
+        <form method="post" action="{{ url_for('ventas.cierre_diario') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            
+            <button type="submit" class="btn btn-dark w-100">
+                Realizar cierre de caja
+            </button>
+        </form>
+    {% endif %}
+
+    <div class="mt-3">
+        <a href="{{ url_for('ventas.punto_venta') }}" class="btn btn-link">
+            ← Volver al punto de venta
+        </a>
+    </div>
+
+</div>
 
 {% endblock %}

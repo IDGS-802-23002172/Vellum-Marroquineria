@@ -36,14 +36,15 @@ def punto_venta():
         session_id = str(uuid.uuid4())
         session["session_id"] = session_id
 
-    busqueda = request.args.get("busqueda")
-    productos = []
+    busqueda = request.args.get("busqueda", "").strip()
 
-    if busqueda:
+    if busqueda != "":
         productos = Producto.query.filter(
             (Producto.nombre.ilike(f"%{busqueda}%")) |
             (Producto.sku.ilike(f"%{busqueda}%"))
         ).all()
+    else:
+        productos = Producto.query.all()
 
     carrito = CarritoTemporal.query.filter_by(session_id=session_id).all()
 
@@ -205,8 +206,59 @@ def ticket():
         total=total
     )
 
-@ventas_bp.route("/cierre-diario")
+@ventas_bp.route("/cierre-diario", methods=["GET", "POST"])
 def cierre_diario():
+    usuario_id = session.get("user_id")
+
+    cierre_existente = MovimientoCaja.query.filter(
+        MovimientoCaja.tipo == "ENTRADA",
+        db.func.date(MovimientoCaja.fecha) == db.func.curdate()
+    ).first()
+
+    if request.method == "POST":
+
+        if cierre_existente:
+            flash("El cierre de hoy ya fue realizado", "warning")
+            return redirect(url_for("ventas.cierre_diario"))
+
+
+        resultado = db.session.execute(text("""
+            SELECT 
+                SUM(d.precio_unitario * d.cantidad) AS total_ventas
+            FROM ventas v
+            JOIN detalle_ventas d ON v.id = d.venta_id
+            WHERE DATE(v.fecha) = CURDATE()
+        """))
+
+        total = resultado.scalar() or 0
+
+
+        if total == 0:
+            flash("No hay ventas registradas hoy. No se puede realizar el cierre.", "warning")
+            return redirect(url_for("ventas.cierre_diario"))
+
+        try:
+            movimiento = MovimientoCaja(
+                tipo="CIERRE",
+                concepto=f"Cierre de caja - {datetime.now().date()}",
+                monto=total,
+                metodo_pago="GENERAL",
+                referencia=None,
+                creado_por=usuario_id,
+                notas="Cierre automático del día"
+            )
+
+            db.session.add(movimiento)
+            db.session.commit()
+
+            flash("Cierre de caja realizado correctamente", "success")
+
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Error al realizar cierre: {str(e)}", "danger")
+
+        return redirect(url_for("ventas.cierre_diario"))
+
 
     resultado = db.session.execute(text("""
         SELECT 
@@ -224,5 +276,7 @@ def cierre_diario():
 
     return render_template(
         "cierre_diario.html",
-        cierre=cierre
+        cierre=cierre,
+        cierre_realizado=bool(cierre_existente),
+        hay_ventas=bool(cierre)
     )

@@ -5,12 +5,7 @@
 
 {% block content %}
 <div class="container-fluid px-0">
-    <div class="d-flex justify-content-end mb-3">
-    <a href="{{ url_for('ventas.cierre_diario') }}" 
-       class="btn btn-outline-dark btn-sm rounded-0 uppercase tracking-widest">
-        Corte Diario
-    </a>
-</div>
+
     <div class="row g-5">
         
         <div class="col-lg-8">
@@ -26,53 +21,58 @@
                 </form>
             </div>
 
+<div class="table-responsive">
+    <table class="table align-middle" style="--bs-table-bg: transparent;">
+        <thead class="small text-muted text-uppercase tracking-widest">
+            <tr>
+                <th class="border-0">Artículo</th>
+                <th class="border-0">SKU</th>
+                <th class="border-0">Inversión</th>
+                <th class="border-0">Stock</th>
+                <th class="border-0 text-center">Acción</th>
+            </tr>
+        </thead>
+        <tbody>
+
             {% for producto in productos %}
-            <div class="table-responsive">
-                <table class="table align-middle" style="--bs-table-bg: transparent;">
-                    <thead class="small text-muted text-uppercase tracking-widest">
-                        <tr>
-                            <th class="border-0">Artículo</th>
-                            <th class="border-0">SKU</th>
-                            <th class="border-0">Inversión</th>
-                            <th class="border-0">Stock</th>
-                            <th class="border-0 text-center">Acción</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr class="border-bottom border-light">
-                            <td class="py-4">
-                                <div class="fw-bold text-uppercase">{{ producto.nombre }}</div>
-                                <small class="text-stone-400 italic">{{ producto.categoria }}</small>
-                            </td>
-                            <td class="py-4 font-monospace small text-stone-500">{{ producto.sku or 'S/N' }}</td>
-                            <td class="py-4">${{ producto.precio_venta }}</td>
-                            <td class="py-4">
-                                <span class="badge-activo {% if producto.stock_actual > 0 %}si{% else %}no{% endif %}">
-                                    {{ producto.stock_actual }}
-                                </span>
-                            </td>
-                            <td class="py-4 text-center">
-                                <form method="post" action="{{ url_for('ventas.agregar_producto') }}" class="d-flex justify-content-center gap-2">
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <input type="hidden" name="producto_id" value="{{ producto.id }}">
-                                    <input type="number" name="cantidad" min="1" max="{{ producto.stock_actual }}" value="1" 
-                                           class="form-control form-control-sm text-center border-stone-200 shadow-none" 
-                                           style="width: 60px; border-radius: 0;">
-                                    <button type="submit" class="btn btn-dark btn-sm rounded-0 px-3 uppercase tracking-tighter" style="font-size: 0.65rem;">
-                                        Añadir
-                                    </button>
-                                </form>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            {% if request.args.get('busqueda') %}
-                <div class="text-center py-5 border border-dashed border-stone-200">
-                    <p class="text-stone-400 italic mb-0">No se encontraron piezas con ese identificador.</p>
-                </div>
-            {% endif %}
+            <tr class="border-bottom border-light">
+                <td class="py-4">
+                    <div class="fw-bold text-uppercase">{{ producto.nombre }}</div>
+                    <small class="text-stone-400 italic">{{ producto.categoria }}</small>
+                </td>
+                <td class="py-4 font-monospace small text-stone-500">
+                    {{ producto.sku or 'S/N' }}
+                </td>
+                <td class="py-4">${{ producto.precio_venta }}</td>
+                <td class="py-4">
+                    <span class="badge-activo {% if producto.stock_actual > 0 %}si{% else %}no{% endif %}">
+                        {{ producto.stock_actual }}
+                    </span>
+                </td>
+                <td class="py-4 text-center">
+                    <form method="post" action="{{ url_for('ventas.agregar_producto') }}" class="d-flex justify-content-center gap-2">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="producto_id" value="{{ producto.id }}">
+                        
+                        <input type="number" name="cantidad" min="1"
+                               max="{{ producto.stock_actual if producto.stock_actual > 0 else 1 }}"
+                               value="1"
+                               class="form-control form-control-sm text-center border-stone-200 shadow-none"
+                               style="width: 60px; border-radius: 0;">
+
+                        <button type="submit"
+                                class="btn btn-dark btn-sm rounded-0 px-3 uppercase tracking-tighter"
+                                {% if producto.stock_actual <= 0 %}disabled{% endif %}>
+                            Añadir
+                        </button>
+                    </form>
+                </td>
+            </tr>
             {% endfor %}
+
+        </tbody>
+    </table>
+</div>
         </div>
 
         <div class="col-lg-4">

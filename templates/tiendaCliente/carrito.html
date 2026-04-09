@@ -161,8 +161,8 @@
                     </div>
 
                     <div class="d-grid gap-2">
-                        <button type="button" class="btn btn-primary btn-lg" disabled>
-                            <i class="bi bi-credit-card"></i> Ir al checkout
+                        <button type="button" id="btnCheckout" class="btn btn-primary btn-lg">
+                            <i class="bi bi-credit-card"></i> Finalizar compra
                         </button>
                         <a href="{{ url_for('tiendaCliente.catalogo') }}" class="btn btn-outline-secondary">
                             <i class="bi bi-bag-plus"></i> Seguir comprando
@@ -197,4 +197,51 @@
     {% endif %}
 
 </div>
+
+<input type="hidden" id="csrf_token" value="{{ csrf_token() }}">
+
+<script>
+document.getElementById('btnCheckout').addEventListener('click', function () {
+
+    if (!confirm('¿Confirmar compra?')) return;
+
+    fetch("{{ url_for('tiendaCliente.checkout') }}", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": document.getElementById("csrf_token").value
+        },
+        body: JSON.stringify({
+            session_id: getCookie('session_id')
+        })
+    })
+    .then(res => {
+        if (!res.ok) {
+            return res.text().then(text => {
+                throw new Error(text);
+            });
+        }
+        return res.json();
+    })
+    .then(data => {
+        if (data.success) {
+            alert("Compra realizada correctamente. Total: $" + data.total);
+            window.location.href = "{{ url_for('tiendaCliente.index') }}";
+        } else {
+            alert(data.message || "Error en la compra");
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        alert("Error: " + err.message);
+    });
+
+});
+
+// Helper
+function getCookie(name) {
+    let match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+    if (match) return match[2];
+}
+</script>
 {% endblock %}

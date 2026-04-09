@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, session, redirect, url_for, request, jsonify, make_response, flash
 from flask_wtf.csrf import validate_csrf
 from wtforms.validators import ValidationError
-from models import db, Producto, CarritoTemporal, Venta, DetalleVenta
+from models import db, Producto, CarritoTemporal, Venta, DetalleVenta, OrdenProduccion
 from sqlalchemy import func
 from datetime import datetime, timedelta
 import uuid
@@ -49,19 +49,49 @@ def index():
 
 @tienda_bp.route('/mis-pedidos')
 def mis_pedidos():
-    # Validamos que sea un cliente logueado
     usuario_id = session.get('user_id')
+
     if not usuario_id or session.get('user_role') != 'Cliente':
         return redirect(url_for('login'))
-    
-    # Consultamos las ventas ligadas a su ID de usuario
-    pedidos = Venta.query.filter_by(usuario_id=usuario_id).order_by(Venta.fecha.desc()).all()
-    
-    return render_template('tiendaCliente/seguimiento.html', pedidos=pedidos)
-    ##if 'user_role' in session and session['user_role'] == 'Administrador':
-      ##  return redirect(url_for('admin.dashboard'))
-    ##return render_template('tiendaCliente/index.html')
 
+    pedidos = Venta.query.filter_by(usuario_id=usuario_id)\
+        .order_by(Venta.fecha.desc()).all()
+
+    pedidos_data = []
+
+    for pedido in pedidos:
+        detalles = pedido.detalles
+
+        # 🔥 ÓRDENES (del usuario)
+        ordenes = OrdenProduccion.query.filter_by(
+            id_usuario=usuario_id
+        ).all()
+
+        # 🔥 TOTAL DETALLES
+        total_detalles = sum(
+            float(d.subtotal or 0) for d in detalles
+        )
+
+        # 🔥 TOTAL PRODUCCIÓN (usando precio del producto)
+        total_produccion = 0
+        for o in ordenes:
+            producto = Producto.query.get(o.id_producto)
+            if producto:
+                total_produccion += float(producto.precio_venta or 0) * o.cantidad
+
+        total_general = total_detalles + total_produccion
+
+        pedidos_data.append({
+            'pedido': pedido,
+            'detalles': detalles,
+            'ordenes': ordenes,
+            'total': total_general
+        })
+
+    return render_template(
+        'tiendaCliente/seguimiento.html',
+        pedidos=pedidos_data
+    )
 # ─────────────────────────────────────────────
 # CATÁLOGO
 # ─────────────────────────────────────────────
@@ -222,13 +252,8 @@ def agregar_carrito(producto_id):
         # Lo que tendría en total si agrega 'cantidad' más
         total_con_nuevo = ya_en_mi_carrito + cantidad
 
-        if total_con_nuevo > stock_para_este_usuario:
-            puede_agregar = max(0, stock_para_este_usuario - ya_en_mi_carrito)
-            if puede_agregar <= 0:
-                flash('No hay más unidades disponibles para agregar.', 'danger')
-            else:
-                flash(f'Solo puedes agregar {puede_agregar} unidad(es) más de este producto.', 'danger')
-            return _redirect_con_cookie('tiendaCliente.detalle_producto', session_id, id=producto_id)
+        if stock_para_este_usuario <= 0:
+            flash('Este producto no tiene stock, pero puedes pedirlo y se enviará a producción.', 'warning')
 
         # 5. Crear o actualizar ítem en carrito
         item = CarritoTemporal.query.filter_by(
@@ -353,14 +378,22 @@ def actualizar_carrito(item_id):
 @tienda_bp.route('/checkout', methods=['POST'])
 def checkout():
     try:
-        datos      = request.get_json()
+        datos = request.get_json(silent=True)
+
+        if not datos:
+            return jsonify({'success': False, 'message': 'Request inválido'}), 400
+
         session_id = datos.get('session_id')
         usuario_id = session.get('user_id')
+
+        if not session_id:
+            return jsonify({'success': False, 'message': 'Session ID requerido'}), 400
 
         if not usuario_id:
             return jsonify({'success': False, 'message': 'Login requerido'}), 401
 
         items = CarritoTemporal.query.filter_by(session_id=session_id).all()
+
         if not items:
             return jsonify({'success': False, 'message': 'Carrito vacío'}), 400
 
@@ -374,54 +407,74 @@ def checkout():
         )
         productos_dict = {p.id: p for p in productos}
 
-        for item in items:
-            prod = productos_dict[item.producto_id]
-            reservado_otros = int(db.session.query(
-                func.coalesce(func.sum(CarritoTemporal.cantidad), 0)
-            ).filter(
-                CarritoTemporal.producto_id == item.producto_id,
-                CarritoTemporal.session_id  != session_id
-            ).scalar())
-
-            stock_disponible = max(0, prod.stock_actual - reservado_otros)
-            if item.cantidad > stock_disponible:
-                db.session.rollback()
-                return jsonify({
-                    'success': False,
-                    'message': f'Stock insuficiente para "{item.nombre}". Disponible: {stock_disponible}'
-                }), 400
-
+        # 🔹 Totales (solo para respuesta, NO se guardan en Venta)
         subtotal = sum(float(i.precio) * i.cantidad for i in items)
-        iva      = subtotal * 0.16
-        total    = subtotal + iva
+        iva = subtotal * 0.16
+        total = subtotal + iva
 
+        # 🔥 GENERAR FOLIO (OBLIGATORIO porque es NOT NULL)
+        folio = f"VTA-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
+
+        # 🔥 CREAR VENTA SOLO CON CAMPOS VÁLIDOS
         venta = Venta(
             usuario_id=usuario_id,
-            subtotal=subtotal,
-            iva=iva,
-            total=total,
-            fecha=datetime.utcnow()
+            folio=folio,
+            fecha=datetime.utcnow(),
+            estado="Pagado"
         )
         db.session.add(venta)
         db.session.flush()
 
+        # 🔥 PROCESAR ITEMS
         for item in items:
             prod = productos_dict[item.producto_id]
-            db.session.add(DetalleVenta(
-                venta_id=venta.id,
-                producto_id=item.producto_id,
-                cantidad=item.cantidad,
-                precio_unitario=item.precio,
-                subtotal=float(item.precio) * item.cantidad
-            ))
-            prod.stock_actual -= item.cantidad
 
+            reservado_otros = int(db.session.query(
+                func.coalesce(func.sum(CarritoTemporal.cantidad), 0)
+            ).filter(
+                CarritoTemporal.producto_id == item.producto_id,
+                CarritoTemporal.session_id != session_id
+            ).scalar())
+
+            stock_disponible = max(0, prod.stock_actual - reservado_otros)
+
+            if item.cantidad <= stock_disponible:
+                # ✅ Venta normal
+                db.session.add(DetalleVenta(
+                    venta_id=venta.id,
+                    producto_id=item.producto_id,
+                    cantidad=item.cantidad,
+                    precio_unitario=item.precio,
+                    subtotal=float(item.precio) * item.cantidad
+                ))
+
+                prod.stock_actual -= item.cantidad
+
+            else:
+                # ⚠️ Producción
+                db.session.add(OrdenProduccion(
+                    id_producto=item.producto_id,
+                    id_usuario=usuario_id,
+                    cantidad=item.cantidad,
+                    estado="Pendiente"
+                ))
+
+        # 🔹 Vaciar carrito
         CarritoTemporal.query.filter_by(session_id=session_id).delete()
+
         db.session.commit()
 
-        return jsonify({'success': True, 'total': float(total)})
+        return jsonify({
+            'success': True,
+            'total': float(total),
+            'venta_id': venta.id
+        })
 
     except Exception as e:
         db.session.rollback()
         print("ERROR CHECKOUT:", e)
-        return jsonify({'success': False, 'message': 'Error interno'}), 500
+
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
