@@ -1,14 +1,86 @@
 {% extends "base.html" %}
 
-{% block title %}Corte{% endblock %}
+{% block title %}Corte de Caja{% endblock %}
+{% block page_title %}Reportes Financieros — Vellum León{% endblock %}
 
 {% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
 
-<h2>Cierre del día</h2>
+            {% if cierre %}
+            <div class="text-center mb-5">
+                <i class="bi bi-journal-check text-success d-block mb-3" style="font-size: 3rem;"></i>
+                <span class="text-uppercase tracking-widest text-muted small">Reporte Diario Z</span>
+                <h2 class="text-premium mt-2">Corte de Caja Finalizado</h2>
+                <div class="mx-auto bg-black" style="width: 50px; height: 2px; margin-top: 15px;"></div>
+                <p class="text-muted small mt-3 font-monospace">Fecha Operativa: {{ cierre.fecha.strftime('%d / %m / %Y') }}</p>
+                
+                {% if cierre.estado == 'cerrada' %}
+                    <span class="badge bg-danger rounded-0 text-uppercase tracking-widest px-3 py-2 mt-2">Caja Sellada</span>
+                {% else %}
+                    <span class="badge bg-success rounded-0 text-uppercase tracking-widest px-3 py-2 mt-2">Turno Abierto</span>
+                {% endif %}
+            </div>
 
-<p>Fecha: {{ cierre.fecha }}</p>
-<p>Artículos vendidos: {{ cierre.articulos_vendidos }}</p>
-<p>Total ventas: {{ cierre.total_ventas }}</p>
-<p>Utilidad total: {{ cierre.utilidad_total }}</p>
+            <div class="card border-0 shadow-sm p-4 p-md-5 mb-4" style="border-radius: 0; border: 1px solid #eee !important;">
+                <h5 class="text-uppercase tracking-widest small fw-bold text-muted border-bottom pb-3 mb-4">Desglose Financiero</h5>
+                
+                <div class="row g-4">
+                    <div class="col-sm-6">
+                        <div class="p-3 bg-light border">
+                            <span class="d-block text-muted small text-uppercase tracking-widest mb-1">Fondo Inicial</span>
+                            <span class="fs-4 font-monospace fw-bold text-dark">${{ "%.2f"|format(cierre.monto_inicial) }}</span>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="p-3 bg-light border">
+                            <span class="d-block text-muted small text-uppercase tracking-widest mb-1">Ventas Generadas (S/IVA)</span>
+                            <span class="fs-4 font-monospace fw-bold text-dark">${{ "%.2f"|format(cierre.total_ventas or 0) }}</span>
+                        </div>
+                    </div>
+                </div>
 
+                <div class="row g-4 mt-1">
+                    <div class="col-sm-6">
+                        <div class="p-3 bg-light border">
+                            <span class="d-block text-muted small text-uppercase tracking-widest mb-1">Artículos Desplazados</span>
+                            <span class="fs-4 font-monospace fw-bold text-dark">{{ cierre.articulos_vendidos or 0 }} pz.</span>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="p-3 bg-success bg-opacity-10 border border-success border-opacity-25">
+                            <span class="d-block text-success small text-uppercase tracking-widest mb-1 fw-bold">Utilidad Bruta Estimada</span>
+                            <span class="fs-4 font-monospace fw-bold text-success">${{ "%.2f"|format(cierre.utilidad_total or 0) }}</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="text-center mt-4">
+                <a href="{{ url_for('ventas.punto_venta') }}" class="btn btn-outline-dark text-uppercase tracking-widest small px-4 py-3" style="border-radius: 0;">
+                    <i class="bi bi-arrow-left me-2"></i> Regresar al Mostrador
+                </a>
+            </div>
+
+            {% else %}
+            <div class="text-center py-5 my-5">
+                <i class="bi bi-inbox text-muted d-block mb-3" style="font-size: 3rem;"></i>
+                <h4 class="text-premium text-muted">No hay cortes registrados</h4>
+                <p class="text-muted small">No se ha realizado ningún cierre de caja recientemente.</p>
+                <a href="{{ url_for('ventas.punto_venta') }}" class="btn btn-dark text-uppercase tracking-widest small px-4 py-2 mt-3" style="border-radius: 0;">
+                    Ir a Ventas
+                </a>
+            </div>
+            {% endif %}
+            
+        </div>
+    </div>
+</div>
+
+<style>
+    .text-premium { font-family: 'Playfair Display', serif; }
+    .tracking-widest { letter-spacing: 0.2em; }
+</style>
 {% endblock %}

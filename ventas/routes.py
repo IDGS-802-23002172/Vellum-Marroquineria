@@ -12,7 +12,6 @@ IVA_TASA = Decimal("0.16")
 # HELPERS
 # ─────────────────────────────────────
 def _siguiente_folio_venta() -> str:
-    """Genera un folio consecutivo tipo VEN-YYYY-NNNN"""
     anio = datetime.utcnow().year
     ultima = Venta.query.filter(Venta.folio.like(f"VEN-{anio}-%")).order_by(Venta.id.desc()).first()
     if ultima:
@@ -25,7 +24,6 @@ def _siguiente_folio_venta() -> str:
     return f"VEN-{anio}-{n:04d}"
 
 def calcular_totales(detalles):
-    """Calcula totales al vuelo para cumplir con la 3NF"""
     subtotal = sum([
         d.precio_unitario * d.cantidad for d in detalles
     ]) if detalles else Decimal("0.00")
@@ -33,9 +31,50 @@ def calcular_totales(detalles):
     total = subtotal + iva
     return subtotal, iva, total
 
-def caja_cerrada_hoy():
-    """Verifica si ya se hizo el cierre de caja del día actual"""
+def obtener_caja_hoy():
+    """Devuelve el registro de la caja del día (el turno actual)"""
     return CierreCaja.query.filter_by(fecha=date.today()).first()
+
+
+# ─────────────────────────────────────
+# APERTURA DE CAJA
+# ─────────────────────────────────────
+@ventas_bp.route("/abrir-caja", methods=["POST"])
+def abrir_caja():
+    usuario_id = session.get("user_id")
+    monto_inicial = request.form.get("monto_inicial", type=float)
+    
+    if monto_inicial is None or monto_inicial < 0:
+        flash("Monto inicial inválido", "danger")
+        return redirect(url_for("ventas.punto_venta"))
+
+    if obtener_caja_hoy():
+        flash("La caja ya fue abierta el día de hoy.", "warning")
+        return redirect(url_for("ventas.punto_venta"))
+
+    # 1. Crear el Turno de Caja
+    nueva_caja = CierreCaja(
+        fecha=date.today(),
+        usuario_id=usuario_id,
+        monto_inicial=monto_inicial,
+        estado="abierta",
+        fecha_apertura=datetime.utcnow()
+    )
+    db.session.add(nueva_caja)
+    
+    # 2. Registrar el ingreso físico en el Flujo de Caja
+    movimiento = MovimientoCaja(
+        tipo="ENTRADA",
+        concepto="Apertura de Caja (Fondo Inicial)",
+        monto=monto_inicial,
+        creado_por=usuario_id,
+        fecha=datetime.utcnow()
+    )
+    db.session.add(movimiento)
+    db.session.commit()
+    
+    flash("Caja abierta exitosamente. ¡Excelente turno!", "success")
+    return redirect(url_for("ventas.punto_venta"))
 
 
 # ─────────────────────────────────────
@@ -43,8 +82,7 @@ def caja_cerrada_hoy():
 # ─────────────────────────────────────
 @ventas_bp.route("/pos", methods=["GET"])
 def punto_venta():
-    if caja_cerrada_hoy():
-        flash("La caja del día ya está cerrada. No se pueden realizar más ventas.", "warning")
+    caja = obtener_caja_hoy()
 
     session_id = session.get("session_id")
     if not session_id:
@@ -59,12 +97,9 @@ def punto_venta():
             (Producto.sku.ilike(f"%{busqueda}%"))
         ).all()
     else:
-        productos = Producto.query.filter(
-            Producto.stock_actual > 0
-        ).all()
+        productos = Producto.query.filter(Producto.stock_actual > 0).all()
 
     carrito = CarritoTemporal.query.filter_by(session_id=session_id).all()
-
     subtotal = sum([item.precio * item.cantidad for item in carrito]) if carrito else Decimal("0.00")
     iva = subtotal * IVA_TASA
     total = subtotal + iva
@@ -76,7 +111,7 @@ def punto_venta():
         subtotal=subtotal,
         iva=iva,
         total=total,
-        caja_cerrada=bool(caja_cerrada_hoy())
+        caja=caja # Pasamos el estado de la caja a la vista
     )
 
 
@@ -85,8 +120,9 @@ def punto_venta():
 # ─────────────────────────────────────
 @ventas_bp.route("/agregar", methods=["POST"])
 def agregar_producto():
-    if caja_cerrada_hoy():
-        flash("No puedes agregar productos. La caja ya está cerrada.", "warning")
+    caja = obtener_caja_hoy()
+    if not caja or caja.estado == 'cerrada':
+        flash("Operación no permitida. Verifica el estado de la caja.", "danger")
         return redirect(url_for("ventas.punto_venta"))
 
     session_id = session.get("session_id")
@@ -125,8 +161,9 @@ def agregar_producto():
 # ─────────────────────────────────────
 @ventas_bp.route("/finalizar", methods=["POST"])
 def finalizar_venta():
-    if caja_cerrada_hoy():
-        flash("No se pueden registrar ventas. La caja del día está cerrada.", "danger")
+    caja = obtener_caja_hoy()
+    if not caja or caja.estado == 'cerrada':
+        flash("Operación no permitida. Verifica el estado de la caja.", "danger")
         return redirect(url_for("ventas.punto_venta"))
 
     session_id = session.get("session_id")
@@ -137,28 +174,24 @@ def finalizar_venta():
         return redirect(url_for("ventas.punto_venta"))
 
     usuario_id = session.get("user_id")
-
     if not usuario_id:
         flash("Sesión inválida", "danger")
         return redirect(url_for("login")) 
     
     try:
-        # 1. Cabecera de la Venta
         nueva_venta = Venta(
             folio=_siguiente_folio_venta(),
             usuario_id=usuario_id,
             estado="Pagado",
-            tipo="POS" # Distinguimos venta de mostrador
+            tipo="POS"
         )
         db.session.add(nueva_venta)
         db.session.flush()
         
         total_venta_sin_iva = Decimal("0.00")
         
-        # 2. Detalles y descuento de inventario
         for item in carrito: 
             producto = Producto.query.get(item.producto_id)
-            
             if producto.stock_actual < item.cantidad:
                 raise ValueError(f"Stock insuficiente para producto: {producto.nombre}")
             
@@ -176,7 +209,6 @@ def finalizar_venta():
         iva = total_venta_sin_iva * IVA_TASA
         total_con_iva = total_venta_sin_iva + iva
         
-        # 3. Flujo de Caja (Generar Ingreso)
         movimiento_caja = MovimientoCaja(
             tipo="ENTRADA",
             concepto=f"Venta en Mostrador - Folio: {nueva_venta.folio}",
@@ -187,10 +219,7 @@ def finalizar_venta():
         )
         db.session.add(movimiento_caja)
         
-        # 4. Limpiar Carrito
         CarritoTemporal.query.filter_by(session_id=session_id).delete()
-        
-        # 5. Confirmar Transacción
         db.session.commit()
         
         session["ultima_venta_id"] = nueva_venta.id
@@ -208,9 +237,6 @@ def finalizar_venta():
         return redirect(url_for("ventas.punto_venta"))
 
 
-# ─────────────────────────────────────
-# CANCELAR VENTA EN PROCESO
-# ─────────────────────────────────────
 @ventas_bp.route("/cancelar", methods=["POST"])
 def cancelar_venta():
     session_id = session.get("session_id")
@@ -220,85 +246,79 @@ def cancelar_venta():
     return redirect(url_for("ventas.punto_venta"))
 
 
-# ─────────────────────────────────────
-# GENERAR TICKET
-# ─────────────────────────────────────
 @ventas_bp.route("/ticket")
 def ticket():
     venta_id = session.get("ultima_venta_id")
-
     if not venta_id:
-        flash("No hay ticket disponible", "warning")
         return redirect(url_for("ventas.punto_venta"))
 
     venta = Venta.query.get(venta_id)
-
-    if not venta:
-        flash("Venta no encontrada", "danger")
-        return redirect(url_for("ventas.punto_venta"))
-
     detalles = DetalleVenta.query.filter_by(venta_id=venta.id).all()
-
     subtotal, iva, total = calcular_totales(detalles)
 
-    return render_template(
-        "ticket.html",
-        venta=venta,
-        detalles=detalles,
-        subtotal=subtotal,
-        iva=iva,
-        total=total
-    )
+    return render_template("ticket.html", venta=venta, detalles=detalles, subtotal=subtotal, iva=iva, total=total)
 
 
 # ─────────────────────────────────────
-# CIERRE DIARIO DE CAJA
+# API DATOS MODAL DE CIERRE
+# ─────────────────────────────────────
+@ventas_bp.route("/api/datos-cierre")
+def datos_cierre():
+    caja = obtener_caja_hoy()
+    if not caja or caja.estado == "cerrada":
+        return {"error": "No hay caja abierta para calcular"}, 400
+        
+    resultado = db.session.execute(text("""
+        SELECT SUM(dv.cantidad * dv.precio_unitario) AS total_ventas
+        FROM ventas v
+        JOIN detalle_ventas dv ON v.id = dv.venta_id
+        WHERE DATE(v.fecha) = CURDATE() AND v.tipo = 'POS'
+    """)).mappings().first()
+    
+    total_ventas = resultado["total_ventas"] or 0
+    monto_inicial = caja.monto_inicial
+    # Sumamos y agregamos el IVA para reflejar el total real en caja
+    total_esperado = float(monto_inicial) + (float(total_ventas) * 1.16) 
+    
+    return {
+        "monto_inicial": float(monto_inicial),
+        "total_ventas": float(total_ventas) * 1.16, # Mostramos con IVA
+        "total_esperado": total_esperado
+    }
+
+
+# ─────────────────────────────────────
+# CONFIRMAR CIERRE DIARIO
 # ─────────────────────────────────────
 @ventas_bp.route("/cierre-diario", methods=["GET", "POST"])
 def cierre_diario():
-    usuario_id = session.get("user_id")
-
     if request.method == "POST":
-        if not usuario_id:
-            flash("Sesión inválida", "danger")
-            return redirect(url_for("login"))
+        caja = obtener_caja_hoy()
         
+        if not caja or caja.estado == 'cerrada':
+            flash("No hay una caja abierta para cerrar hoy.", "warning")
+            return redirect(url_for("ventas.punto_venta"))
+
         resultado = db.session.execute(text("""
             SELECT 
-                DATE(v.fecha) AS fecha,
                 SUM(dv.cantidad) AS articulos_vendidos,
                 SUM(dv.cantidad * dv.precio_unitario) AS total_ventas,
                 SUM(dv.cantidad * (dv.precio_unitario - dv.costo_unitario)) AS utilidad_total
             FROM ventas v
             JOIN detalle_ventas dv ON v.id = dv.venta_id
             WHERE DATE(v.fecha) = CURDATE() AND v.tipo = 'POS'
-            GROUP BY DATE(v.fecha)
-        """))
+        """)).mappings().first()
 
-        cierre_vista = resultado.mappings().first()
+        caja.articulos_vendidos = resultado["articulos_vendidos"] or 0
+        caja.total_ventas = resultado["total_ventas"] or 0
+        caja.utilidad_total = resultado["utilidad_total"] or 0
+        caja.estado = "cerrada"
+        caja.fecha_cierre = datetime.utcnow()
 
-        if not cierre_vista:
-            flash("No hay ventas de mostrador (POS) registradas hoy para hacer el cierre.", "warning")
-            return redirect(url_for("ventas.punto_venta"))
-
-        fecha_cierre = cierre_vista["fecha"]
-        existe = CierreCaja.query.filter_by(fecha=fecha_cierre).first()
-
-        if existe:
-            flash("El cierre de caja de hoy ya fue realizado previamente.", "info")
-            return redirect(url_for("ventas.punto_venta"))
-
-        nuevo_cierre = CierreCaja(
-            fecha=fecha_cierre,
-            usuario_id=usuario_id,
-            articulos_vendidos=cierre_vista["articulos_vendidos"] or 0,
-            total_ventas=cierre_vista["total_ventas"] or 0,
-            utilidad_total=cierre_vista["utilidad_total"] or 0
-        )
-        db.session.add(nuevo_cierre)
         db.session.commit()
-        
-        flash("Cierre de caja realizado correctamente. La caja ha sido bloqueada por hoy.", "success")
-        return render_template("cierre_diario.html", cierre=nuevo_cierre)
+        flash("Cierre de caja realizado y sellado correctamente.", "success")
+        return redirect(url_for("ventas.cierre_diario"))
+
+    # GET: Mostrar la vista de cierre
     cierre = CierreCaja.query.order_by(CierreCaja.fecha.desc()).first()
     return render_template("cierre_diario.html", cierre=cierre)

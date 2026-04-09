@@ -181,7 +181,6 @@ def agregar_carrito(producto_id):
 @tienda_bp.route('/checkout', methods=['POST'])
 def checkout():
     try:
-        # ✅ CSRF correcto
         csrf_token = request.headers.get("X-CSRFToken")
         validate_csrf(csrf_token)
 
