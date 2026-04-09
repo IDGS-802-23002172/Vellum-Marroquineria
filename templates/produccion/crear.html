@@ -49,15 +49,15 @@
           {% endfor %}
         </div>
 
-        {# Aviso de estado inicial #}
+        {# Aviso de estado inicial CORREGIDO #}
         <div class="flash flash-info" role="note" style="margin-bottom:24px;">
           <i class="bi bi-info-circle flex-shrink-0"></i>
-          <span>Al lanzar, la orden pasará automáticamente a estado <strong>En Corte</strong>.</span>
+          <span>La orden se creará en estado <strong>Pendiente</strong>. No se descontará material hasta que el taller la pase a "En Corte".</span>
         </div>
 
         <div class="d-flex gap-3">
           <button type="submit" class="btn-piel flex-grow-1 justify-content-center">
-            <i class="bi bi-hammer"></i> Lanzar orden
+            <i class="bi bi-hammer"></i> Registrar orden
           </button>
           <a href="{{ url_for('produccion.listar_ordenes') }}"
              class="btn-outline-piel flex-grow-1 justify-content-center">

@@ -50,21 +50,38 @@
               <span class="tag-material tag-confirmada">Terminado</span>
             {% elif o.estado == 'Cancelado' %}
               <span class="tag-material tag-cancelada">Cancelado</span>
+            {% elif o.estado == 'Pendiente' %}
+              <span class="tag-material tag-borrador">Pendiente</span>
             {% else %}
-              <span class="tag-material tag-borrador">{{ o.estado }}</span>
+              <span class="tag-material" style="background:#e0f2fe; color:#991b1b; border:1px solid #fecaca;">{{ o.estado }}</span>
             {% endif %}
           </td>
           <td style="min-width:140px;">
             <div style="background:var(--v-border); border-radius:1px; height:4px; overflow:hidden;">
-              <div style="height:100%; background:{% if o.estado == 'Terminado' %}var(--v-success){% elif o.estado == 'Cancelado' %}var(--v-danger){% else %}var(--v-tan){% endif %};
-                          width:{% if o.estado == 'Terminado' %}100%{% elif o.estado == 'Cancelado' %}100%{% else %}50%{% endif %};
-                          transition: width .4s ease;">
-              </div>
+              
+              {% set bg = '#3b82f6' %}
+              {% set ancho = '60%' %}
+
+              {% if o.estado == 'Terminado' %}
+                {% set bg = 'var(--v-success)' %}
+                {% set ancho = '100%' %}
+              {% elif o.estado == 'Cancelado' %}
+                {% set bg = 'var(--v-danger)' %}
+                {% set ancho = '100%' %}
+              {% elif o.estado == 'Pendiente' %}
+                {% set bg = 'var(--v-tan)' %}
+                {% set ancho = '25%' %}
+              {% endif %}
+
+              <div class="barra-dinamica" style="--bg-dinamico: {{ bg }}; --ancho-dinamico: {{ ancho }};"></div>
+
             </div>
+            
             <span style="font-size:.68rem; color:var(--v-mid); margin-top:3px; display:block;">
               {% if o.estado == 'Terminado' %}Completado
               {% elif o.estado == 'Cancelado' %}Cancelado
-              {% else %}En proceso{% endif %}
+              {% elif o.estado == 'Pendiente' %}En espera de material
+              {% else %}Cortando / Confección{% endif %}
             </span>
           </td>
           <td>

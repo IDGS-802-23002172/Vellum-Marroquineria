@@ -19,7 +19,6 @@
 
     <div class="p-4">
 
-      {# Resumen de la orden #}
       <div style="background:var(--v-paper); border:1px solid var(--v-border); border-radius:2px;
                   padding:14px 16px; margin-bottom:24px;">
         <div style="font-size:.65rem; text-transform:uppercase; letter-spacing:.1em; color:var(--v-mid); margin-bottom:8px;">
@@ -33,13 +32,15 @@
             <span class="tag-material tag-confirmada">{{ orden.estado }}</span>
           {% elif orden.estado == 'Cancelado' %}
             <span class="tag-material tag-cancelada">{{ orden.estado }}</span>
-          {% else %}
+          {% elif orden.estado == 'Pendiente' %}
             <span class="tag-material tag-borrador">{{ orden.estado }}</span>
+          {% else %}
+            <span class="tag-material" style="background:#e0f2fe; color:#991b1b;">{{ orden.estado }}</span>
           {% endif %}
         </div>
       </div>
 
-      <form method="POST" novalidate>
+      <form method="POST" action="{{ url_for('produccion.actualizar_produccion', id=orden.id_orden) }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
         <div style="margin-bottom:28px;">
@@ -47,11 +48,12 @@
             Nueva fase de producción <span style="color:#dc2626;" aria-hidden="true">*</span>
           </label>
           <select name="estado" id="estado-select" class="form-select">
-            <option value="En Corte"  {% if orden.estado == 'En Corte'  %}selected{% endif %}>En Corte</option>
+            <option value="Pendiente" {% if orden.estado == 'Pendiente' %}selected{% endif %}>Pendiente (Esperando Material)</option>
+            <option value="En Corte"  {% if orden.estado == 'En Corte'  %}selected{% endif %}>En Corte (Descuenta material)</option>
             <option value="Terminado" {% if orden.estado == 'Terminado' %}selected{% endif %}>Terminado — mover a almacén</option>
           </select>
           <p style="font-size:.75rem; color:var(--v-mid); margin-top:6px; line-height:1.5;">
-            Al marcar como <strong>Terminado</strong>, el stock del producto se actualizará automáticamente.
+            Al pasar a <strong>En Corte</strong> se descontará el material de la receta. Al marcar como <strong>Terminado</strong>, el stock aumentará.
           </p>
         </div>
 
@@ -64,21 +66,22 @@
             <i class="bi bi-arrow-left"></i> Regresar
           </a>
         </div>
-
       </form>
     </div>
   </div>
 
-  {# Zona de peligro — cancelar orden #}
+  {# Zona de peligro — cancelar orden CORREGIDA #}
   {% if orden.estado not in ['Terminado', 'Cancelado'] %}
   <div style="margin-top:16px;">
-    <a href="{{ url_for('produccion.cancelar_orden', id=orden.id_orden) }}"
-       style="display:block; text-align:center; font-size:.72rem; color:var(--v-mid);
-              text-transform:uppercase; letter-spacing:.08em; text-decoration:none;
-              padding:10px; border:1px dashed var(--v-border); border-radius:2px;
-              transition: color .2s, border-color .2s;">
-      <i class="bi bi-x-octagon me-1"></i> Cancelar esta orden de producción
-    </a>
+    <form method="POST" action="{{ url_for('produccion.cancelar_orden', id=orden.id_orden) }}" onsubmit="return confirm('¿Estás seguro de cancelar esta orden?');">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" style="display:block; width:100%; text-align:center; font-size:.72rem; color:var(--v-mid);
+             text-transform:uppercase; letter-spacing:.08em; text-decoration:none; background:transparent;
+             padding:10px; border:1px dashed var(--v-border); border-radius:2px;
+             transition: color .2s, border-color .2s; cursor:pointer;">
+        <i class="bi bi-x-octagon me-1"></i> Cancelar esta orden de producción
+      </button>
+    </form>
   </div>
   {% endif %}
 

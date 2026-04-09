@@ -250,7 +250,14 @@ def checkout():
                 id_usuario=usuario_id,
                 id_producto=prod.id,
                 cantidad=item.cantidad,
-                estado="En Corte"
+                estado="Pendiente"
+            ))
+            db.session.add(DetalleVenta(
+                venta_id=venta.id,
+                producto_id=prod.id,
+                cantidad=item.cantidad,
+                precio_unitario=item.precio,
+                costo_unitario=prod.costo_produccion or 0
             ))
 
         movimiento = MovimientoCaja(

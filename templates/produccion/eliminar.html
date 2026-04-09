@@ -19,7 +19,6 @@
 
     <div class="p-4">
 
-      {# Resumen de la orden #}
       <div style="background:var(--v-danger-bg); border:1px solid #fecaca;
                   border-radius:2px; padding:16px; margin-bottom:24px;">
         <div style="font-size:.65rem; text-transform:uppercase; letter-spacing:.1em; color:var(--v-danger); margin-bottom:8px; font-weight:600;">
@@ -41,8 +40,8 @@
       </div>
 
       <p style="font-size:.875rem; color:var(--v-stone); line-height:1.65; margin-bottom:24px;">
-        Esta acción <strong>no se puede deshacer</strong>. La orden quedará marcada como cancelada
-        y los materiales ya consumidos <strong>no se reintegrarán</strong> al inventario automáticamente.
+        Esta acción <strong>no se puede deshacer</strong>. La orden quedará marcada como cancelada. <br><br>
+        <em>Nota del sistema:</em> Si la orden estaba "En Corte", los materiales descontados <strong>se devolverán automáticamente</strong> a tu almacén físico de materia prima.
       </p>
 
       <form method="POST" action="{{ url_for('produccion.cancelar_orden', id=orden.id_orden) }}">
