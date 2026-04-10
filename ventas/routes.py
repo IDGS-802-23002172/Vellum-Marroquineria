@@ -8,9 +8,6 @@ from datetime import datetime, date
 
 IVA_TASA = Decimal("0.16")
 
-# ─────────────────────────────────────
-# HELPERS
-# ─────────────────────────────────────
 def _siguiente_folio_venta() -> str:
     anio = datetime.utcnow().year
     ultima = Venta.query.filter(Venta.folio.like(f"VEN-{anio}-%")).order_by(Venta.id.desc()).first()
@@ -24,21 +21,13 @@ def _siguiente_folio_venta() -> str:
     return f"VEN-{anio}-{n:04d}"
 
 def calcular_totales(detalles):
-    subtotal = sum([
-        d.precio_unitario * d.cantidad for d in detalles
-    ]) if detalles else Decimal("0.00")
+    subtotal = sum([d.precio_unitario * d.cantidad for d in detalles]) if detalles else Decimal("0.00")
     iva = subtotal * IVA_TASA
-    total = subtotal + iva
-    return subtotal, iva, total
+    return subtotal, iva, subtotal + iva
 
 def obtener_caja_hoy():
-    """Devuelve el registro de la caja del día (el turno actual)"""
     return CierreCaja.query.filter_by(fecha=date.today()).first()
 
-
-# ─────────────────────────────────────
-# APERTURA DE CAJA
-# ─────────────────────────────────────
 @ventas_bp.route("/abrir-caja", methods=["POST"])
 def abrir_caja():
     usuario_id = session.get("user_id")
@@ -52,49 +41,35 @@ def abrir_caja():
         flash("La caja ya fue abierta el día de hoy.", "warning")
         return redirect(url_for("ventas.punto_venta"))
 
-    # 1. Crear el Turno de Caja
     nueva_caja = CierreCaja(
-        fecha=date.today(),
-        usuario_id=usuario_id,
-        monto_inicial=monto_inicial,
-        estado="abierta",
-        fecha_apertura=datetime.utcnow()
+        fecha=date.today(), usuario_id=usuario_id, monto_inicial=monto_inicial,
+        estado="abierta", fecha_apertura=datetime.utcnow()
     )
     db.session.add(nueva_caja)
     
-    # 2. Registrar el ingreso físico en el Flujo de Caja
     movimiento = MovimientoCaja(
-        tipo="ENTRADA",
-        concepto="Apertura de Caja (Fondo Inicial)",
-        monto=monto_inicial,
-        creado_por=usuario_id,
-        fecha=datetime.utcnow()
+        tipo="ENTRADA", concepto="Apertura de Caja (Fondo Inicial)",
+        monto=monto_inicial, creado_por=usuario_id, fecha=datetime.utcnow()
     )
     db.session.add(movimiento)
     db.session.commit()
     
-    flash("Caja abierta exitosamente. ¡Excelente turno!", "success")
+    flash("Caja abierta exitosamente.", "success")
     return redirect(url_for("ventas.punto_venta"))
 
-
-# ─────────────────────────────────────
-# POS (PUNTO DE VENTA)
-# ─────────────────────────────────────
 @ventas_bp.route("/pos", methods=["GET"])
 def punto_venta():
     caja = obtener_caja_hoy()
-
     session_id = session.get("session_id")
     if not session_id:
         session_id = str(uuid.uuid4())
         session["session_id"] = session_id
 
-    busqueda = request.args.get("busqueda")
+    busqueda = request.args.get("busqueda", "").strip()
 
-    if busqueda:
+    if busqueda != "":
         productos = Producto.query.filter(
-            (Producto.nombre.ilike(f"%{busqueda}%")) |
-            (Producto.sku.ilike(f"%{busqueda}%"))
+            (Producto.nombre.ilike(f"%{busqueda}%")) | (Producto.sku.ilike(f"%{busqueda}%"))
         ).all()
     else:
         productos = Producto.query.filter(Producto.stock_actual > 0).all()
@@ -104,20 +79,8 @@ def punto_venta():
     iva = subtotal * IVA_TASA
     total = subtotal + iva
 
-    return render_template(
-        "punto_venta.html",
-        productos=productos,
-        carrito=carrito,
-        subtotal=subtotal,
-        iva=iva,
-        total=total,
-        caja=caja # Pasamos el estado de la caja a la vista
-    )
+    return render_template("punto_venta.html", productos=productos, carrito=carrito, subtotal=subtotal, iva=iva, total=total, caja=caja)
 
-
-# ─────────────────────────────────────
-# AGREGAR PRODUCTO AL CARRITO
-# ─────────────────────────────────────
 @ventas_bp.route("/agregar", methods=["POST"])
 def agregar_producto():
     caja = obtener_caja_hoy()
@@ -128,37 +91,24 @@ def agregar_producto():
     session_id = session.get("session_id")
     producto_id = request.form.get("producto_id")
     cantidad = int(request.form.get("cantidad"))
-
     producto = Producto.query.get(producto_id)
 
     if cantidad > producto.stock_actual:
         flash("Stock insuficiente", "danger")
         return redirect(url_for("ventas.punto_venta"))
 
-    item_existente = CarritoTemporal.query.filter_by(
-        session_id=session_id,
-        producto_id=producto.id
-    ).first()
-
+    item_existente = CarritoTemporal.query.filter_by(session_id=session_id, producto_id=producto.id).first()
     if item_existente:
         item_existente.cantidad += cantidad
     else:
-        item = CarritoTemporal(
-            session_id=session_id,
-            producto_id=producto.id,
-            nombre=producto.nombre,
-            precio=producto.precio_venta,
-            cantidad=cantidad
-        )
-        db.session.add(item)
+        db.session.add(CarritoTemporal(
+            session_id=session_id, producto_id=producto.id, nombre=producto.nombre,
+            precio=producto.precio_venta, cantidad=cantidad
+        ))
     
     db.session.commit()
     return redirect(url_for("ventas.punto_venta"))
 
-
-# ─────────────────────────────────────
-# FINALIZAR VENTA (TRANSACCIÓN ACID)
-# ─────────────────────────────────────
 @ventas_bp.route("/finalizar", methods=["POST"])
 def finalizar_venta():
     caja = obtener_caja_hoy()
@@ -179,12 +129,7 @@ def finalizar_venta():
         return redirect(url_for("login")) 
     
     try:
-        nueva_venta = Venta(
-            folio=_siguiente_folio_venta(),
-            usuario_id=usuario_id,
-            estado="Pagado",
-            tipo="POS"
-        )
+        nueva_venta = Venta(folio=_siguiente_folio_venta(), usuario_id=usuario_id, estado="Pagado", tipo="POS")
         db.session.add(nueva_venta)
         db.session.flush()
         
@@ -195,29 +140,19 @@ def finalizar_venta():
             if producto.stock_actual < item.cantidad:
                 raise ValueError(f"Stock insuficiente para producto: {producto.nombre}")
             
-            detalle = DetalleVenta(
-                venta_id=nueva_venta.id,
-                producto_id=item.producto_id,
-                cantidad=item.cantidad,
-                precio_unitario=item.precio,
-                costo_unitario=producto.costo_produccion
-            )
-            db.session.add(detalle)
+            db.session.add(DetalleVenta(
+                venta_id=nueva_venta.id, producto_id=item.producto_id,
+                cantidad=item.cantidad, precio_unitario=item.precio, costo_unitario=producto.costo_produccion
+            ))
             producto.stock_actual -= item.cantidad
             total_venta_sin_iva += (Decimal(str(item.precio)) * item.cantidad)
         
-        iva = total_venta_sin_iva * IVA_TASA
-        total_con_iva = total_venta_sin_iva + iva
+        total_con_iva = total_venta_sin_iva + (total_venta_sin_iva * IVA_TASA)
         
-        movimiento_caja = MovimientoCaja(
-            tipo="ENTRADA",
-            concepto=f"Venta en Mostrador - Folio: {nueva_venta.folio}",
-            monto=total_con_iva,
-            id_venta=nueva_venta.id,
-            creado_por=usuario_id,
-            fecha=datetime.utcnow()
-        )
-        db.session.add(movimiento_caja)
+        db.session.add(MovimientoCaja(
+            tipo="ENTRADA", concepto=f"Venta en Mostrador - Folio: {nueva_venta.folio}",
+            monto=total_con_iva, id_venta=nueva_venta.id, creado_por=usuario_id, fecha=datetime.utcnow()
+        ))
         
         CarritoTemporal.query.filter_by(session_id=session_id).delete()
         db.session.commit()
@@ -230,12 +165,10 @@ def finalizar_venta():
         db.session.rollback()
         flash(str(ve), "warning")
         return redirect(url_for("ventas.punto_venta"))
-
     except Exception as e:
         db.session.rollback()
-        flash(f"Error crítico al procesar la venta: {str(e)}", "danger")
+        flash(f"Error crítico: {str(e)}", "danger")
         return redirect(url_for("ventas.punto_venta"))
-
 
 @ventas_bp.route("/cancelar", methods=["POST"])
 def cancelar_venta():
@@ -245,28 +178,20 @@ def cancelar_venta():
     flash("Venta cancelada", "info")
     return redirect(url_for("ventas.punto_venta"))
 
-
 @ventas_bp.route("/ticket")
 def ticket():
     venta_id = session.get("ultima_venta_id")
-    if not venta_id:
-        return redirect(url_for("ventas.punto_venta"))
-
+    if not venta_id: return redirect(url_for("ventas.punto_venta"))
     venta = Venta.query.get(venta_id)
     detalles = DetalleVenta.query.filter_by(venta_id=venta.id).all()
     subtotal, iva, total = calcular_totales(detalles)
-
     return render_template("ticket.html", venta=venta, detalles=detalles, subtotal=subtotal, iva=iva, total=total)
 
-
-# ─────────────────────────────────────
-# API DATOS MODAL DE CIERRE
-# ─────────────────────────────────────
 @ventas_bp.route("/api/datos-cierre")
 def datos_cierre():
     caja = obtener_caja_hoy()
     if not caja or caja.estado == "cerrada":
-        return {"error": "No hay caja abierta para calcular"}, 400
+        return {"error": "No hay caja abierta"}, 400
         
     resultado = db.session.execute(text("""
         SELECT SUM(dv.cantidad * dv.precio_unitario) AS total_ventas
@@ -277,33 +202,22 @@ def datos_cierre():
     
     total_ventas = resultado["total_ventas"] or 0
     monto_inicial = caja.monto_inicial
-    # Sumamos y agregamos el IVA para reflejar el total real en caja
     total_esperado = float(monto_inicial) + (float(total_ventas) * 1.16) 
     
-    return {
-        "monto_inicial": float(monto_inicial),
-        "total_ventas": float(total_ventas) * 1.16, # Mostramos con IVA
-        "total_esperado": total_esperado
-    }
+    return {"monto_inicial": float(monto_inicial), "total_ventas": float(total_ventas) * 1.16, "total_esperado": total_esperado}
 
-
-# ─────────────────────────────────────
-# CONFIRMAR CIERRE DIARIO
-# ─────────────────────────────────────
 @ventas_bp.route("/cierre-diario", methods=["GET", "POST"])
 def cierre_diario():
     if request.method == "POST":
         caja = obtener_caja_hoy()
-        
         if not caja or caja.estado == 'cerrada':
-            flash("No hay una caja abierta para cerrar hoy.", "warning")
+            flash("No hay caja abierta.", "warning")
             return redirect(url_for("ventas.punto_venta"))
 
         resultado = db.session.execute(text("""
-            SELECT 
-                SUM(dv.cantidad) AS articulos_vendidos,
-                SUM(dv.cantidad * dv.precio_unitario) AS total_ventas,
-                SUM(dv.cantidad * (dv.precio_unitario - dv.costo_unitario)) AS utilidad_total
+            SELECT SUM(dv.cantidad) AS articulos_vendidos,
+                   SUM(dv.cantidad * dv.precio_unitario) AS total_ventas,
+                   SUM(dv.cantidad * (dv.precio_unitario - dv.costo_unitario)) AS utilidad_total
             FROM ventas v
             JOIN detalle_ventas dv ON v.id = dv.venta_id
             WHERE DATE(v.fecha) = CURDATE() AND v.tipo = 'POS'
@@ -316,9 +230,8 @@ def cierre_diario():
         caja.fecha_cierre = datetime.utcnow()
 
         db.session.commit()
-        flash("Cierre de caja realizado y sellado correctamente.", "success")
+        flash("Cierre sellado correctamente.", "success")
         return redirect(url_for("ventas.cierre_diario"))
 
-    # GET: Mostrar la vista de cierre
     cierre = CierreCaja.query.order_by(CierreCaja.fecha.desc()).first()
     return render_template("cierre_diario.html", cierre=cierre)

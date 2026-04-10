@@ -9,49 +9,65 @@ import uuid
 
 tienda_bp = Blueprint('tiendaCliente', __name__)
 
-# ─────────────────────────────────────────────
-# HELPER: obtener o crear session_id
-# ─────────────────────────────────────────────
 def get_or_create_session_id():
     session_id = request.cookies.get('session_id')
     if not session_id:
         session_id = str(uuid.uuid4())
     return session_id
 
-# ─────────────────────────────────────────────
 def _redirect_con_cookie(endpoint, session_id=None, **kwargs):
     response = make_response(redirect(url_for(endpoint, **kwargs)))
     if session_id:
         response.set_cookie('session_id', session_id, max_age=86400)
     return response
 
-# ─────────────────────────────────────────────
 def limpiar_carritos_expirados():
     hace_30_min = datetime.utcnow() - timedelta(minutes=30)
     db.session.query(CarritoTemporal).filter(
         CarritoTemporal.creado_en < hace_30_min
     ).delete(synchronize_session=False)
 
-# ─────────────────────────────────────────────
 @tienda_bp.route('/')
 def index():
     if 'user_role' in session and session['user_role'] != 'Cliente':
         return redirect(url_for('dashboard.index')) 
     return render_template('tiendaCliente/index.html')
 
-# ─────────────────────────────────────────────
 @tienda_bp.route('/mis-pedidos')
 def mis_pedidos():
     usuario_id = session.get('user_id')
+
     if not usuario_id or session.get('user_role') != 'Cliente':
         return redirect(url_for('login'))
-    
-    pedidos = Venta.query.filter_by(usuario_id=usuario_id)\
-        .order_by(Venta.fecha.desc()).all()
-    
-    return render_template('tiendaCliente/seguimiento.html', pedidos=pedidos)
 
-# ─────────────────────────────────────────────
+    pedidos = Venta.query.filter_by(usuario_id=usuario_id).order_by(Venta.fecha.desc()).all()
+    pedidos_data = []
+
+    for pedido in pedidos:
+        detalles = pedido.detalles
+        ordenes = OrdenProduccion.query.filter_by(id_usuario=usuario_id).all()
+        
+        total_detalles = sum(float(d.subtotal or 0) for d in detalles)
+        total_produccion = 0
+        
+        # Filtramos las órdenes para que solo coincidan con la fecha de este pedido (aproximado) o vinculación real si existiera
+        # Por ahora mantenemos la lógica de Emilio
+        for o in ordenes:
+            producto = Producto.query.get(o.id_producto)
+            if producto:
+                total_produccion += float(producto.precio_venta or 0) * o.cantidad
+
+        total_general = total_detalles + total_produccion
+
+        pedidos_data.append({
+            'pedido': pedido,
+            'detalles': detalles,
+            'ordenes': ordenes,
+            'total': total_general
+        })
+
+    return render_template('tiendaCliente/seguimiento.html', pedidos=pedidos_data)
+
 @tienda_bp.route('/catalogo')
 def catalogo():
     page = request.args.get('page', 1, type=int)
@@ -64,22 +80,14 @@ def catalogo():
 
     if search:
         query = query.filter(Producto.nombre.ilike(f"%{search}%"))
-
     if linea:
         query = query.filter(Producto.linea == linea)
-
     if categoria:
         query = query.filter(Producto.categoria == categoria)
-
     if solo_disponibles:
         query = query.filter(Producto.stock_actual > 0)
 
-    productos = query.order_by(Producto.nombre).paginate(
-        page=page,
-        per_page=12,
-        error_out=False
-    )
-
+    productos = query.order_by(Producto.nombre).paginate(page=page, per_page=12, error_out=False)
     lineas = db.session.query(Producto.linea).distinct().all()
     categorias = db.session.query(Producto.categoria).distinct().all()
 
@@ -93,25 +101,16 @@ def catalogo():
         categoría_actual=categoria
     )
 
-# ─────────────────────────────────────────────
 @tienda_bp.route('/producto/<int:id>')
 def detalle_producto(id):
     producto = Producto.query.get_or_404(id)
-
     limpiar_carritos_expirados()
     db.session.flush()
+    return render_template('tiendaCliente/detalle_producto.html', producto=producto, stock_disponible=producto.stock_disponible)
 
-    return render_template(
-        'tiendaCliente/detalle_producto.html',
-        producto=producto,
-        stock_disponible=producto.stock_disponible
-    )
-
-# ─────────────────────────────────────────────
 @tienda_bp.route('/carrito')
 def ver_carrito():
     session_id = get_or_create_session_id()
-
     articulos = CarritoTemporal.query.filter_by(session_id=session_id).all()
     total = sum(float(a.precio or 0) * a.cantidad for a in articulos)
 
@@ -124,7 +123,6 @@ def ver_carrito():
     response.set_cookie('session_id', session_id, max_age=86400)
     return response
 
-# ─────────────────────────────────────────────
 @tienda_bp.route('/agregar-carrito/<int:producto_id>', methods=['POST'])
 def agregar_carrito(producto_id):
     try:
@@ -145,10 +143,15 @@ def agregar_carrito(producto_id):
 
         producto = Producto.query.get_or_404(producto_id)
 
-        item = CarritoTemporal.query.filter_by(
-            session_id=session_id,
-            producto_id=producto_id
-        ).first()
+        # Lógica de stock avanzado de Emilio
+        ya_en_mi_carrito = int(db.session.query(func.coalesce(func.sum(CarritoTemporal.cantidad), 0)).filter_by(session_id=session_id, producto_id=producto_id).scalar())
+        reservado_otros = int(db.session.query(func.coalesce(func.sum(CarritoTemporal.cantidad), 0)).filter(CarritoTemporal.producto_id == producto_id, CarritoTemporal.session_id != session_id).scalar())
+        stock_para_este_usuario = max(0, producto.stock_actual - reservado_otros)
+
+        if stock_para_este_usuario <= 0:
+            flash('Este producto no tiene stock, pero puedes pedirlo y se enviará a producción.', 'warning')
+
+        item = CarritoTemporal.query.filter_by(session_id=session_id, producto_id=producto_id).first()
 
         if item:
             item.cantidad += cantidad
@@ -164,20 +167,22 @@ def agregar_carrito(producto_id):
             ))
 
         db.session.commit()
-
         total_productos = CarritoTemporal.query.filter_by(session_id=session_id).count()
-
         flash(f'"{producto.nombre}" agregado ({total_productos} en carrito)', 'success')
 
         return _redirect_con_cookie('tiendaCliente.detalle_producto', session_id, id=producto_id)
 
     except Exception as e:
         db.session.rollback()
-        print("ERROR agregar_carrito:", e)
         flash('Error interno.', 'danger')
         return _redirect_con_cookie('tiendaCliente.detalle_producto', id=producto_id)
 
-# ─────────────────────────────────────────────
+def generar_folio():
+    fecha = datetime.now().strftime("%Y%m%d")
+    ultima = Venta.query.order_by(Venta.id.desc()).first()
+    numero = (ultima.id + 1) if ultima else 1
+    return f"T-{fecha}-{numero:04d}"
+
 @tienda_bp.route('/checkout', methods=['POST'])
 def checkout():
     try:
@@ -200,10 +205,7 @@ def checkout():
 
         limpiar_carritos_expirados()
 
-        productos = Producto.query.filter(
-            Producto.id.in_([i.producto_id for i in items])
-        ).with_for_update().all()
-
+        productos = Producto.query.filter(Producto.id.in_([i.producto_id for i in items])).with_for_update().all()
         productos_dict = {p.id: p for p in productos}
 
         detalles_venta = []
@@ -212,11 +214,9 @@ def checkout():
 
         for item in items:
             prod = productos_dict.get(item.producto_id)
-            if not prod:
-                continue
+            if not prod: continue
 
-            stock = prod.stock_actual or 0  # 🔥 evita None
-
+            stock = prod.stock_actual or 0
             if item.cantidad <= stock:
                 detalles_venta.append((prod, item))
             else:
@@ -231,7 +231,6 @@ def checkout():
             estado="Pagado",
             tipo="ONLINE"
         )
-
         db.session.add(venta)
         db.session.flush()
 
@@ -262,31 +261,19 @@ def checkout():
 
         movimiento = MovimientoCaja(
             tipo="ENTRADA",
-            concepto=f"Venta {venta.folio}",
+            concepto=f"Venta Online {venta.folio}",
             monto=total * Decimal("1.16"),
             id_venta=venta.id,
             creado_por=usuario_id,
             fecha=datetime.utcnow()
         )
-
         db.session.add(movimiento)
 
         CarritoTemporal.query.filter_by(session_id=session_id).delete()
-
         db.session.commit()
 
-        return jsonify({'success': True})
+        return jsonify({'success': True, 'total': float(total * Decimal("1.16"))})
 
     except Exception as e:
         db.session.rollback()
-        import traceback
-        traceback.print_exc()
-        print("ERROR CHECKOUT:", e)
         return jsonify({'success': False, 'message': str(e)}), 500
-
-# ─────────────────────────────────────────────
-def generar_folio():
-    fecha = datetime.now().strftime("%Y%m%d")
-    ultima = Venta.query.order_by(Venta.id.desc()).first()
-    numero = (ultima.id + 1) if ultima else 1
-    return f"T-{fecha}-{numero:04d}"

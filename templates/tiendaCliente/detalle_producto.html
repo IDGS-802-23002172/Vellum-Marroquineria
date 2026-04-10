@@ -5,7 +5,6 @@
 {% block content %}
 <div class="container my-5">
 
-    <!-- NAVEGACIÓN -->
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{{ url_for('tiendaCliente.index') }}">Inicio</a></li>
@@ -15,17 +14,15 @@
     </nav>
 
     <div class="row mb-5">
-
-        <!-- IMAGEN -->
         <div class="col-md-6 mb-4">
-            <div class="card border-light">
+            <div class="card border-0 shadow-sm">
                 {% if producto.imagen %}
                 <img src="{{ url_for('static', filename='img/productos/' + producto.imagen) }}"
-                     class="card-img-top"
+                     class="card-img-top rounded-0"
                      alt="{{ producto.nombre }}"
                      style="max-height: 500px; object-fit: cover;">
                 {% else %}
-                <div class="bg-light d-flex align-items-center justify-content-center" style="height: 500px;">
+                <div class="bg-light d-flex align-items-center justify-content-center rounded-0" style="height: 500px;">
                     <div class="text-center">
                         <i class="bi bi-image text-muted" style="font-size: 5rem;"></i>
                         <p class="text-muted mt-2">Sin imagen disponible</p>
@@ -35,181 +32,78 @@
             </div>
         </div>
 
-        <!-- INFORMACIÓN -->
         <div class="col-md-6">
-
-            <!-- BADGES -->
             <div class="mb-3">
                 {% if producto.linea %}
-                <span class="badge bg-info me-2 p-2">{{ producto.linea }}</span>
+                <span class="badge bg-dark rounded-0 me-2 p-2 text-uppercase tracking-widest">{{ producto.linea }}</span>
                 {% endif %}
                 {% if producto.categoria %}
-                <span class="badge bg-secondary p-2">{{ producto.categoria }}</span>
+                <span class="badge bg-secondary rounded-0 p-2 text-uppercase tracking-widest">{{ producto.categoria }}</span>
                 {% endif %}
             </div>
 
-            <h1 class="mb-2">{{ producto.nombre }}</h1>
-            <p class="text-muted mb-3">SKU: <strong>{{ producto.sku }}</strong></p>
+            <h1 class="mb-2 fw-bold" style="font-family: 'Playfair Display', serif;">{{ producto.nombre }}</h1>
+            <p class="text-muted mb-3 font-monospace small">SKU: <strong>{{ producto.sku }}</strong></p>
 
-            <hr>
+            <hr class="my-4">
 
-            <!-- PRECIO -->
             <div class="mb-4">
-                <h3 class="text-primary fw-bold mb-1">{{ "$%.2f"|format(producto.precio_venta) }}</h3>
-                {% if producto.costo_produccion %}
-                <small class="text-muted d-block">Costo: ${{ "%.2f"|format(producto.costo_produccion) }}</small>
-                {% endif %}
+                <h2 class="text-primary fw-bold mb-1">{{ "$%.2f"|format(producto.precio_venta) }}</h2>
             </div>
 
-            <!-- STOCK
-                 Mostramos stock_disponible (stock real − reservado en carritos
-                 activos de todos los usuarios), no stock_actual en crudo.
-                 Así el cliente ve exactamente lo que puede comprar ahora mismo.
-            -->
-            <!-- STOCK / DISPONIBILIDAD -->
             <div class="mb-4">
-
                 {% if stock_disponible > 0 %}
-                <div class="alert alert-success d-flex align-items-center" role="alert">
-                    <i class="bi bi-check-circle-fill me-2"></i>
+                <div class="alert alert-success d-flex align-items-center rounded-0 border-0 border-start border-4 border-success">
+                    <i class="bi bi-check-circle-fill me-3 fs-4"></i>
                     <div>
-                        <strong>Disponible:</strong> {{ stock_disponible }} unidad(es) en stock
+                        <strong>Disponible:</strong> {{ stock_disponible }} unidad(es) listas para envío.
                     </div>
                 </div>
-
-                <div class="alert alert-info">
-                    <i class="bi bi-info-circle"></i>
-                    Puedes comprar más unidades; las adicionales se enviarán a producción.
-                </div>
-
                 {% else %}
-                <div class="alert alert-warning d-flex align-items-center" role="alert">
-                    <i class="bi bi-tools me-2"></i>
+                <div class="alert alert-warning d-flex align-items-center rounded-0 border-0 border-start border-4 border-warning">
+                    <i class="bi bi-tools me-3 fs-4"></i>
                     <div>
                         <strong>Producto bajo pedido</strong><br>
-                        Este producto no tiene stock disponible actualmente.<br>
-                        Tu compra generará una orden de producción.
+                        Se fabricará exclusivamente para ti al confirmar la compra.
                     </div>
                 </div>
                 {% endif %}
-
             </div>
 
-            <!-- FORMULARIO DE COMPRA (SIEMPRE DISPONIBLE) -->
-            <form method="POST"
-                action="{{ url_for('tiendaCliente.agregar_carrito', producto_id=producto.id) }}"
-                class="mb-4">
-
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-
-                <div class="mb-3">
-                    <label for="cantidad" class="form-label fw-bold">Cantidad</label>
-                    <input type="number"
-                        class="form-control form-control-lg"
-                        id="cantidad"
-                        name="cantidad"
-                        value="1"
-                        min="1"
-                        required>
-
-                    {% if stock_disponible > 0 %}
-                    <small class="text-muted">
-                        Stock disponible inmediato: {{ stock_disponible }}
-                    </small>
-                    {% else %}
-                    <small class="text-warning">
-                        Todo el pedido será enviado a producción
-                    </small>
-                    {% endif %}
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show rounded-0 border-0 border-start border-4 border-{{ category }}">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
+                {% endfor %}
+            {% endwith %}
 
-                <div class="d-grid mt-4">
-                    <button type="submit" class="btn btn-primary btn-lg">
-                        <i class="bi bi-cart-plus"></i> Agregar al carrito
-                    </button>
+            <form method="POST" action="{{ url_for('tiendaCliente.agregar_carrito', producto_id=producto.id) }}" class="mb-5">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="row g-3 align-items-end">
+                    <div class="col-4">
+                        <label for="cantidad" class="form-label fw-bold text-uppercase small tracking-widest text-muted">Cantidad</label>
+                        <input type="number" class="form-control form-control-lg rounded-0 text-center" id="cantidad" name="cantidad" value="1" min="1" required>
+                    </div>
+                    <div class="col-8">
+                        <button type="submit" class="btn btn-dark btn-lg w-100 rounded-0 text-uppercase tracking-widest">
+                            <i class="bi bi-cart-plus me-2"></i> Añadir
+                        </button>
+                    </div>
                 </div>
             </form>
 
-            <!-- INFORMACIÓN ADICIONAL -->
-            <div class="mb-4">
-                <h5 class="fw-bold mb-3">Información del producto</h5>
-                <table class="table table-sm table-borderless">
-                    <tr>
-                        <td class="text-muted">SKU:</td>
-                        <td class="fw-bold">{{ producto.sku }}</td>
-                    </tr>
-                    {% if producto.linea %}
-                    <tr>
-                        <td class="text-muted">Línea:</td>
-                        <td class="fw-bold">{{ producto.linea }}</td>
-                    </tr>
-                    {% endif %}
-                    {% if producto.categoria %}
-                    <tr>
-                        <td class="text-muted">Categoría:</td>
-                        <td class="fw-bold">{{ producto.categoria }}</td>
-                    </tr>
-                    {% endif %}
-                    <tr>
-                        <td class="text-muted">Registrado:</td>
-                            <td class="fw-bold">
-                                {{ producto.fecha_registro.strftime('%d/%m/%Y') if producto.fecha_registro else 'Sin fecha' }}
-                            </td>
-                    </tr>
-                </table>
-            </div>
-
-            <!-- CONTACTO -->
-            <div class="card bg-light border-0">
-                <div class="card-body">
-                    <h6 class="card-title fw-bold">¿Preguntas sobre este producto?</h6>
-                    <p class="card-text text-sm mb-2">Contáctanos para más información</p>
-                    <a href="mailto:info@vellummarroquineria.com" class="btn btn-sm btn-outline-primary">
-                        <i class="bi bi-envelope"></i> Enviar consulta
+            <div class="card bg-light border-0 rounded-0">
+                <div class="card-body p-4">
+                    <h6 class="fw-bold mb-3 text-uppercase tracking-widest small">Atención al Cliente</h6>
+                    <p class="text-muted small mb-3">¿Deseas personalizar esta pieza o tienes dudas sobre los materiales?</p>
+                    <a href="mailto:info@vellummarroquineria.com" class="btn btn-sm btn-outline-dark rounded-0 text-uppercase tracking-widest">
+                        <i class="bi bi-envelope me-2"></i> Contáctanos
                     </a>
                 </div>
             </div>
-
         </div>
     </div>
-
-    <!-- PRODUCTOS RELACIONADOS -->
-    {% if relacionados %}
-    <hr class="my-5">
-    <div class="mb-5">
-        <h3 class="fw-bold mb-4">Productos relacionados</h3>
-        <div class="row row-cols-1 row-cols-md-4 g-4">
-            {% for prod in relacionados %}
-            <div class="col">
-                <div class="card h-100 shadow-sm">
-                    <div style="height: 200px; overflow: hidden;">
-                        {% if prod.imagen %}
-                        <img src="{{ url_for('static', filename='img/productos/' + prod.imagen) }}"
-                             class="card-img-top h-100 w-100"
-                             style="object-fit: cover;"
-                             alt="{{ prod.nombre }}">
-                        {% else %}
-                        <div class="bg-light h-100 d-flex align-items-center justify-content-center">
-                            <i class="bi bi-image text-muted" style="font-size: 2rem;"></i>
-                        </div>
-                        {% endif %}
-                    </div>
-                    <div class="card-body d-flex flex-column">
-                        <h6 class="card-title fw-bold text-truncate">{{ prod.nombre }}</h6>
-                        <p class="card-text fw-bold text-primary mt-auto">
-                            ${{ "%.2f"|format(prod.precio_venta) }}
-                        </p>
-                        <a href="{{ url_for('tiendaCliente.detalle_producto', id=prod.id) }}"
-                           class="btn btn-sm btn-outline-primary w-100">
-                            Ver
-                        </a>
-                    </div>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-    </div>
-    {% endif %}
-
 </div>
 {% endblock %}

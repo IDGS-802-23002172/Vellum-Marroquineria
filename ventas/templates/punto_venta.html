@@ -28,6 +28,7 @@
             </div>
         </div>
     </div>
+
     {% elif caja.estado == 'cerrada' %}
     <div class="text-center mt-5 py-5 bg-light" style="border: 1px dashed #ccc;">
         <i class="bi bi-lock-fill text-muted mb-3 d-block" style="font-size: 3rem;"></i>
@@ -37,6 +38,7 @@
             Ver Resumen de Cierre
         </a>
     </div>
+
     {% else %}
     <div class="d-flex justify-content-between mb-4 align-items-center border-bottom pb-3">
         <div>
@@ -50,11 +52,128 @@
         </button>
     </div>
 
-    <div class="row g-4">
+    <div class="row g-5">
         
-        <div class="col-12 text-center p-5 bg-light border">
-             <h4 class="text-muted">Espacio para tu Interfaz de Ventas</h4>
-             <p>Reemplaza este div con tu código HTML del buscador, los productos y el carrito de compras.</p>
+        <div class="col-lg-8">
+            <div class="mb-5">
+                <form method="get" action="{{ url_for('ventas.punto_venta') }}" class="search-wrap">
+                    <div class="position-relative">
+                        <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-secondary"></i>
+                        <input type="text" name="busqueda" 
+                               class="form-control border-0 border-bottom border-dark bg-transparent rounded-0 shadow-none ps-5 py-3 font-monospace" 
+                               placeholder="BUSCAR PIEZA POR NOMBRE O SKU..."
+                               value="{{ request.args.get('busqueda', '') }}">
+                    </div>
+                </form>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead class="small text-muted text-uppercase tracking-widest bg-light">
+                        <tr>
+                            <th class="border-0 ps-3 py-3">Artículo</th>
+                            <th class="border-0 py-3">SKU</th>
+                            <th class="border-0 py-3">Precio</th>
+                            <th class="border-0 py-3">Stock</th>
+                            <th class="border-0 text-center py-3">Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for producto in productos %}
+                        <tr class="border-bottom border-light">
+                            <td class="py-3 ps-3">
+                                <div class="fw-bold text-uppercase">{{ producto.nombre }}</div>
+                                <small class="text-muted">{{ producto.categoria }}</small>
+                            </td>
+                            <td class="py-3 font-monospace small text-muted">
+                                {{ producto.sku or 'S/N' }}
+                            </td>
+                            <td class="py-3">${{ "%.2f"|format(producto.precio_venta) }}</td>
+                            <td class="py-3">
+                                {% if producto.stock_actual > 0 %}
+                                    <span class="badge bg-success rounded-0">Stock: {{ producto.stock_actual }}</span>
+                                {% else %}
+                                    <span class="badge bg-danger rounded-0">Agotado</span>
+                                {% endif %}
+                            </td>
+                            <td class="py-3 text-center">
+                                <form method="post" action="{{ url_for('ventas.agregar_producto') }}" class="d-flex justify-content-center gap-2">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <input type="hidden" name="producto_id" value="{{ producto.id }}">
+                                    
+                                    <input type="number" name="cantidad" min="1"
+                                           max="{{ producto.stock_actual if producto.stock_actual > 0 else 1 }}"
+                                           value="1"
+                                           class="form-control form-control-sm text-center shadow-none"
+                                           style="width: 70px; border-radius: 0;">
+
+                                    <button type="submit"
+                                            class="btn btn-dark btn-sm rounded-0 px-3 text-uppercase tracking-widest"
+                                            {% if producto.stock_actual <= 0 %}disabled{% endif %}>
+                                        <i class="bi bi-plus-lg"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card border-0 border-start border-light ps-lg-4 h-100 bg-transparent rounded-0">
+                <h3 class="small text-uppercase tracking-widest border-bottom border-dark pb-3 mb-4 fw-bold">Ticket de Venta</h3>
+                
+                <div class="cart-items mb-4" style="min-height: 200px;">
+                    {% if carrito %}
+                        {% for item in carrito %}
+                        <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom border-light">
+                            <div>
+                                <div class="fw-bold text-uppercase small">{{ item.nombre }}</div>
+                                <div class="small text-muted text-uppercase tracking-widest" style="font-size: 0.7rem;">Cant: {{ item.cantidad }} x ${{ "%.2f"|format(item.precio) }}</div>
+                            </div>
+                            <div class="fw-bold font-monospace">
+                                ${{ "%.2f"|format(item.precio * item.cantidad) }}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted text-center italic small mt-5">Aún no hay productos en la mesa.</p>
+                    {% endif %}
+                </div>
+
+                <div class="bg-light p-4 border">
+                    <div class="d-flex justify-content-between mb-2 small text-uppercase tracking-widest text-muted">
+                        <span>Subtotal</span>
+                        <span>${{ "%.2f"|format(subtotal) }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-3 small text-uppercase tracking-widest text-muted">
+                        <span>I.V.A (16%)</span>
+                        <span>${{ "%.2f"|format(iva) }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-4 border-top border-dark pt-3">
+                        <h6 class="mb-0 fw-bold text-uppercase tracking-widest">A COBRAR</h6>
+                        <h5 class="mb-0 text-dark fw-bold font-monospace">${{ "%.2f"|format(total) }}</h5>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <form method="post" action="{{ url_for('ventas.finalizar_venta') }}" class="m-0">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-dark w-100 py-3 rounded-0 text-uppercase tracking-widest fw-bold" {% if not carrito %}disabled{% endif %}>
+                                <i class="bi bi-receipt me-2"></i> Procesar Pago
+                            </button>
+                        </form>
+                        
+                        <form method="post" action="{{ url_for('ventas.cancelar_venta') }}" class="m-0">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-outline-danger w-100 py-2 rounded-0 text-uppercase tracking-widest small" {% if not carrito %}disabled{% endif %}>
+                                Cancelar Orden
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
         </div>
 
     </div>

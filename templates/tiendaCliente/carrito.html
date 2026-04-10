@@ -15,23 +15,27 @@
 
     {% if articulos %}
     <div class="row g-4">
-
-        <!-- 🔴 namespace para acumular -->
         {% set ns = namespace(total_disponible=0) %}
 
-        <!-- TABLA -->
         <div class="col-lg-8">
-            <div class="card border-light">
+            <div class="card border-light shadow-sm">
                 <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light">
+                            <tr>
+                                <th>Artículo</th>
+                                <th class="text-end">Precio</th>
+                                <th class="text-center">Cantidad</th>
+                                <th class="text-center">Estado</th>
+                                <th class="text-end">Subtotal</th>
+                            </tr>
+                        </thead>
                         <tbody>
-
                         {% for articulo in articulos %}
                             {% set stock = articulo.producto.stock_disponible %}
-
                             {% set subtotal_item = articulo.precio * articulo.cantidad %}
-
                             {% set ns.total_disponible = ns.total_disponible + subtotal_item %}
+                            
                             {% if articulo.cantidad <= stock %}
                                 {% set tipo = "stock" %}
                             {% else %}
@@ -39,101 +43,105 @@
                             {% endif %}
 
                             <tr>
-                                <td>{{ articulo.nombre }}</td>
-
-                                <td class="text-end">
-                                    ${{ "%.2f"|format(articulo.precio) }}
-                                </td>
-
-                                <td class="text-center">
-                                    {{ articulo.cantidad }}
-                                </td>
-
+                                <td class="fw-bold">{{ articulo.nombre }}</td>
+                                <td class="text-end">${{ "%.2f"|format(articulo.precio) }}</td>
+                                <td class="text-center">{{ articulo.cantidad }}</td>
                                 <td class="text-center">
                                     {% if tipo == "stock" %}
-                                        <span class="badge bg-success">Entrega inmediata</span>
+                                        <span class="badge bg-success">Inmediata</span>
                                     {% else %}
-                                        <span class="badge bg-warning">A producción</span>
+                                        <span class="badge bg-warning text-dark">A producción</span>
                                     {% endif %}
                                 </td>
-
-                                <td class="text-end">
+                                <td class="text-end fw-bold">
                                     {% if tipo == "stock" %}
                                         ${{ "%.2f"|format(subtotal_item) }}
                                     {% else %}
-                                        <span class="text-muted">Se cotiza</span>
+                                        <span class="text-muted small">Se cotiza</span>
                                     {% endif %}
                                 </td>
                             </tr>
                         {% endfor %}
-
                         </tbody>
                     </table>
                 </div>
             </div>
         </div>
 
-        <!-- RESUMEN -->
         <div class="col-lg-4">
-            <div class="card border-light">
-                <div class="card-body">
-
-                    <div class="mb-3">
-                        <strong>Total inmediato:</strong><br>
-                        <span class="text-success fw-bold">
-                            ${{ "%.2f"|format(ns.total_disponible) }}
-                        </span>
+            <div class="card border-light shadow-sm">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between mb-4 border-bottom pb-3">
+                        <h6 class="mb-0 fw-bold">TOTAL ESTIMADO</h6>
+                        <h5 class="mb-0 text-primary fw-bold">${{ "%.2f"|format(total) }}</h5>
                     </div>
 
-                    <button onclick="checkout()" class="btn btn-primary w-100">
-                        Finalizar compra
-                    </button>
-
+                    <div class="d-grid gap-2">
+                        <button type="button" id="btnCheckout" class="btn btn-dark btn-lg rounded-0 text-uppercase tracking-widest text-sm">
+                            <i class="bi bi-credit-card me-2"></i> Finalizar compra
+                        </button>
+                        <a href="{{ url_for('tiendaCliente.catalogo') }}" class="btn btn-outline-secondary rounded-0 text-uppercase tracking-widest text-sm">
+                            Seguir comprando
+                        </a>
+                    </div>
+                </div>
+                <div class="card-footer bg-light text-center py-3">
+                    <small class="text-muted"><i class="bi bi-shield-check me-1"></i> Transacción 100% Segura</small>
                 </div>
             </div>
         </div>
 
     </div>
+    {% else %}
+    <div class="text-center py-5 my-5">
+        <i class="bi bi-cart-x text-muted mb-3 d-block" style="font-size: 3rem;"></i>
+        <h4>Tu carrito está vacío</h4>
+        <a href="{{ url_for('tiendaCliente.catalogo') }}" class="btn btn-dark mt-3 rounded-0 px-4">Explorar Catálogo</a>
+    </div>
     {% endif %}
 </div>
 
-<script>
-function checkout() {
+<input type="hidden" id="csrf_token" value="{{ csrf_token() }}">
 
-    const sessionId = getCookie("session_id");
-    const csrfToken = "{{ csrf_token() }}";
+<script>
+document.getElementById('btnCheckout')?.addEventListener('click', function () {
+    if (!confirm('¿Confirmar compra?')) return;
+
+    // Deshabilitar botón para evitar dobles clicks
+    this.disabled = true;
+    this.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Procesando...';
 
     fetch("{{ url_for('tiendaCliente.checkout') }}", {
         method: "POST",
-        credentials: "same-origin",
         headers: {
             "Content-Type": "application/json",
-            "X-CSRFToken": csrfToken
+            "X-CSRFToken": document.getElementById("csrf_token").value
         },
         body: JSON.stringify({
-            session_id: sessionId
+            session_id: getCookie('session_id')
         })
     })
     .then(res => res.json())
     .then(data => {
         if (data.success) {
-            alert("Compra realizada");
+            alert("Compra realizada correctamente.");
             window.location.href = "{{ url_for('tiendaCliente.mis_pedidos') }}";
         } else {
-            alert(data.message);
+            alert(data.message || "Error en la compra");
+            document.getElementById('btnCheckout').disabled = false;
+            document.getElementById('btnCheckout').innerHTML = '<i class="bi bi-credit-card me-2"></i> Finalizar compra';
         }
     })
     .catch(err => {
         console.error(err);
-        alert("Error en checkout");
+        alert("Error: " + err.message);
+        document.getElementById('btnCheckout').disabled = false;
     });
-}
+});
 
 function getCookie(name) {
-    const value = `; ${document.cookie}`;
-    const parts = value.split(`; ${name}=`);
-    if (parts.length === 2) return parts.pop().split(';').shift();
+    let match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+    if (match) return match[2];
 }
 </script>
-
 {% endblock %}
