@@ -11,7 +11,6 @@ import time
 from sqlalchemy import text
 from pedidos import pedidos_bp
 
-
 from KPIs.routes import dashboard_bp
 
 from caja.routes import compras_bp
@@ -32,7 +31,7 @@ app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'static/img/productos'
 
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv(
-    'DATABASE_URL', 
+    'DATABASE_URL',
     'mysql+pymysql://vellum_user:vellum_password_123@db/vellum_db'
 )
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -40,18 +39,15 @@ app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'clave_segura_vellum_123')
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=10)
 
 
-
 db.init_app(app)
 csrf = CSRFProtect(app)
 app.register_blueprint(proveedores_bp)
 app.register_blueprint(productos_bp)
 app.register_blueprint(recetas_bp)
-
 app.register_blueprint(compras_bp)
 app.register_blueprint(unidades_bp)
 app.register_blueprint(materias_bp)
 app.register_blueprint(produccion_bp)
-
 app.register_blueprint(pedidos_bp)
 app.register_blueprint(ventas_bp, url_prefix="/ventas")
 app.register_blueprint(dashboard_bp)
@@ -59,7 +55,7 @@ app.register_blueprint(tienda_bp, url_prefix="/tienda")
 
 with app.app_context():
     intentos = 0
-    while intentos < 2: # Damos 50 segundos totales para que MySQL despierte
+    while intentos < 2:
         try:
             db.create_all()
             print("Tablas creadas con éxito.")
@@ -68,153 +64,99 @@ with app.app_context():
             break
         except Exception as e:
             intentos += 1
-            print(f"Esperando a MySQL (Intento {intentos}/10)...")
+            print(f"Esperando a MySQL (Intento {intentos}/2)...")
             time.sleep(5)
+
 
 @app.before_request
 def verificar_sesion():
-    rutas_publicas = ['login', 'static']
+    # Rutas que no requieren sesión activa.
+    # 'tiendaCliente.*' permite que el blueprint de tienda maneje su propia auth.
+    rutas_publicas = {
+        'login',
+        'logout',
+        'static',
+        'tiendaCliente.index',   # ajusta según los endpoints de tu blueprint
+        'tiendaCliente.login',
+    }
 
-    if request.endpoint not in rutas_publicas and 'user_id' not in session:
+    if request.endpoint in rutas_publicas:
+        return  # dejar pasar sin verificar
+
+    if 'user_id' not in session:
         return redirect(url_for('login'))
-    
+
+
 @app.route('/')
 def index():
     print("Sesion:", dict(session), flush=True)
     return render_template('index.html')
 
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    # Si ya hay sesión activa, redirigir al destino correcto
+    if 'user_id' in session:
+        if session.get('user_role') == 'Cliente':
+            return redirect(url_for('tiendaCliente.index'))
+        return redirect(url_for('index'))
+
     form = UserForm()
+
+    # login_mode: 'client' (tienda) o 'staff' (gestión interna).
+    # Se usa sólo para restaurar el toggle visual cuando hay errores de validación.
+    login_mode = request.form.get('login_mode', 'client')
+
     if form.validate_on_submit():
         user = Usuario.query.filter_by(username=form.username.data).first()
-        
+
         if not user:
             flash("El usuario no existe.", "danger")
-            return render_template('login.html', form=form)
-            
+            return render_template('login.html', form=form, login_mode=login_mode)
+
         if user.esta_bloqueado or user.intentos_fallidos >= 3:
-            flash("Cuenta bloqueada por seguridad. Contacte al admin.", "danger")
-            return render_template('login.html', form=form)
-            
+            flash("Cuenta bloqueada por seguridad. Contacte al administrador.", "danger")
+            return render_template('login.html', form=form, login_mode=login_mode)
+
         if check_password_hash(user.password, form.password.data):
+            # Credenciales correctas: limpiar intentos y crear sesión
             user.intentos_fallidos = 0
             db.session.commit()
-            
-            session['user_id'] = user.id
-            session['user_role'] = user.rol.nombre 
-            session.permanent = True
-            
+
+            session['user_id']   = user.id
+            session['user_role'] = user.rol.nombre
+            session.permanent    = True
+
             if session['user_role'] == 'Cliente':
-                return redirect(url_for('tiendaCliente.index')) 
-            else:
-                return redirect(url_for('index'))
-                
+                return redirect(url_for('tiendaCliente.index'))
+            return redirect(url_for('index'))
+
         else:
+            # Contraseña incorrecta
             user.intentos_fallidos += 1
             if user.intentos_fallidos >= 3:
                 user.esta_bloqueado = True
             db.session.commit()
-            flash(f"Contraseña incorrecta. Intento {user.intentos_fallidos} de 3.", "warning")
 
-    return render_template('login.html', form=form)
+            restantes = max(0, 3 - user.intentos_fallidos)
+            if restantes:
+                flash(
+                    f"Contraseña incorrecta. Te queda{'n' if restantes > 1 else ''} "
+                    f"{restantes} intento{'s' if restantes > 1 else ''}.",
+                    "warning"
+                )
+            else:
+                flash("Cuenta bloqueada por seguridad. Contacte al administrador.", "danger")
+
+    # GET o form inválido (CSRF, campos vacíos)
+    return render_template('login.html', form=form, login_mode=login_mode)
+
 
 @app.route('/logout')
 def logout():
     session.clear()
-    flash("Has cerrado sesión correctamente", "info")
+    flash("Has cerrado sesión correctamente.", "info")
     return redirect(url_for('login'))
-
-#CRUD Productos
-@app.route("/productos")
-def listar_productos():
-    productos = Producto.query.all()
-    return render_template("productos/index.html", productos=productos)
-
-@app.route("/productos/nuevo", methods=['GET', 'POST'])
-def crear_producto():
-
-    form = forms.ProductoForm(request.form)
-
-    if request.method == 'POST' and form.validate():
-
-        if not os.path.exists(app.config['UPLOAD_FOLDER']):
-            os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-
-        f = request.files['imagen']
-        filename = secure_filename(f.filename)
-        f.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-        
-        nuevo_prod = Producto(
-            sku=form.sku.data,
-            nombre=form.nombre.data,
-            linea=form.linea.data,
-            categoria=form.categoria.data,
-            precio_venta=form.precio.data,
-            stock_actual=form.stock.data,
-            imagen=filename
-        )
-        db.session.add(nuevo_prod)
-        db.session.commit()
-        flash("Producto registrado con éxito")
-        return redirect(url_for('listar_productos'))
-
-    return render_template("productos/crear.html", form=form)
-
-@app.route("/modificar_producto", methods=['GET', 'POST'])
-def modificar_producto():
-    form = forms.ProductoForm(request.form)
-    
-    if request.method == 'GET':
-        id = request.args.get('id')
-        prod = db.session.query(Producto).filter(Producto.id == id).first()
-        
-        if prod:
-            form.id.data = id
-            form.nombre.data = prod.nombre
-            form.linea.data = prod.linea
-            form.categoria.data = prod.categoria
-            form.precio.data = prod.precio_venta
-        else:
-            flash("Producto no encontrado")
-            return redirect(url_for('listar_productos'))
-
-    if request.method == 'POST':
-        id = form.id.data
-        prod = db.session.query(Producto).filter(Producto.id == id).first()
-
-        if prod:
-            # Actualizamos los campos con lo que el usuario escribió en el formulario
-            prod.nombre = str.rstrip(form.nombre.data)
-            prod.linea = form.linea.data
-            prod.categoria = form.categoria.data
-            prod.precio_venta = form.precio.data
-            
-            # Lógica opcional: Si subió una nueva imagen, la reemplazamos [cite: 30]
-            if 'imagen' in request.files:
-                f = request.files['imagen']
-                if f.filename != '':
-                    filename = secure_filename(f.filename)
-                    f.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-                    prod.imagen = filename
-            
-            db.session.add(prod)
-            db.session.commit()
-            flash("Producto actualizado correctamente")
-            return redirect(url_for('listar_productos'))
-            
-    return render_template("productos/modificar.html", form=form)
-
-@app.route("/productos/eliminar", methods=['GET', 'POST'])
-def eliminar_producto():
-    id = request.args.get('id')
-    prod = Producto.query.get(id)
-    if request.method == 'POST':
-        db.session.delete(prod)
-        db.session.commit()
-        return redirect(url_for('listar_productos'))
-    return render_template("productos/eliminar.html", producto=prod)
-
 
 
 if __name__ == '__main__':

@@ -6,28 +6,33 @@
   <title>Vellum — Marroquinería León, Gto.</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,500&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400;1,500&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
 
   <style>
     :root {
-      --v-black:  #0a0a0a;
-      --v-paper:  #f5f4f0;
-      --v-border: #e2e0db;
-      --v-tan:    #8b6f47;
-      --v-mid:    #767676;
+      --v-black:   #0c0b09;
+      --v-ivory:   #f7f5f0;
+      --v-parchment: #ede9e1;
+      --v-paper:   #f5f4f0;
+      --v-border:  #ddd9d1;
+      --v-tan:     #000000;
+      --v-tan-light: #ffffff;
+      --v-tan-muted: rgba(139,111,71,.12);
+      --v-mid:     #7a7369;
     }
     *, *::before, *::after { box-sizing: border-box; }
     body {
       font-family: 'DM Sans', sans-serif;
-      background: var(--v-paper);
+      background: var(--v-ivory);
       color: var(--v-black);
       font-size: 0.9375rem;
       line-height: 1.6;
     }
     :focus-visible { outline: 2px solid var(--v-tan); outline-offset: 2px; }
 
+    /* ── Navbar (páginas internas, NO login) ── */
     .navbar-vellum {
       background: var(--v-black);
       padding: 0 40px;
@@ -40,26 +45,51 @@
       font-family: 'Playfair Display', serif;
       font-size: 1.4rem;
       color: #fff;
-      letter-spacing: 0.25em;
+      letter-spacing: 0.28em;
       text-transform: uppercase;
       text-decoration: none;
+      transition: color .2s;
     }
-    .navbar-brand-vellum:hover { color: #d4b896; }
+    .navbar-brand-vellum:hover { color: var(--v-tan-light); }
     .navbar-tagline {
-      font-size: 0.6rem;
+      font-size: 0.58rem;
       color: #555;
       letter-spacing: 0.18em;
       text-transform: uppercase;
     }
-    main.container { padding-top: 48px; padding-bottom: 64px; }
+    .navbar-nav-links {
+      display: flex;
+      gap: 28px;
+      list-style: none;
+      margin: 0; padding: 0;
+    }
+    .navbar-nav-links a {
+      font-size: 0.65rem;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--v-mid);
+      text-decoration: none;
+      transition: color .2s;
+    }
+    .navbar-nav-links a:hover { color: var(--v-tan-light); }
+
+    /* ── Layout interno (páginas que NO son login) ── */
+    main.v-main {
+      padding-top: 48px;
+      padding-bottom: 64px;
+    }
+
+    /* ── Footer ── */
     .footer-vellum {
       border-top: 1px solid var(--v-border);
       padding: 28px 40px;
       text-align: center;
-      font-size: 0.78rem;
+      font-size: 0.72rem;
       color: var(--v-mid);
     }
-    /* Carousel */
+
+    /* ── Carousel (páginas internas) ── */
     .carousel-img {
       width: 100%; max-height: 70vh;
       object-fit: cover; object-position: center; display: block;
@@ -70,24 +100,37 @@
     }
     .carousel-indicators [data-bs-target].active { opacity: 1; }
   </style>
-</head>
-<body>
 
+  {% block head %}{% endblock %}
+</head>
+<body class="{% block body_class %}{% endblock %}">
+
+  {% block navbar %}
   <nav class="navbar-vellum" aria-label="Navegación principal">
     <div>
       <a href="/" class="navbar-brand-vellum">Vellum</a>
       <span class="navbar-tagline d-block" style="margin-top:2px;">León, Guanajuato</span>
     </div>
+    <ul class="navbar-nav-links">
+      <li><a href="/pos">Punto de venta</a></li>
+      <li><a href="/inventario">Inventario</a></li>
+      <li><a href="/reportes">Reportes</a></li>
+      <li><a href="/logout"><i class="bi bi-box-arrow-right"></i> Salir</a></li>
+    </ul>
   </nav>
+  {% endblock %}
 
-  <main class="container">
-    {% block content %}{% endblock %}
-  </main>
+  {% block full_page %}
+    <main class="v-main container">
+      {% block content %}{% endblock %}
+    </main>
 
-  <footer class="footer-vellum">
-    &copy; 2026 Marroquinería Vellum · León, Gto.
-  </footer>
+    <footer class="footer-vellum">
+      &copy; 2026 Marroquinería Vellum &middot; León, Gto.
+    </footer>
+  {% endblock %}
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+  {% block scripts %}{% endblock %}
 </body>
 </html>

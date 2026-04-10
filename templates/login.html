@@ -1,77 +1,462 @@
 {% extends "layout.html" %}
-{% block content %}
 {% import "_macros.html" as macros %}
 
-<div class="row justify-content-center" style="padding-top: 40px;">
-  <div class="col-sm-10 col-md-7 col-lg-5 col-xl-4">
+{# Suprime navbar y footer del layout base #}
+{% block navbar %}{% endblock %}
 
-    <div class="text-center" style="margin-bottom: 32px;">
-      <p style="font-size:0.72rem; text-transform:uppercase; letter-spacing:0.14em; color:var(--v-mid); margin-bottom:6px;">
-        Acceso al sistema
+{% block full_page %}
+<div class="login-split">
+
+  <!-- ══ PANEL IZQUIERDO — Branding ══ -->
+  <div class="login-left">
+    <div class="ll-top">
+      <span class="ll-brand">Vellum</span>
+      <span class="ll-sub">Marroquinería · León, Gto.</span>
+    </div>
+
+    <div class="ll-mid">
+      <div class="ll-rule">
+        <span></span>
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+          <rect x="5" y="0" width="4" height="14" fill="#ffffff"/>
+          <rect x="0" y="5" width="14" height="4" fill="#ffffff"/>
+        </svg>
+        <span class="ll-rule-r"></span>
+      </div>
+      <p class="ll-headline">
+        Cada pieza,<br>
+        una historia<br>
+        de <em>oficio</em>.
       </p>
-      <h1 style="font-family:'Playfair Display',serif; font-size:1.6rem; font-weight:500; font-style:italic; margin:0;">
-        Bienvenido a Vellum
-      </h1>
     </div>
 
-    <div style="background:#fff; border:1px solid var(--v-border); border-radius:2px; padding:36px 32px; box-shadow:0 1px 4px rgba(0,0,0,.06);">
-      <form method="POST" novalidate>
-        {{ form.csrf_token }}
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-
-        <div style="margin-bottom:20px;">
-          <label for="{{ form.username.id }}" style="display:block; font-size:0.7rem; font-weight:600; text-transform:uppercase; letter-spacing:0.1em; color:#4a4a4a; margin-bottom:6px;">
-            {{ form.username.label.text }}
-          </label>
-          {{ form.username(id=form.username.id, class="form-control" + (" is-invalid" if form.username.errors else ""), placeholder="tu_usuario", autocomplete="username", autofocus=True) }}
-          {% for error in form.username.errors %}
-            <div style="font-size:0.78rem; color:#991b1b; margin-top:4px; display:flex; align-items:center; gap:4px;">
-              <i class="bi bi-exclamation-circle"></i> {{ error }}
-            </div>
-          {% endfor %}
-        </div>
-
-        <div style="margin-bottom:28px;">
-          <label for="{{ form.password.id }}" style="display:block; font-size:0.7rem; font-weight:600; text-transform:uppercase; letter-spacing:0.1em; color:#4a4a4a; margin-bottom:6px;">
-            {{ form.password.label.text }}
-          </label>
-          {{ form.password(id=form.password.id, class="form-control" + (" is-invalid" if form.password.errors else ""), placeholder="••••••••", autocomplete="current-password") }}
-          {% for error in form.password.errors %}
-            <div style="font-size:0.78rem; color:#991b1b; margin-top:4px; display:flex; align-items:center; gap:4px;">
-              <i class="bi bi-exclamation-circle"></i> {{ error }}
-            </div>
-          {% endfor %}
-        </div>
-
-        <button type="submit" class="btn-login">Entrar a Vellum</button>
-      </form>
+    <div class="ll-bottom">
+      <svg class="ll-ornament" width="52" height="52" viewBox="0 0 60 60" fill="none" aria-hidden="true">
+        <circle cx="30" cy="30" r="29" stroke="#c4a67a" stroke-width="0.6"/>
+        <circle cx="30" cy="30" r="22" stroke="#c4a67a" stroke-width="0.6"/>
+        <line x1="30" y1="1" x2="30" y2="59" stroke="#c4a67a" stroke-width="0.6"/>
+        <line x1="1"  y1="30" x2="59" y2="30" stroke="#c4a67a" stroke-width="0.6"/>
+        <circle cx="30" cy="30" r="3" fill="#c4a67a"/>
+      </svg>
+      <p class="ll-system">Sistema de gestión &amp; tienda en línea</p>
     </div>
-
-    <p style="text-align:center; font-size:0.75rem; color:var(--v-mid); margin-top:20px;">
-      &copy; 2026 Marroquinería Vellum &middot; León, Gto.
-    </p>
   </div>
-</div>
 
+  <!-- ══ PANEL DERECHO — Formulario ══ -->
+  <div class="login-right">
+    <div class="lr-wrap">
+
+      {# Mensajes flash (errores globales, sesión expirada, etc.) #}
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="lr-alert lr-alert--{{ category }}" role="alert">
+              <i class="bi bi-{{ 'exclamation-circle' if category == 'danger' else 'info-circle' }}"></i>
+              {{ message }}
+            </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      <p class="lr-eyebrow">Bienvenido</p>
+      <h1 class="lr-title" id="lr-title">Accede a tu cuenta</h1>
+
+      <!-- ══ DARK CARD ══ -->
+      <div class="dark-card">
+
+        <!-- Toggle modo: Tienda / Empleados -->
+        <div class="mode-toggle" role="tablist" aria-label="Selecciona el tipo de acceso">
+          <button
+            class="mode-btn active"
+            id="btn-client"
+            role="tab"
+            aria-selected="true"
+            aria-controls="login-form"
+            type="button"
+            onclick="setMode('client')"
+          >
+            <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+              <path d="M14 3H2a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1zm-8.5-1a2.5 2.5 0 0 1 5 0H12v1H4V2h1.5z"/>
+              <path fill-rule="evenodd" d="M5 7a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5A.5.5 0 0 1 5 7z"/>
+            </svg>
+            Tienda
+          </button>
+          <button
+            class="mode-btn"
+            id="btn-staff"
+            role="tab"
+            aria-selected="false"
+            aria-controls="login-form"
+            type="button"
+            onclick="setMode('staff')"
+          >
+            <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+              <path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492zM5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0z"/>
+              <path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.892 3.433-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52l-.094-.319zm-2.633.283c.246-.835 1.428-.835 1.674 0l.094.319a1.873 1.873 0 0 0 2.693 1.115l.291-.16c.764-.415 1.6.42 1.184 1.185l-.159.292a1.873 1.873 0 0 0 1.116 2.692l.318.094c.835.246.835 1.428 0 1.674l-.319.094a1.873 1.873 0 0 0-1.115 2.693l.16.291c.415.764-.42 1.6-1.185 1.184l-.291-.159a1.873 1.873 0 0 0-2.693 1.116l-.094.318c-.246.835-1.428.835-1.674 0l-.094-.319a1.873 1.873 0 0 0-2.692-1.115l-.292.16c-.764.415-1.6-.42-1.184-1.185l.159-.291A1.873 1.873 0 0 0 1.945 8.93l-.319-.094c-.835-.246-.835-1.428 0-1.674l.319-.094A1.873 1.873 0 0 0 3.06 4.474l-.16-.292c-.415-.764.42-1.6 1.185-1.184l.292.159a1.873 1.873 0 0 0 2.692-1.115l.094-.319z"/>
+            </svg>
+            Empleados
+          </button>
+        </div>
+
+        <!-- Contexto dinámico -->
+        <p class="mode-context" id="mode-context" aria-live="polite">
+          Accede a tu cuenta en <span>Vellum Tienda</span>
+        </p>
+
+        <!-- Formulario -->
+        <form method="POST" novalidate id="login-form">
+          {{ form.csrf_token }}
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+          <!-- Campo oculto: indica al backend qué portal se usó -->
+          <input type="hidden" name="login_mode" id="login-mode-input" value="client"/>
+
+          <!-- Usuario / Correo -->
+          <div class="dc-field {% if form.username.errors %}dc-field--invalid{% endif %}">
+            <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+              <path d="M13.106 7.222c0-2.967-2.249-5.032-5.482-5.032-3.35 0-5.646 2.318-5.646 5.702 0 3.493 2.235 5.708 5.762 5.708.862 0 1.689-.123 2.304-.335v-.862c-.43.199-1.354.328-2.29.328-2.926 0-4.813-1.88-4.813-4.798 0-2.844 1.921-4.881 4.594-4.881 2.735 0 4.608 1.688 4.608 4.156 0 1.682-.554 2.769-1.416 2.769-.492 0-.772-.28-.772-.76V5.206H8.923v.834h-.11c-.266-.595-.881-.964-1.6-.964-1.4 0-2.378 1.162-2.378 2.823 0 1.737.957 2.906 2.379 2.906.8 0 1.415-.39 1.709-1.087h.11c.081.67.703 1.148 1.503 1.148 1.572 0 2.57-1.415 2.57-3.643zm-7.177.704c0-1.197.54-1.907 1.456-1.907.93 0 1.524.738 1.524 1.907S8.308 9.84 7.371 9.84c-.895 0-1.442-.725-1.442-1.914z"/>
+            </svg>
+            {{ form.username(
+                id=form.username.id,
+                class="dc-input",
+                placeholder="Correo electrónico",
+                autocomplete="username",
+                autofocus=True
+            ) }}
+          </div>
+          {% for error in form.username.errors %}
+            <p class="dc-error"><i class="bi bi-exclamation-circle"></i> {{ error }}</p>
+          {% endfor %}
+
+          <!-- Contraseña -->
+          <div class="dc-field {% if form.password.errors %}dc-field--invalid{% endif %}" style="margin-top:10px;">
+            <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+              <path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2zm3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/>
+            </svg>
+            {{ form.password(
+                id=form.password.id,
+                class="dc-input",
+                placeholder="Contraseña",
+                autocomplete="current-password"
+            ) }}
+          </div>
+          {% for error in form.password.errors %}
+            <p class="dc-error"><i class="bi bi-exclamation-circle"></i> {{ error }}</p>
+          {% endfor %}
+
+          <!-- Acciones -->
+          <div class="dc-actions">
+            <button type="submit" class="btn-primary-dark">
+              <span id="btn-label">Entrar a la Tienda</span>
+            </button>
+
+            <div class="dc-divider">
+              <span></span><p>o</p><span></span>
+            </div>
+
+            <button type="button" class="btn-secondary-dark" id="btn-alt" onclick="handleAlt()">
+              ¿No tienes cuenta? <span class="btn-alt-accent">Regístrate</span>
+            </button>
+          </div>
+        </form>
+
+      </div><!-- /dark-card -->
+
+      <p class="lr-foot">&copy; 2026 Marroquinería Vellum &middot; León, Gto.</p>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+
+{% block head %}
 <style>
-  .form-control {
-    border: 1px solid #e2e0db; border-radius: 2px;
-    padding: 9px 12px; font-family: 'DM Sans',sans-serif;
-    font-size: 0.875rem; width: 100%;
+  body { min-height: 100vh; margin: 0; }
+
+  .login-split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    min-height: 100vh;
+  }
+
+  /* ── Panel izquierdo ── */
+  .login-left {
+    position: relative;
+    background: #0c0b09;
+    display: flex; flex-direction: column;
+    justify-content: space-between;
+    padding: 52px 56px;
+    overflow: hidden;
+  }
+  .login-left::before {
+    content: ''; position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse 60% 50% at 20% 80%, rgba(211, 211, 211, 0.2) 0%, transparent 70%),
+      radial-gradient(ellipse 40% 60% at 80% 10%, rgba(92, 90, 88, 0.09) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .login-left::after {
+    content: ''; position: absolute; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    background-size: 256px 256px; opacity: .5; pointer-events: none;
+  }
+  .ll-top, .ll-mid, .ll-bottom { position: relative; z-index: 1; }
+
+  .ll-brand {
+    font-family: 'Playfair Display', serif; font-size: 2rem; font-weight: 500;
+    letter-spacing: .35em; text-transform: uppercase; color: #fff; display: block;
+  }
+  .ll-sub {
+    font-size: .58rem; letter-spacing: .22em; text-transform: uppercase;
+    color: #ffffff; margin-top: 6px; display: block;
+  }
+  .ll-rule { display: flex; align-items: center; gap: 16px; margin-bottom: 28px; }
+  .ll-rule span {
+    display: block; height: 1px; flex: 1;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.728), transparent);
+  }
+  .ll-rule-r {
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.728)) !important;
+  }
+  .ll-headline {
+    font-family: 'Playfair Display', serif; font-size: 2.55rem;
+    font-style: italic; font-weight: 400; line-height: 1.22;
+    color: rgba(255,255,255,.88); max-width: 300px;
+  }
+  .ll-headline em { font-style: normal; color: #c6c6c6b3; }
+  .ll-bottom { display: flex; align-items: center; gap: 16px; }
+  .ll-ornament { opacity: .28; flex-shrink: 0; }
+  .ll-system {
+    font-size: .58rem; letter-spacing: .18em; text-transform: uppercase;
+    color: #fffcfc; margin: 0;
+  }
+
+  /* ── Panel derecho ── */
+  .login-right {
+    display: flex; align-items: center; justify-content: center;
+    padding: 64px 60px; background: #f7f5f0; position: relative;
+  }
+  .login-right::before {
+    content: ''; position: absolute; inset: 0;
+    background: radial-gradient(ellipse 80% 50% at 100% 100%, rgba(139,111,71,.05) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .lr-wrap { width: 100%; max-width: 380px; position: relative; z-index: 1; }
+
+  /* Flash alerts (modo oscuro para que contrasten con el card) */
+  .lr-alert {
+    display: flex; align-items: center; gap: 8px;
+    font-size: .8rem; padding: 10px 14px; margin-bottom: 20px; border-left: 2px solid;
+    border-radius: 4px;
+  }
+  .lr-alert--danger  { background: #fef2f2; border-color: #dc2626; color: #991b1b; }
+  .lr-alert--success { background: #f0fdf4; border-color: #16a34a; color: #15803d; }
+  .lr-alert--info    { background: #eff6ff; border-color: #3b82f6; color: #1d4ed8; }
+
+  .lr-eyebrow {
+    font-size: .6rem; letter-spacing: .18em; text-transform: uppercase;
+    color: #000000; margin-bottom: 10px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .lr-eyebrow::before { content: ''; display: block; width: 24px; height: 1px; background: #8b6f47; }
+
+  .lr-title {
+    font-family: 'Playfair Display', serif; font-size: 1.7rem;
+    font-weight: 500; font-style: italic; color: #0c0b09;
+    line-height: 1.2; margin-bottom: 28px;
+  }
+
+  /* ── Dark Card ── */
+  .dark-card {
+    background: #000000;
+    border-radius: 20px;
+    padding: 28px 28px 24px;
+    position: relative;
+    border: 1px solid rgba(36, 36, 36, 0.1);
+  }
+  .dark-card::before, .dark-card::after {
+    content: ''; position: absolute;
+    width: 14px; height: 14px;
+    border-color: #ffffff; border-style: solid; opacity: .35;
+  }
+  .dark-card::before { top: -1px; left: -1px; border-width: 1px 0 0 1px; border-radius: 4px 0 0 0; }
+  .dark-card::after  { bottom: -1px; right: -1px; border-width: 0 1px 1px 0; border-radius: 0 0 4px 0; }
+
+  /* Toggle */
+  .mode-toggle {
+    display: grid; grid-template-columns: 1fr 1fr;
+    background: #111; border-radius: 12px; padding: 4px;
+    margin-bottom: 24px; gap: 4px;
+  }
+  .mode-btn {
+    padding: 9px 12px; border: none; border-radius: 9px;
+    font-family: 'DM Sans', sans-serif; font-size: .65rem; font-weight: 500;
+    letter-spacing: .1em; text-transform: uppercase;
+    cursor: pointer;
+    transition: background .25s, color .25s, box-shadow .25s;
+    background: transparent; color: #555;
+    display: flex; align-items: center; justify-content: center; gap: 7px;
+  }
+  .mode-btn svg { width: 13px; height: 13px; opacity: .6; transition: opacity .25s; }
+  .mode-btn.active {
+    background: #1f1b17; color: #ffffff;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,.5);
+  }
+  .mode-btn.active svg { opacity: 1; }
+
+  .mode-context {
+    font-size: .72rem; color: #555; text-align: center;
+    margin-bottom: 20px; min-height: 1.3em;
+  }
+  .mode-context span { color: #ffffff; }
+
+  /* Fields */
+  .dc-field {
+    display: flex; align-items: center; gap: 10px;
+    background: #111; border-radius: 12px; padding: 10px 14px;
+    border: 1px solid rgba(255,255,255,.04);
+    box-shadow: inset 2px 4px 10px rgba(0,0,0,.6);
     transition: border-color .2s, box-shadow .2s;
   }
-  .form-control:focus {
-    border-color: #8b6f47;
-    box-shadow: 0 0 0 3px rgba(139,111,71,.12); outline: none;
+  .dc-field + .dc-field { margin-top: 10px; }
+  .dc-field:focus-within {
+    border-color: rgba(37, 37, 37, 0.5);
+    box-shadow: inset 2px 4px 10px rgba(0,0,0,.5), 0 0 0 3px rgba(139,111,71,.18);
   }
-  .form-control.is-invalid { border-color: #dc2626; }
-  .btn-login {
-    width: 100%; background: #0a0a0a; color: #fff;
-    border: none; border-radius: 2px; padding: 11px 16px;
-    font-family: 'DM Sans',sans-serif; font-size: 0.72rem;
-    font-weight: 600; text-transform: uppercase;
-    letter-spacing: 0.12em; cursor: pointer; transition: background .2s;
+  .dc-field--invalid { border-color: rgba(220,38,38,.5) !important; }
+  .dc-field svg { width: 15px; height: 15px; fill: #555; flex-shrink: 0; transition: fill .2s; }
+  .dc-field:focus-within svg { fill: #ffffff; }
+
+  .dc-input {
+    background: none; border: none; outline: none; width: 100%;
+    font-family: 'DM Sans', sans-serif; font-size: .875rem; color: #ffffff;
   }
-  .btn-login:hover { background: #8b6f47; }
+  .dc-input::placeholder { color: #000000; }
+
+  .dc-error {
+    font-size: .72rem; color: #fca5a5; margin-top: 6px;
+    display: flex; align-items: center; gap: 5px;
+  }
+
+  /* Acciones */
+  .dc-actions { margin-top: 20px; display: flex; flex-direction: column; gap: 10px; }
+
+  .btn-primary-dark {
+    width: 100%; background: #1f1b17; color: #ffffff;
+    border: 1px solid rgba(196,166,122,.2); border-radius: 10px;
+    padding: 12px 16px;
+    font-family: 'DM Sans', sans-serif; font-size: .68rem; font-weight: 500;
+    letter-spacing: .16em; text-transform: uppercase;
+    cursor: pointer; position: relative; overflow: hidden;
+    transition: border-color .25s;
+  }
+  .btn-primary-dark::after {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(139,111,71,.15), transparent);
+    transform: scaleX(0); transform-origin: left;
+    transition: transform .35s cubic-bezier(.4,0,.2,1);
+  }
+  .btn-primary-dark:hover { border-color: rgba(0, 0, 0, 0.45); }
+  .btn-primary-dark:hover::after { transform: scaleX(1); }
+  .btn-primary-dark span { position: relative; z-index: 1; }
+
+  .dc-divider { display: flex; align-items: center; gap: 12px; margin: 4px 0; }
+  .dc-divider span { flex: 1; height: 1px; background: rgba(255,255,255,.06); }
+  .dc-divider p { font-size: .62rem; color: #000000; letter-spacing: .1em; text-transform: uppercase; margin: 0; }
+
+  .btn-secondary-dark {
+    width: 100%; background: transparent; color: #1e1e1e; border: none; border-radius: 10px;
+    padding: 10px 16px;
+    font-family: 'DM Sans', sans-serif; font-size: .65rem;
+    letter-spacing: .12em; text-transform: uppercase;
+    cursor: pointer; transition: color .25s;
+  }
+  .btn-secondary-dark:hover { color: #2b2b2b; }
+  .btn-alt-accent { color: #ffffff; }
+
+  .lr-foot { text-align: center; font-size: .68rem; color: #ffffff; margin-top: 20px; }
+
+  /* Animaciones de entrada */
+  @keyframes v-fade-up {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes slide-ctx {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .ll-top     { animation: v-fade-up .7s .10s both; }
+  .ll-mid     { animation: v-fade-up .7s .25s both; }
+  .ll-bottom  { animation: v-fade-up .7s .38s both; }
+  .lr-eyebrow { animation: v-fade-up .6s .45s both; }
+  .lr-title   { animation: v-fade-up .6s .55s both; }
+  .dark-card  { animation: v-fade-up .6s .65s both; }
+  .lr-foot    { animation: v-fade-up .6s .75s both; }
+  .mode-context.anim { animation: slide-ctx .25s both; }
+
+  /* Responsive: móvil apila, oculta panel izquierdo */
+  @media (max-width: 768px) {
+    .login-split { grid-template-columns: 1fr; }
+    .login-left  { display: none; }
+    .login-right { padding: 48px 28px; }
+  }
 </style>
+{% endblock %}
+
+
+{% block scripts %}
+<script>
+  const MODES = {
+    client: {
+      context:        'Accede a tu cuenta en <span>Vellum Tienda</span>',
+      userPlaceholder:'Correo electrónico',
+      btnLabel:       'Entrar a la Tienda',
+      altHtml:        '¿No tienes cuenta? <span class="btn-alt-accent">Regístrate</span>',
+      altHref:        '/registro',
+      title:          'Accede a tu cuenta',
+    },
+    staff: {
+      context:        'Portal interno de <span>Vellum · Gestión</span>',
+      userPlaceholder:'Usuario de empleado',
+      btnLabel:       'Entrar al Sistema',
+      altHtml:        '¿Olvidaste tu contraseña? <span class="btn-alt-accent">Recuperar</span>',
+      altHref:        '/recuperar-contrasena',
+      title:          'Acceso al sistema',
+    },
+  };
+
+  let currentMode = 'client';
+
+  function setMode(m) {
+    currentMode = m;
+    const d = MODES[m];
+
+    // Toggle botones
+    ['client','staff'].forEach(k => {
+      const btn = document.getElementById('btn-' + k);
+      btn.classList.toggle('active', k === m);
+      btn.setAttribute('aria-selected', k === m);
+    });
+
+    // Contexto animado
+    const ctx = document.getElementById('mode-context');
+    ctx.classList.remove('anim');
+    void ctx.offsetWidth;
+    ctx.innerHTML = d.context;
+    ctx.classList.add('anim');
+
+    // Campos y textos
+    document.getElementById('{{ form.username.id }}').placeholder = d.userPlaceholder;
+    document.getElementById('btn-label').textContent = d.btnLabel;
+    document.getElementById('btn-alt').innerHTML = d.altHtml;
+    document.getElementById('lr-title').textContent = d.title;
+    document.getElementById('login-mode-input').value = m;
+  }
+
+  function handleAlt() {
+    window.location.href = MODES[currentMode].altHref;
+  }
+
+  
+</script>
 {% endblock %}
