@@ -72,7 +72,7 @@
                         </div>
                         <div class="col-md-6 mb-4">
                             <label class="form-label text-uppercase small fw-bold tracking-wider">Retícula / Consumo (dm²)</label>
-                            {{ form.area_reticula(class="form-control", id="input-reticula", placeholder="Ej. 0.85", style="border-radius: 0;") }}
+                            {{ form.area_reticula(class="form-control", id="input-reticula", placeholder="Ej. 0.85", style="border-radius: 0;", min="0.01", step="0.01") }}
                         </div>
                     </div>
 
@@ -84,17 +84,13 @@
                         </div>
                     </div>
 
-                    <!-- ────────────────────────────────────────── -->
-                    <!-- Otros Insumos (forros, herrajes, hilos…)  -->
-                    <!-- ────────────────────────────────────────── -->
+                    <!-- Otros Insumos -->
                     <div class="d-flex align-items-center gap-2 mb-3">
                         <span class="text-uppercase small text-muted tracking-widest" style="white-space:nowrap;">Otros Insumos</span>
                         <div class="flex-grow-1 bg-black" style="height:1px; opacity:.15;"></div>
                     </div>
 
-                    <div id="contenedor-insumos" class="mb-3">
-                        <!-- Filas dinámicas se insertan aquí -->
-                    </div>
+                    <div id="contenedor-insumos" class="mb-3"></div>
 
                     <button type="button" id="btn-agregar-insumo"
                             class="btn btn-outline-secondary w-100 mb-4 d-flex align-items-center justify-content-center gap-2"
@@ -115,14 +111,12 @@
                     </div>
 
                 </form>
-            </div><!-- /card -->
+            </div>
         </div>
     </div>
 </div>
 
-<!-- ═══════════════════════════════════════════
-     Template invisible para clonar filas extra
-     ═══════════════════════════════════════════ -->
+<!-- Template para filas extra -->
 <template id="tpl-fila-insumo">
     <div class="fila-insumo row g-2 align-items-center mb-2">
         <div class="col-6">
@@ -147,20 +141,16 @@
     </div>
 </template>
 
-<!-- ═══════
-     Scripts
-     ═══════ -->
 <script>
-    /* ── Referencias DOM ── */
-    const inputPlantilla  = document.getElementById('input-plantilla');
-    const inputReticula   = document.getElementById('input-reticula');
-    const visorMerma      = document.getElementById('visor-merma');
-    const selectProducto  = document.getElementById('select-producto');
-    const btnAgregar      = document.getElementById('btn-agregar-insumo');
-    const contenedor      = document.getElementById('contenedor-insumos');
-    const template        = document.getElementById('tpl-fila-insumo');
+    const inputPlantilla = document.getElementById('input-plantilla');
+    const inputReticula  = document.getElementById('input-reticula');
+    const visorMerma     = document.getElementById('visor-merma');
+    const selectProducto = document.getElementById('select-producto');
+    const btnAgregar     = document.getElementById('btn-agregar-insumo');
+    const contenedor     = document.getElementById('contenedor-insumos');
+    const template       = document.getElementById('tpl-fila-insumo');
 
-    /* ── Cálculo de merma (piel) ── */
+    /* ── Cálculo de merma ── */
     function calcularMerma() {
         const p = parseFloat(inputPlantilla.value) || 0;
         const r = parseFloat(inputReticula.value)  || 0;
@@ -175,7 +165,20 @@
         }
     }
 
-    /* ── API: traer área plantilla al cambiar producto ── */
+    /* ── Validación retícula >= plantilla ── */
+    function validarReticula() {
+        const p = parseFloat(inputPlantilla.value) || 0;
+        const r = parseFloat(inputReticula.value)  || 0;
+
+        if (p > 0 && r < p) {
+            inputReticula.setCustomValidity(`Mínimo ${p.toFixed(2)} dm² (área de plantilla)`);
+            inputReticula.reportValidity();
+        } else {
+            inputReticula.setCustomValidity('');
+        }
+    }
+
+    /* ── API: área plantilla al cambiar producto ── */
     selectProducto.addEventListener('change', function () {
         const productoId = this.value;
         if (!productoId) return;
@@ -184,18 +187,22 @@
             .then(r => { if (!r.ok) throw new Error(); return r.json(); })
             .then(data => {
                 inputPlantilla.value = data.area;
+                // Resetear validación custom al cambiar producto
+                inputReticula.setCustomValidity('');
                 calcularMerma();
             })
             .catch(() => { inputPlantilla.value = '0.00'; });
     });
 
-    inputReticula.addEventListener('input', calcularMerma);
+    inputReticula.addEventListener('input', () => {
+        validarReticula();
+        calcularMerma();
+    });
 
-    /* ── Añadir fila de insumo extra ── */
+    /* ── Añadir fila extra ── */
     btnAgregar.addEventListener('click', () => {
         const fila = template.content.cloneNode(true);
         contenedor.appendChild(fila);
-        // Enfoca el select recién creado
         contenedor.lastElementChild.querySelector('select').focus();
     });
 
@@ -205,7 +212,7 @@
         if (btn) btn.closest('.fila-insumo').remove();
     });
 
-    /* ── Al cargar: disparar cambio si ya hay producto seleccionado ── */
+    /* ── Al cargar: disparar cambio si ya hay producto ── */
     window.addEventListener('DOMContentLoaded', () => {
         if (selectProducto.value) {
             selectProducto.dispatchEvent(new Event('change'));
@@ -214,7 +221,7 @@
 </script>
 
 <style>
-    .text-premium   { font-family: 'Playfair Display', serif; }
+    .text-premium    { font-family: 'Playfair Display', serif; }
     .tracking-wider  { letter-spacing: 0.1em; }
     .tracking-widest { letter-spacing: 0.2em; }
 
@@ -226,10 +233,7 @@
     }
     .btn-vellum:hover { background: #333; transform: translateY(-2px); }
 
-    /* Animación de entrada para filas nuevas */
-    .fila-insumo {
-        animation: slideIn .2s ease;
-    }
+    .fila-insumo { animation: slideIn .2s ease; }
     @keyframes slideIn {
         from { opacity: 0; transform: translateY(-6px); }
         to   { opacity: 1; transform: translateY(0); }
