@@ -23,6 +23,7 @@ from tiendaCliente.routes import tienda_bp
 from productos.routes import productos_bp
 from recetas.routes import recetas_bp
 from produccion.routes import produccion_bp
+from trazabilidad.routes import trazabilidad_bp
 
 
 load_dotenv()
@@ -52,6 +53,7 @@ app.register_blueprint(pedidos_bp)
 app.register_blueprint(ventas_bp, url_prefix="/ventas")
 app.register_blueprint(dashboard_bp)
 app.register_blueprint(tienda_bp, url_prefix="/tienda")
+app.register_blueprint(trazabilidad_bp)
 
 with app.app_context():
     intentos = 0

@@ -1,0 +1,255 @@
+{% extends "base.html" %}
+
+{% block title %}Trazabilidad{% endblock %}
+{% block page_title %}Módulo de Trazabilidad{% endblock %}
+
+{% block content %}
+
+<!-- BOTONES -->
+<div class="d-flex justify-content-center gap-3 mt-3 flex-wrap">
+
+    <button id="btnProduccion" onclick="mostrarSeccion('produccion')" class="btn-vellum active">
+        Producción
+    </button>
+
+    <button id="btnVentas" onclick="mostrarSeccion('ventas')" class="btn-vellum">
+        Ventas
+    </button>
+
+</div>
+
+<!-- SECCIÓN PRODUCCIÓN -->
+<div id="seccionProduccion" class="card-vellum mt-4">
+
+    <h3>Órdenes de Producción</h3>
+
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Producto</th>
+                    <th>Cantidad</th>
+                    <th>Estado</th>
+                    <th>Usuario</th>
+                    <th>Fecha</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody id="tablaProduccion"></tbody>
+        </table>
+    </div>
+
+</div>
+
+<!-- SECCIÓN VENTAS -->
+<div id="seccionVentas" class="card-vellum mt-4 d-none">
+
+    <h3>Auditoría de Ventas</h3>
+
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Folio</th>
+                    <th>Usuario</th>
+                    <th>Acción</th>
+                    <th>Fecha</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody id="tablaVentas"></tbody>
+        </table>
+    </div>
+
+</div>
+
+<!-- MODAL -->
+<div class="modal fade" id="modalDetalle">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Detalle</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="detalleContenido"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+
+const API = "/trazabilidad";
+
+// ================= UI =================
+function mostrarSeccion(seccion) {
+
+    const secciones = ["Produccion", "Ventas"];
+
+    secciones.forEach(s => {
+        document.getElementById("seccion" + s).classList.add("d-none");
+        document.getElementById("btn" + s).classList.remove("active");
+    });
+
+    const nombre = seccion.charAt(0).toUpperCase() + seccion.slice(1);
+
+    document.getElementById("seccion" + nombre).classList.remove("d-none");
+    document.getElementById("btn" + nombre).classList.add("active");
+
+    if (seccion === "produccion") cargarProduccion();
+    if (seccion === "ventas") cargarVentas();
+}
+
+// ================= PRODUCCIÓN =================
+async function cargarProduccion() {
+
+    try {
+        const res = await fetch(`${API}/ordenes-produccion`);
+        if (!res.ok) throw await res.text();
+
+        const data = await res.json();
+
+        tablaProduccion.innerHTML = "";
+
+        data.forEach(o => {
+            tablaProduccion.innerHTML += `
+                <tr>
+                    <td>${o.id_orden}</td>
+                    <td>${o.producto}</td>
+                    <td>${o.cantidad}</td>
+                    <td>${o.estado}</td>
+                    <td>${o.creado_por}</td>
+                    <td>${o.fecha}</td>
+                    <td>
+                        <button class="btn btn-dark btn-sm"
+                            onclick="verOrden(${o.id_orden})">
+                            Ver
+                        </button>
+                    </td>
+                </tr>`;
+        });
+
+    } catch (e) {
+        console.error(e);
+        alert("Error cargando producción");
+    }
+}
+
+async function verOrden(id) {
+
+    const res = await fetch(`${API}/orden-produccion/${id}`);
+    const data = await res.json();
+
+    detalleContenido.innerHTML = `
+        <p><b>Producto:</b> ${data.producto.nombre}</p>
+        <p><b>SKU:</b> ${data.producto.sku}</p>
+        <p><b>Usuario:</b> ${data.usuario.username}</p>
+        <p><b>Cantidad:</b> ${data.cantidad}</p>
+        <p><b>Estado:</b> ${data.estado}</p>
+        <p><b>Fecha:</b> ${data.fecha}</p>
+    `;
+
+    new bootstrap.Modal(modalDetalle).show();
+}
+
+// ================= VENTAS =================
+async function cargarVentas() {
+
+    try {
+        const res = await fetch(`${API}/auditoria-ventas`);
+        if (!res.ok) throw await res.text();
+
+        const data = await res.json();
+
+        tablaVentas.innerHTML = "";
+
+        data.forEach(v => {
+            tablaVentas.innerHTML += `
+                <tr>
+                    <td>${v.venta_id}</td>
+                    <td>${v.folio}</td>
+                    <td>${v.usuario}</td>
+                    <td>${v.accion}</td>
+                    <td>${v.fecha}</td>
+                    <td>
+                        <button class="btn btn-success btn-sm"
+                            onclick="verVenta(${v.venta_id})">
+                            Ver
+                        </button>
+                    </td>
+                </tr>`;
+        });
+
+    } catch (e) {
+        console.error(e);
+        alert("Error cargando ventas");
+    }
+}
+
+// ================= DETALLE VENTA =================
+async function verVenta(id) {
+
+    try {
+        const res = await fetch(`${API}/auditoria-venta/${id}`);
+        if (!res.ok) throw await res.text();
+
+        const data = await res.json();
+
+        let html = `
+        <h5>Productos de la venta</h5>
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Producto</th>
+                    <th>Cantidad</th>
+                    <th>Precio</th>
+                    <th>Subtotal</th>
+                </tr>
+            </thead>
+            <tbody>
+        `;
+
+        let total = 0;
+
+        data.productos.forEach(p => {
+            total += p.subtotal;
+
+            html += `
+            <tr>
+                <td>${p.nombre}</td>
+                <td>${p.cantidad}</td>
+                <td>$${p.precio.toFixed(2)}</td>
+                <td>$${p.subtotal.toFixed(2)}</td>
+            </tr>`;
+        });
+
+        html += `
+            </tbody>
+        </table>
+        <h5 class="text-end">Total: $${total.toFixed(2)}</h5>
+        `;
+
+        html += `<hr><h5>Historial</h5><ul>`;
+        data.historial.forEach(h => {
+            html += `<li>${h.fecha} - ${h.usuario} → ${h.accion}</li>`;
+        });
+        html += "</ul>";
+
+        detalleContenido.innerHTML = html;
+        new bootstrap.Modal(modalDetalle).show();
+
+    } catch (e) {
+        console.error(e);
+        alert("Error en detalle de venta");
+    }
+}
+
+// INIT
+document.addEventListener("DOMContentLoaded", () => {
+    mostrarSeccion("produccion");
+});
+
+</script>
+
+{% endblock %}
