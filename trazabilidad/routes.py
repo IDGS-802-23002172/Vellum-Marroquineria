@@ -26,7 +26,9 @@ def trazabilidad_ordenes_produccion():
             "cantidad": o.cantidad,
             "estado": o.estado,
             "fecha": o.fecha_creacion,
-            "creado_por": o.artesano.username if o.artesano else "N/A"
+            "creado_por": o.artesano_solicitante.username if o.artesano_solicitante else "N/A",
+            "corte_por": o.artesano_corte.username if o.artesano_corte else "Pendiente",
+            "finalizado_por": o.artesano_finalizador.username if o.artesano_finalizador else "Pendiente"
         }
         for o in ordenes
     ])
@@ -45,14 +47,13 @@ def detalle_orden_produccion(id_orden):
             "nombre": o.producto.nombre if o.producto else "N/A",
             "sku": o.producto.sku if o.producto else "N/A"
         },
-        "usuario": {
-            "username": o.artesano.username if o.artesano else "N/A"
-        },
+        "solicitado_por": o.artesano_solicitante.username if o.artesano_solicitante else "N/A",
+        "corte_por": o.artesano_corte.username if o.artesano_corte else "Pendiente",
+        "finalizado_por": o.artesano_finalizador.username if o.artesano_finalizador else "Pendiente",
         "cantidad": o.cantidad,
         "estado": o.estado,
         "fecha": o.fecha_creacion
     })
-
 
 # ================= AUDITORÍA (LISTADO) =================
 @trazabilidad_bp.route("/auditoria-ventas", methods=["GET"])

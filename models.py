@@ -157,6 +157,7 @@ class OrdenCompra(db.Model):
     proveedor  = db.relationship("Proveedor")
     subtotal   = db.Column(db.Numeric(14, 2), nullable=False, default=0)
     iva        = db.Column(db.Numeric(14, 2), nullable=False, default=0)
+    usuario_creador = db.relationship("Usuario", foreign_keys=[creado_por])
     referencia_doc = db.Column(db.String(100), nullable=True) # Añade esta línea
     detalles   = db.relationship(
         "DetalleOrdenCompra",
@@ -376,8 +377,12 @@ class OrdenProduccion(db.Model):
     cantidad = db.Column(db.Integer, nullable=False)
     estado = db.Column(db.String(50), default="En Corte")
     fecha_creacion = db.Column(db.DateTime, default=db.func.current_timestamp())
+    id_artesano_corte = db.Column(db.Integer, db.ForeignKey("usuarios.id"), nullable=True)
+    id_artesano_terminado = db.Column(db.Integer, db.ForeignKey("usuarios.id"), nullable=True)
     producto = db.relationship("Producto")
-    artesano = db.relationship("Usuario", foreign_keys=[id_usuario])
+    artesano_solicitante = db.relationship("Usuario", foreign_keys=[id_usuario])
+    artesano_corte = db.relationship("Usuario", foreign_keys=[id_artesano_corte])
+    artesano_finalizador = db.relationship("Usuario", foreign_keys=[id_artesano_terminado])
 
 class AuditoriaVenta(db.Model):
     __tablename__ = "auditoria_ventas"
@@ -386,6 +391,7 @@ class AuditoriaVenta(db.Model):
     usuario_id = db.Column(db.Integer, db.ForeignKey("usuarios.id"), nullable=False)
     fecha = db.Column(db.DateTime, default=datetime.utcnow)
     accion = db.Column(db.String(50))
+    origen_plataforma= (db.column(50))
     venta = db.relationship("Venta")
     usuario = db.relationship("Usuario")
 
@@ -398,7 +404,8 @@ def registrar_auditoria(mapper, connection, target):
             "venta_id": target.id,
             "usuario_id": target.usuario_id,
             "fecha": datetime.utcnow(),
-            "accion": "VENTA_REGISTRADA"
+            "accion": "VENTA_REGISTRADA",
+            "origen_plataforma": target.tipo
         }
     )
 

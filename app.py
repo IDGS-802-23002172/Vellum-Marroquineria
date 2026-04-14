@@ -10,6 +10,7 @@ from materiales.routes import materias_bp
 import time
 from sqlalchemy import text
 from pedidos import pedidos_bp
+from trazabilidad.routes import trazabilidad_bp
 
 from KPIs.routes import dashboard_bp
 
@@ -23,7 +24,6 @@ from tiendaCliente.routes import tienda_bp
 from productos.routes import productos_bp
 from recetas.routes import recetas_bp
 from produccion.routes import produccion_bp
-from trazabilidad.routes import trazabilidad_bp
 
 
 load_dotenv()
@@ -49,11 +49,11 @@ app.register_blueprint(compras_bp)
 app.register_blueprint(unidades_bp)
 app.register_blueprint(materias_bp)
 app.register_blueprint(produccion_bp)
+app.register_blueprint(trazabilidad_bp, url_prefix="/trazabilidad")
 app.register_blueprint(pedidos_bp)
 app.register_blueprint(ventas_bp, url_prefix="/ventas")
 app.register_blueprint(dashboard_bp)
 app.register_blueprint(tienda_bp, url_prefix="/tienda")
-app.register_blueprint(trazabilidad_bp)
 
 with app.app_context():
     intentos = 0
@@ -72,21 +72,31 @@ with app.app_context():
 
 @app.before_request
 def verificar_sesion():
-    # Rutas que no requieren sesión activa.
-    # 'tiendaCliente.*' permite que el blueprint de tienda maneje su propia auth.
     rutas_publicas = {
         'login',
         'logout',
         'static',
-        'tiendaCliente.index',   # ajusta según los endpoints de tu blueprint
+        'tiendaCliente.index',  
         'tiendaCliente.login',
     }
 
     if request.endpoint in rutas_publicas:
-        return  # dejar pasar sin verificar
-
+        return  
     if 'user_id' not in session:
         return redirect(url_for('login'))
+    user_role = session.get('user_role')
+    endpoint = request.endpoint or ''
+    if user_role == 'Cliente':
+        if not endpoint.startswith('tiendaCliente.'):
+            flash("Acceso denegado. Área exclusiva del personal de Vellum.", "danger")
+            return redirect(url_for('tiendaCliente.index'))
+
+@app.after_request
+def add_header(response):
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
 
 
 @app.route('/')
@@ -97,16 +107,12 @@ def index():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    # Si ya hay sesión activa, redirigir al destino correcto
     if 'user_id' in session:
         if session.get('user_role') == 'Cliente':
             return redirect(url_for('tiendaCliente.index'))
         return redirect(url_for('index'))
 
     form = UserForm()
-
-    # login_mode: 'client' (tienda) o 'staff' (gestión interna).
-    # Se usa sólo para restaurar el toggle visual cuando hay errores de validación.
     login_mode = request.form.get('login_mode', 'client')
 
     if form.validate_on_submit():
@@ -121,7 +127,6 @@ def login():
             return render_template('login.html', form=form, login_mode=login_mode)
 
         if check_password_hash(user.password, form.password.data):
-            # Credenciales correctas: limpiar intentos y crear sesión
             user.intentos_fallidos = 0
             db.session.commit()
 

@@ -5,33 +5,28 @@
 
 {% block content %}
 
-<!-- BOTONES -->
 <div class="d-flex justify-content-center gap-3 mt-3 flex-wrap">
-
     <button id="btnProduccion" onclick="mostrarSeccion('produccion')" class="btn-vellum active">
         Producción
     </button>
-
     <button id="btnVentas" onclick="mostrarSeccion('ventas')" class="btn-vellum">
         Ventas
     </button>
-
 </div>
 
-<!-- SECCIÓN PRODUCCIÓN -->
 <div id="seccionProduccion" class="card-vellum mt-4">
-
     <h3>Órdenes de Producción</h3>
-
     <div class="table-responsive">
         <table class="table">
-            <thead>
+            <thead class="small text-uppercase text-muted">
                 <tr>
                     <th>ID</th>
                     <th>Producto</th>
-                    <th>Cantidad</th>
+                    <th>Cant.</th>
                     <th>Estado</th>
-                    <th>Usuario</th>
+                    <th>Solicitó</th>
+                    <th>Cortó</th>
+                    <th>Finalizó</th>
                     <th>Fecha</th>
                     <th></th>
                 </tr>
@@ -39,17 +34,13 @@
             <tbody id="tablaProduccion"></tbody>
         </table>
     </div>
-
 </div>
 
-<!-- SECCIÓN VENTAS -->
 <div id="seccionVentas" class="card-vellum mt-4 d-none">
-
     <h3>Auditoría de Ventas</h3>
-
     <div class="table-responsive">
         <table class="table">
-            <thead>
+            <thead class="small text-uppercase text-muted">
                 <tr>
                     <th>ID</th>
                     <th>Folio</th>
@@ -62,38 +53,31 @@
             <tbody id="tablaVentas"></tbody>
         </table>
     </div>
-
 </div>
 
-<!-- MODAL -->
 <div class="modal fade" id="modalDetalle">
-  <div class="modal-dialog modal-lg">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Detalle</h5>
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content rounded-0">
+      <div class="modal-header border-dark">
+        <h5 class="modal-title font-monospace fw-bold">Detalle Operativo</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
-      <div class="modal-body" id="detalleContenido"></div>
+      <div class="modal-body p-4" id="detalleContenido"></div>
     </div>
   </div>
 </div>
 
 <script>
-
 const API = "/trazabilidad";
 
 // ================= UI =================
 function mostrarSeccion(seccion) {
-
     const secciones = ["Produccion", "Ventas"];
-
     secciones.forEach(s => {
         document.getElementById("seccion" + s).classList.add("d-none");
         document.getElementById("btn" + s).classList.remove("active");
     });
-
     const nombre = seccion.charAt(0).toUpperCase() + seccion.slice(1);
-
     document.getElementById("seccion" + nombre).classList.remove("d-none");
     document.getElementById("btn" + nombre).classList.add("active");
 
@@ -103,33 +87,31 @@ function mostrarSeccion(seccion) {
 
 // ================= PRODUCCIÓN =================
 async function cargarProduccion() {
-
     try {
         const res = await fetch(`${API}/ordenes-produccion`);
         if (!res.ok) throw await res.text();
 
         const data = await res.json();
-
         tablaProduccion.innerHTML = "";
 
         data.forEach(o => {
             tablaProduccion.innerHTML += `
                 <tr>
-                    <td>${o.id_orden}</td>
-                    <td>${o.producto}</td>
+                    <td class="font-monospace">#${o.id_orden}</td>
+                    <td class="fw-bold">${o.producto}</td>
                     <td>${o.cantidad}</td>
-                    <td>${o.estado}</td>
-                    <td>${o.creado_por}</td>
-                    <td>${o.fecha}</td>
+                    <td><span class="badge bg-secondary rounded-0">${o.estado}</span></td>
+                    <td class="text-muted"> ${o.creado_por}</td>
+                    <td class="text-muted">${o.corte_por}</td>
+                    <td class="text-muted"> ${o.finalizado_por}</td>
+                    <td class="small">${new Date(o.fecha).toLocaleDateString()}</td>
                     <td>
-                        <button class="btn btn-dark btn-sm"
-                            onclick="verOrden(${o.id_orden})">
-                            Ver
+                        <button class="btn btn-outline-dark btn-sm rounded-0" onclick="verOrden(${o.id_orden})">
+                            <i class="bi bi-eye"></i>
                         </button>
                     </td>
                 </tr>`;
         });
-
     } catch (e) {
         console.error(e);
         alert("Error cargando producción");
@@ -137,50 +119,54 @@ async function cargarProduccion() {
 }
 
 async function verOrden(id) {
-
     const res = await fetch(`${API}/orden-produccion/${id}`);
     const data = await res.json();
 
     detalleContenido.innerHTML = `
-        <p><b>Producto:</b> ${data.producto.nombre}</p>
-        <p><b>SKU:</b> ${data.producto.sku}</p>
-        <p><b>Usuario:</b> ${data.usuario.username}</p>
-        <p><b>Cantidad:</b> ${data.cantidad}</p>
-        <p><b>Estado:</b> ${data.estado}</p>
-        <p><b>Fecha:</b> ${data.fecha}</p>
+        <div class="row g-4">
+            <div class="col-md-6">
+                <h6 class="text-uppercase text-muted small fw-bold tracking-widest border-bottom pb-2">Datos del Producto</h6>
+                <p class="mb-1"><b>Producto:</b> ${data.producto.nombre}</p>
+                <p class="mb-1"><b>SKU:</b> <span class="font-monospace">${data.producto.sku}</span></p>
+                <p class="mb-1"><b>Cantidad:</b> ${data.cantidad} uds.</p>
+                <p class="mb-1"><b>Estado:</b> <span class="badge bg-dark rounded-0">${data.estado}</span></p>
+                <p class="mb-1"><b>Fecha creación:</b> ${new Date(data.fecha).toLocaleString()}</p>
+            </div>
+            <div class="col-md-6">
+                <h6 class="text-uppercase text-muted small fw-bold tracking-widest border-bottom pb-2">Trazabilidad de Personal</h6>
+                <p class="mb-2"><b>Solicitado por:</b> <br><span class="ms-4">${data.solicitado_por}</span></p>
+                <p class="mb-2"><b>Cortado por:</b> <br><span class="ms-4 text-primary">${data.corte_por}</span></p>
+                <p class="mb-2"></i><b>Finalizado por:</b> <br><span class="ms-4 text-success">${data.finalizado_por}</span></p>
+            </div>
+        </div>
     `;
-
-    new bootstrap.Modal(modalDetalle).show();
+    new bootstrap.Modal(document.getElementById('modalDetalle')).show();
 }
 
 // ================= VENTAS =================
 async function cargarVentas() {
-
     try {
         const res = await fetch(`${API}/auditoria-ventas`);
         if (!res.ok) throw await res.text();
 
         const data = await res.json();
-
         tablaVentas.innerHTML = "";
 
         data.forEach(v => {
             tablaVentas.innerHTML += `
                 <tr>
                     <td>${v.venta_id}</td>
-                    <td>${v.folio}</td>
-                    <td>${v.usuario}</td>
-                    <td>${v.accion}</td>
-                    <td>${v.fecha}</td>
+                    <td class="font-monospace fw-bold">${v.folio}</td>
+                    <td><i class="bi bi-person"></i> ${v.usuario}</td>
+                    <td><span class="badge bg-dark rounded-0">${v.accion}</span></td>
+                    <td class="small">${new Date(v.fecha).toLocaleString()}</td>
                     <td>
-                        <button class="btn btn-success btn-sm"
-                            onclick="verVenta(${v.venta_id})">
-                            Ver
+                        <button class="btn btn-outline-dark btn-sm rounded-0" onclick="verVenta(${v.venta_id})">
+                            <i class="bi bi-eye"></i>
                         </button>
                     </td>
                 </tr>`;
         });
-
     } catch (e) {
         console.error(e);
         alert("Error cargando ventas");
@@ -189,7 +175,6 @@ async function cargarVentas() {
 
 // ================= DETALLE VENTA =================
 async function verVenta(id) {
-
     try {
         const res = await fetch(`${API}/auditoria-venta/${id}`);
         if (!res.ok) throw await res.text();
@@ -197,47 +182,47 @@ async function verVenta(id) {
         const data = await res.json();
 
         let html = `
-        <h5>Productos de la venta</h5>
-        <table class="table table-bordered">
-            <thead>
-                <tr>
-                    <th>Producto</th>
-                    <th>Cantidad</th>
-                    <th>Precio</th>
-                    <th>Subtotal</th>
-                </tr>
-            </thead>
-            <tbody>
+        <h6 class="text-uppercase text-muted small fw-bold tracking-widest mb-3">Productos de la venta</h6>
+        <div class="table-responsive mb-4">
+            <table class="table table-bordered table-sm align-middle">
+                <thead class="bg-light text-uppercase small">
+                    <tr>
+                        <th>Producto</th>
+                        <th class="text-center">Cantidad</th>
+                        <th class="text-end">Precio</th>
+                        <th class="text-end">Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody>
         `;
 
         let total = 0;
-
         data.productos.forEach(p => {
             total += p.subtotal;
-
             html += `
             <tr>
-                <td>${p.nombre}</td>
-                <td>${p.cantidad}</td>
-                <td>$${p.precio.toFixed(2)}</td>
-                <td>$${p.subtotal.toFixed(2)}</td>
+                <td class="fw-bold">${p.nombre}</td>
+                <td class="text-center">${p.cantidad}</td>
+                <td class="text-end font-monospace">$${p.precio.toFixed(2)}</td>
+                <td class="text-end font-monospace">$${p.subtotal.toFixed(2)}</td>
             </tr>`;
         });
 
         html += `
-            </tbody>
-        </table>
-        <h5 class="text-end">Total: $${total.toFixed(2)}</h5>
+                </tbody>
+            </table>
+        </div>
+        <h5 class="text-end fw-bold font-monospace mb-4">Total: $${total.toFixed(2)}</h5>
         `;
 
-        html += `<hr><h5>Historial</h5><ul>`;
+        html += `<h6 class="text-uppercase text-muted small fw-bold tracking-widest border-bottom pb-2 mb-3">Historial Operativo</h6><ul class="list-group list-group-flush small">`;
         data.historial.forEach(h => {
-            html += `<li>${h.fecha} - ${h.usuario} → ${h.accion}</li>`;
+            html += `<li class="list-group-item bg-transparent px-0"><i class="bi bi-clock-history me-2"></i> ${new Date(h.fecha).toLocaleString()} - <b>${h.usuario}</b> → <span class="badge bg-secondary">${h.accion}</span></li>`;
         });
         html += "</ul>";
 
-        detalleContenido.innerHTML = html;
-        new bootstrap.Modal(modalDetalle).show();
+        document.getElementById('detalleContenido').innerHTML = html;
+        new bootstrap.Modal(document.getElementById('modalDetalle')).show();
 
     } catch (e) {
         console.error(e);
@@ -245,11 +230,16 @@ async function verVenta(id) {
     }
 }
 
-// INIT
 document.addEventListener("DOMContentLoaded", () => {
     mostrarSeccion("produccion");
 });
-
 </script>
 
+<style>
+    .btn-vellum.active {
+        background-color: #000;
+        color: #fff;
+        border-color: #000;
+    }
+</style>
 {% endblock %}

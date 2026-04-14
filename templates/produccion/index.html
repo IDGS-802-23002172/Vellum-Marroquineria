@@ -30,15 +30,18 @@
           <th scope="col">Producto</th>
           <th scope="col" style="text-align:center;">Cantidad</th>
           <th scope="col" style="text-align:center;">Estado</th>
-          <th scope="col">Progreso</th>
-          <th scope="col" style="text-align:center; width:100px;">Acciones</th>
+          <th scope="col">Progreso y Trazabilidad</th>
+          <th scope="col" style="text-align:center; width:110px;">Acciones</th>
         </tr>
       </thead>
       <tbody>
       {% for o in ordenes %}
         <tr>
-          <td style="font-family:monospace; font-size:.825rem; color:var(--v-mid);">
-            #{{ o.id_orden }}
+          <td style="font-size:.825rem; color:var(--v-mid);">
+            <strong style="font-family:monospace;">#{{ o.id_orden }}</strong><br>
+            <span style="font-size:.65rem; color:var(--v-stone); text-transform:uppercase;">
+              <i class="bi bi-person-fill"></i> Solicitó: {{ o.artesano_solicitante.username if o.artesano_solicitante else 'Tienda Web' }}
+            </span>
           </td>
           <td style="font-weight:600; font-size:.875rem;">{{ o.producto.nombre }}</td>
           <td style="text-align:center; font-size:.875rem; font-variant-numeric:tabular-nums;">
@@ -56,7 +59,7 @@
               <span class="tag-material" style="background:#e0f2fe; color:#991b1b; border:1px solid #fecaca;">{{ o.estado }}</span>
             {% endif %}
           </td>
-          <td style="min-width:140px;">
+          <td style="min-width:160px;">
             <div style="background:var(--v-border); border-radius:1px; height:4px; overflow:hidden;">
               
               {% set bg = '#3b82f6' %}
@@ -78,20 +81,31 @@
             </div>
             
             <span style="font-size:.68rem; color:var(--v-mid); margin-top:3px; display:block;">
-              {% if o.estado == 'Terminado' %}Completado
-              {% elif o.estado == 'Cancelado' %}Cancelado
-              {% elif o.estado == 'Pendiente' %}En espera de material
-              {% else %}Cortando / Confección{% endif %}
+              {% if o.estado == 'Terminado' %}
+                Completado por: <strong class="text-dark">{{ o.artesano_finalizador.username if o.artesano_finalizador else 'Sistema' }}</strong>
+              {% elif o.estado == 'Cancelado' %}
+                Cancelado
+              {% elif o.estado == 'Pendiente' %}
+                En espera de material
+              {% else %}
+                Cortando: <strong class="text-dark">{{ o.artesano_corte.username if o.artesano_corte else 'En Taller' }}</strong>
+              {% endif %}
             </span>
           </td>
           <td>
             <div class="d-flex gap-1 justify-content-center">
-              <a href="{{ url_for('produccion.actualizar_produccion', id=o.id_orden) }}"
-                 class="btn-icon-piel" title="Gestionar orden" aria-label="Gestionar orden #{{ o.id_orden }}"
-                 style="width:auto; padding:6px 10px; font-size:.7rem; gap:4px;">
-                <i class="bi bi-gear-fill"></i>
-                <span style="font-size:.68rem; text-transform:uppercase; letter-spacing:.06em;">Gestionar</span>
-              </a>
+              {% if o.estado not in ['Terminado', 'Cancelado'] %}
+                <a href="{{ url_for('produccion.actualizar_produccion', id=o.id_orden) }}"
+                   class="btn-icon-piel" title="Gestionar orden" aria-label="Gestionar orden #{{ o.id_orden }}"
+                   style="width:auto; padding:6px 10px; font-size:.7rem; gap:4px;">
+                  <i class="bi bi-gear-fill"></i>
+                  <span style="font-size:.68rem; text-transform:uppercase; letter-spacing:.06em;">Gestionar</span>
+                </a>
+              {% else %}
+                <span class="text-muted" style="font-size:.65rem; text-transform:uppercase; letter-spacing:.1em;">
+                  <i class="bi bi-lock-fill"></i> Sellada
+                </span>
+              {% endif %}
             </div>
           </td>
         </tr>

@@ -35,8 +35,18 @@ docker system prune -f
 ### 3. Sembrado de Datos
 Una vez que los contenedores estén activos, ejecuta el script de automatización para generar los roles y usuarios iniciales con contraseñas hasheadas:
 
+OJITO: Si haces esto ya no hagas el paso 4
+
 ```powershell
 docker exec -it vellum_app python seed_db.py
+```
+
+### 4. Restauracion completa
+OJITO: Si usan esta opcion es porque no hiciste el paso 3, esto es para directamente insertar toda la informacion de la base de datos con el dump actual que tenemos. Si tu respaldo no se llama Dump20260408 entonces no sirve o no es el más actual.
+
+
+```powershell
+docker exec -it vellum_app python restauracion.py 
 ```
 
 ---

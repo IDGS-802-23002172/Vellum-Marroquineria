@@ -107,6 +107,11 @@ def crear_orden():
 def actualizar_produccion(id):
     orden = OrdenProduccion.query.get_or_404(id)
     
+    # BLOQUEO QA: Evitar que se modifique una orden terminada vía backend
+    if orden.estado == "Terminado":
+        flash("Esta orden ya se encuentra terminada y no puede ser modificada.", "warning")
+        return redirect(url_for('produccion.listar_ordenes'))
+
     if request.method == 'POST':
         nuevo_estado = request.form.get('estado')
         
@@ -114,12 +119,14 @@ def actualizar_produccion(id):
             # 1. TRIGGER: De "Pendiente" a "En Corte" (Descuenta Material)
             if orden.estado == "Pendiente" and nuevo_estado == "En Corte":
                 ejecutar_explosion_materiales(orden.id_producto, orden.cantidad)
+                orden.id_artesano_corte = session.get('user_id')
                 flash(f"Materiales descontados exitosamente. Orden enviada a corte.", "success")
 
             # 2. TRIGGER: De "En Corte" a "Terminado" (Suma Producto Terminado)
             elif orden.estado != "Terminado" and nuevo_estado == "Terminado":
                 producto_almacen = Producto.query.get(orden.id_producto)
                 producto_almacen.stock_actual += orden.cantidad
+                orden.id_artesano_terminado = session.get('user_id')
                 flash(f"Producción finalizada: {orden.cantidad} unidades listas para venta.", "success")
             
             # Guardamos el nuevo estado si no hubo errores matemáticos
