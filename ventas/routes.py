@@ -57,6 +57,32 @@ def abrir_caja():
     flash("Caja abierta exitosamente.", "success")
     return redirect(url_for("ventas.punto_venta"))
 
+@ventas_bp.route("/reabrir-caja", methods=["POST"])
+def reabrir_caja():
+    caja = obtener_caja_hoy()
+    monto_adicional = request.form.get("monto_adicional", type=float)
+    
+    if monto_adicional is None or monto_adicional < 0:
+        flash("Monto adicional inválido", "danger")
+        return redirect(url_for("ventas.punto_venta"))
+        
+    if caja and caja.estado == 'cerrada':
+        caja.estado = 'abierta'
+        caja.fecha_cierre = None
+        
+        # Sumar el nuevo monto al fondo inicial del día
+        caja.monto_inicial = Decimal(str(caja.monto_inicial)) + Decimal(str(monto_adicional))
+        
+        # Registrar el movimiento en el historial de caja
+        movimiento = MovimientoCaja(
+            tipo="ENTRADA", concepto="Reapertura de Turno (Fondo Adicional)",
+            monto=monto_adicional, creado_por=session.get("user_id"), fecha=datetime.utcnow()
+        )
+        db.session.add(movimiento)
+        db.session.commit()
+        flash("Caja reabierta exitosamente. Se ha registrado el nuevo fondo.", "success")
+    return redirect(url_for("ventas.punto_venta"))
+
 @ventas_bp.route("/pos", methods=["GET"])
 def punto_venta():
     caja = obtener_caja_hoy()
@@ -206,6 +232,7 @@ def datos_cierre():
     
     return {"monto_inicial": float(monto_inicial), "total_ventas": float(total_ventas) * 1.16, "total_esperado": total_esperado}
 
+
 @ventas_bp.route("/cierre-diario", methods=["GET", "POST"])
 def cierre_diario():
     if request.method == "POST":
@@ -228,9 +255,30 @@ def cierre_diario():
         caja.utilidad_total = resultado["utilidad_total"] or 0
         caja.estado = "cerrada"
         caja.fecha_cierre = datetime.utcnow()
+        total_ventas_hoy = resultado["total_ventas"] or 0
+        total_con_iva = float(total_ventas_hoy) * 1.16
+        total_esperado = float(caja.monto_inicial) + total_con_iva
+        cierre_previo = MovimientoCaja.query.filter(
+            MovimientoCaja.tipo == "CIERRE",
+            db.func.date(MovimientoCaja.fecha) == db.func.curdate()
+        ).first()
+
+        if cierre_previo:
+            cierre_previo.monto = total_esperado
+            cierre_previo.fecha = datetime.utcnow()
+        else:
+            movimiento_cierre = MovimientoCaja(
+                tipo="CIERRE",
+                concepto=f"Cierre Z (Retiro a Bóveda) - {datetime.utcnow().date()}",
+                monto=total_esperado,
+                creado_por=session.get("user_id"),
+                fecha=datetime.utcnow(),
+                notas="Retiro de la caja física al finalizar el día."
+            )
+            db.session.add(movimiento_cierre)
 
         db.session.commit()
-        flash("Cierre sellado correctamente.", "success")
+        flash("Cierre sellado correctamente. El dinero físico ha sido retirado en el flujo de caja.", "success")
         return redirect(url_for("ventas.cierre_diario"))
 
     cierre = CierreCaja.query.order_by(CierreCaja.fecha.desc()).first()

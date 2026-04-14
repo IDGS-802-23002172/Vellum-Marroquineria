@@ -34,9 +34,21 @@
         <i class="bi bi-lock-fill text-muted mb-3 d-block" style="font-size: 3rem;"></i>
         <h4 class="text-premium text-uppercase text-dark font-bold">Caja Sellada</h4>
         <p class="text-muted fst-italic">El turno del día ha concluido. No se permiten más ventas hoy.</p>
-        <a href="{{ url_for('ventas.cierre_diario') }}" class="btn btn-outline-dark mt-3 rounded-0 text-uppercase tracking-widest small px-4 py-2">
-            Ver Resumen de Cierre
-        </a>
+        <div class="d-flex flex-column align-items-center mt-4">
+            <form method="POST" action="{{ url_for('ventas.reabrir_caja') }}" class="m-0 mb-3">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="input-group shadow-sm">
+                    <span class="input-group-text rounded-0 bg-white text-muted small text-uppercase tracking-widest">Añadir Fondo $</span>
+                    <input type="number" step="0.01" min="0" name="monto_adicional" class="form-control rounded-0" placeholder="Ej. 500.00" required style="max-width: 150px;">
+                    <button type="submit" class="btn btn-dark rounded-0 text-uppercase tracking-widest small px-4">
+                        <i class="bi bi-unlock-fill me-2"></i> Reabrir Turno
+                    </button>
+                </div>
+            </form>
+            <a href="{{ url_for('ventas.cierre_diario') }}" class="btn btn-outline-dark rounded-0 text-uppercase tracking-widest small px-4 py-2">
+                Ver Resumen
+            </a>
+        </div>
     </div>
 
     {% else %}
