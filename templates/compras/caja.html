@@ -76,6 +76,8 @@
           <td>
             {% if m.tipo == 'ENTRADA' %}
               <span class="tag-material tag-entrada">Entrada</span>
+            {% elif m.tipo == 'CIERRE' %}
+              <span class="tag-material" style="background:#1f2937; color:#fff; border-radius:3px; padding:2px 6px;">Cierre</span>
             {% else %}
               <span class="tag-material tag-salida">Salida</span>
             {% endif %}

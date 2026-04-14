@@ -445,7 +445,7 @@ def caja():
     # Totales del período visible
     todos    = consulta.all()
     entradas = sum(m.monto for m in todos if m.tipo == "ENTRADA")
-    salidas  = sum(m.monto for m in todos if m.tipo == "SALIDA")
+    salidas  = sum(m.monto for m in todos if m.tipo in ["SALIDA", "CIERRE"])
 
     return render_template(
         "compras/caja.html",
