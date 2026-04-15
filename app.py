@@ -1,5 +1,5 @@
 import os
-from flask import Flask, render_template, session, flash, redirect, url_for, request
+from flask import Flask, render_template, session, flash, redirect, url_for, request, g
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_wtf.csrf import CSRFProtect
 from dotenv import load_dotenv
@@ -84,6 +84,7 @@ def verificar_sesion():
         return  
     if 'user_id' not in session:
         return redirect(url_for('login'))
+    g.user = Usuario.query.get(session['user_id'])
     user_role = session.get('user_role')
     endpoint = request.endpoint or ''
     if user_role == 'Cliente':
