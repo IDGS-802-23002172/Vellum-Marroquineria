@@ -126,7 +126,7 @@
 let graficaVentas, graficaLineas, graficaTop;
 
 // ------------------------
-// Mostrar secciones + botón activo
+// Mostrar secciones
 // ------------------------
 function mostrarSeccion(seccion) {
 
@@ -147,13 +147,10 @@ function mostrarSeccion(seccion) {
 // Descargar gráfica
 // ------------------------
 function descargarGrafica(canvasId, nombreArchivo) {
-
     const canvas = document.getElementById(canvasId);
-
     const link = document.createElement("a");
     link.download = nombreArchivo + ".png";
     link.href = canvas.toDataURL("image/png", 1.0);
-
     link.click();
 }
 
@@ -209,10 +206,11 @@ function cargarDashboard() {
 }
 
 // ------------------------
-// Graficas
+// GRÁFICAS CON TOOLTIPS AVANZADOS
 // ------------------------
 function cargarGraficas(filtros) {
 
+    // ---------------- VENTAS MENSUALES ----------------
     fetch("/dashboard/ventas-mensuales" + filtros)
         .then(r => r.json())
         .then(data => {
@@ -226,13 +224,30 @@ function cargarGraficas(filtros) {
                     data: {
                         labels: data.map(d => `${d.mes}/${d.anio}`),
                         datasets: [{
+                            label: "Ventas",
                             data: data.map(d => d.total)
                         }]
+                    },
+                    options: {
+                        plugins: {
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const d = data[context.dataIndex];
+                                        return [
+                                            `Total: $${d.total.toFixed(2)}`,
+                                            `Unidades: ${d.unidades}`
+                                        ];
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             );
         });
 
+    // ---------------- VENTAS POR LÍNEA ----------------
     fetch("/dashboard/ventas-por-linea" + filtros)
         .then(r => r.json())
         .then(data => {
@@ -248,11 +263,28 @@ function cargarGraficas(filtros) {
                         datasets: [{
                             data: data.map(d => d.total)
                         }]
+                    },
+                    options: {
+                        plugins: {
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const d = data[context.dataIndex];
+                                        return [
+                                            `${d.linea}`,
+                                            `Ventas: $${d.total.toFixed(2)}`,
+                                            `Unidades: ${d.unidades}`
+                                        ];
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             );
         });
 
+    // ---------------- TOP PRODUCTOS ----------------
     fetch("/dashboard/top-productos" + filtros)
         .then(r => r.json())
         .then(data => {
@@ -266,9 +298,25 @@ function cargarGraficas(filtros) {
                     data: {
                         labels: data.map(d => d.nombre),
                         datasets: [{
-                            label: "Unidades vendidas", 
+                            label: "Unidades vendidas",
                             data: data.map(d => d.unidades)
                         }]
+                    },
+                    options: {
+                        plugins: {
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const d = data[context.dataIndex];
+                                        return [
+                                            `Producto: ${d.nombre}`,
+                                            `Unidades: ${d.unidades}`,
+                                            `Precio promedio: $${d.precio.toFixed(2)}`
+                                        ];
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             );
